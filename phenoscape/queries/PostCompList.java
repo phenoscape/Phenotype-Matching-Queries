@@ -4,11 +4,24 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import phenoscape.queries.lib.Match;
+import org.obo.dataadapter.DefaultOBOParser;
+import org.obo.dataadapter.OBOParseEngine;
+import org.obo.dataadapter.OBOParseException;
+import org.obo.datamodel.IdentifiedObject;
+import org.obo.datamodel.OBOClass;
+import org.obo.datamodel.OBOSession;
+import org.obo.util.TermUtil;
+
+import phenoscape.queries.lib.StringConsts;
 import phenoscape.queries.lib.Utils;
 
 import com.google.gson.JsonObject;
@@ -19,12 +32,22 @@ public class PostCompList {
 	final static String TAXONSTR = "taxon";
 	final static String IDSTR = "id";
 	
+	final static public Pattern TAOPATTERN = Pattern.compile("TAO:\\d+");
+	final static public Pattern ZFAPATTERN = Pattern.compile("ZFA:\\d+");
+	final static public Pattern GOPATTERN = Pattern.compile("GO:\\d+");
+	final static public Pattern PATOPATTERN = Pattern.compile("PATO:\\d+");
+	final static public Pattern BSPOPATTERN = Pattern.compile("BSPO:\\d+");
+
+	final private static String pathStrRoot = StringConsts.KBBASEURL + "term/";
+
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Question1 reporter = new Question1();
-		reporter.writeReport("TaxonGeneEQMatches.txt",new Utils());
+
+		PostCompList reporter = new PostCompList();
+		reporter.writeReport("PostCompList.txt",new Utils());
+
 	}
 
 	void writeReport(String fileName, Utils u){
@@ -40,7 +63,7 @@ public class PostCompList {
 		for(JsonObject g : geneAnnotations){
 			String gEntity = g.get("entity").getAsJsonObject().get(IDSTR).getAsString();
 			if (gEntity.indexOf('^') != -1){
-				genePostComps.add(gEntity);
+				genePostComps.add(doSubstitutions(gEntity,u));
 			}
 		}
 		File outFile = new File(fileName);
@@ -61,10 +84,9 @@ public class PostCompList {
             	}
             	else{
             		for(JsonObject t : taxonAnnotations){
-            			System.out.println("Read " + taxonAnnotations.size() + " taxon annotations");
             			String tEntity = t.get("entity").getAsJsonObject().get(IDSTR).getAsString();
             			if (tEntity.indexOf('^') != -1)
-            				taxaPostComps.add(tEntity);
+            				taxaPostComps.add(doSubstitutions(tEntity,u));
             		}
             	}
             }
@@ -79,6 +101,73 @@ public class PostCompList {
 		}
 	}
 
+	private String doSubstitutions(String s, Utils u){
+		
+		Matcher taoMatcher = TAOPATTERN.matcher(s);
+		while (taoMatcher.find()){
+			final int first = taoMatcher.start();
+			final int last = taoMatcher.end();
+			final String id = s.substring(first,last);
+			String name = u.lookupIDToName  (id);
+			s = s.substring(0,first)+name+s.substring(last);
+			//System.out.println("New string is " + s);
+			taoMatcher = TAOPATTERN.matcher(s);
+		}
+		Matcher zfaMatcher = ZFAPATTERN.matcher(s);
+		while (zfaMatcher.find()){
+			final int first = zfaMatcher.start();
+			final int last = zfaMatcher.end();
+			final String id = s.substring(first,last);
+			String name = u.lookupIDToName(id);
+			s = s.substring(0,first)+name+s.substring(last);
+			//System.out.println("New string is " + s);
+			zfaMatcher = ZFAPATTERN.matcher(s);
+			
+		}
+		Matcher goMatcher = GOPATTERN.matcher(s);
+		while (goMatcher.find()){
+			final int first = goMatcher.start();
+			final int last = goMatcher.end();
+			final String id = s.substring(first,last);
+			String name = u.lookupIDToName(id);
+			s = s.substring(0,first)+name+s.substring(last);
+			//System.out.println("New string is " + s);
+			goMatcher = GOPATTERN.matcher(s);
+			
+		}
+		Matcher patoMatcher = PATOPATTERN.matcher(s);
+		while (patoMatcher.find()){
+			final int first = patoMatcher.start();
+			final int last = patoMatcher.end();
+			final String id = s.substring(first,last);
+			String name = u.lookupIDToName(id);
+			s = s.substring(0,first)+name+s.substring(last);
+			patoMatcher = PATOPATTERN.matcher(s);
+			
+		}
+		Matcher bspoMatcher = BSPOPATTERN.matcher(s);
+		while (bspoMatcher.find()){
+			final int first = bspoMatcher.start();
+			final int last = bspoMatcher.end();
+			final String id = s.substring(first,last);
+			String name = u.lookupIDToName(id);
+			s = s.substring(0,first)+name+s.substring(last);
+			//System.out.println("New string is " + s);
+			bspoMatcher = BSPOPATTERN.matcher(s);			
+		}
+		//System.out.println("New string is " + s);
+		return s;
+	}
+	
+	OBOClass getTerm(Collection<OBOClass> terms, String id){
+		for(OBOClass term : terms){
+			if (id.equals(term.getID()))
+				return term;
+		}
+		return null;
+	}
+	
+	
 	private void writeOrDump(String contents, BufferedWriter b){
 		if (b == null)
 			System.out.println(contents);

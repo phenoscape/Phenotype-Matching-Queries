@@ -11,14 +11,22 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Queue;
 import java.util.Set;
+
+import org.obo.datamodel.OBOClass;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -35,26 +43,170 @@ public class Utils {
 	final private static String QUALITYSTR = "quality";
 	
 	final private static String pathStrRoot = StringConsts.KBBASEURL + "term/";
+	final private static String termRoot = pathStrRoot;
 	final private static String pathSuffix = "/path";
 
 	final static public Pattern PARENPATTERN = Pattern.compile("\\(");
 	final static public Pattern CIRCUMFLEXPATTERN = Pattern.compile("\\^");
 	
-	final private Set<String> allTerms = new HashSet<String>(40000);
+	final static public Pattern TAOPATTERN = Pattern.compile("TAO:\\d+");
+	final static public Pattern ZFAPATTERN = Pattern.compile("ZFA:\\d+");
+	final static public Pattern GOPATTERN = Pattern.compile("GO:\\d+");
+	final static public Pattern PATOPATTERN = Pattern.compile("PATO:\\d+");
+	final static public Pattern BSPOPATTERN = Pattern.compile("BSPO:\\d+");
 
-	final private Map<String,String> termNames = new HashMap<String,String>(40000);
+	private static final String CONNECTION_PROPERTIES_FILENAME = "connection.properties"; 
 	
-	final private Map<String,Set<String>> parents = new HashMap<String,Set<String>>(30000);
-	final private Map<String,Set<String>> ancestors = new HashMap<String,Set<String>>(30000);
+	
+	//These are rather unfortunate, but KB-DEV currently (11-15-2010) uses an unreleased PATO with 
+	//the relational qualities removed, but includes annotations with them.  So, the three relational 
+	//qualities used by PATO will be hard coded here to support lookupIDToName and doSubstitutions.
+	
+	final static public String RELATIONALSHAPEQUALITYNAME = "relational shape quality";
+	final static public String RELATIONALSPATIALQUALITYNAME = "relational spatial quality";
+	final static public String RELATIONALSTRUCTURALQUALITYNAME = "relational structural quality";
+	
+	final static public String RELATIONALSHAPEQUALITYID = "PATO:0001647";
+	final static public String RELATIONALSPATIALQUALITYID = "PATO:0001631";
+	final static public String RELATIONALSTRUCTURALQUALITYID = "PATO:0001452";
+	
+
+
+	final private Map<Integer,String> nodeNames = new HashMap<Integer,String>(40000);
+	final private Map<Integer,String> nodeUIDs = new HashMap<Integer, String>(40000);
+	
+	final private Map<Integer,Set<Integer>> parents = new HashMap<Integer,Set<Integer>>(30000);
+	final private Map<Integer,Set<Integer>> ancestors = new HashMap<Integer,Set<Integer>>(30000);
 	
 	private boolean parentsBuilt = false;
 	
 	
-	public String getTermName(String id){
-		return termNames.get(id);
+	public String doSubstitutions(String s){
+		Matcher taoMatcher = TAOPATTERN.matcher(s);
+		while (taoMatcher.find()){
+			final int first = taoMatcher.start();
+			final int last = taoMatcher.end();
+			final String id = s.substring(first,last);
+			String name = lookupIDToName(id);
+			s = s.substring(0,first)+name+s.substring(last);
+			//System.out.println("New string is " + s );
+			taoMatcher = TAOPATTERN.matcher(s);
+		}
+		Matcher zfaMatcher = ZFAPATTERN.matcher(s);
+		while (zfaMatcher.find()){
+			final int first = zfaMatcher.start();
+			final int last = zfaMatcher.end();
+			final String id = s.substring(first,last);
+			String name = lookupIDToName(id);
+			s = s.substring(0,first)+name+s.substring(last);
+			//System.out.println("New string is " + s);
+			zfaMatcher = ZFAPATTERN.matcher(s);
+			
+		}
+		Matcher goMatcher = GOPATTERN.matcher(s);
+		while (goMatcher.find()){
+			final int first = goMatcher.start();
+			final int last = goMatcher.end();
+			final String id = s.substring(first,last);
+			String name = lookupIDToName(id);
+			s = s.substring(0,first)+name+s.substring(last);
+			//System.out.println("New string is " + s);
+			goMatcher = GOPATTERN.matcher(s);
+			
+		}
+		Matcher patoMatcher = PATOPATTERN.matcher(s);
+		while (patoMatcher.find()){
+			final int first = patoMatcher.start();
+			final int last = patoMatcher.end();
+			final String id = s.substring(first,last);
+			String name = lookupIDToName(id);
+			s = s.substring(0,first)+name+s.substring(last);
+			//System.out.println("New string is " + s);
+			patoMatcher = PATOPATTERN.matcher(s);
+			
+		}
+		Matcher bspoMatcher = BSPOPATTERN.matcher(s);
+		while (bspoMatcher.find()){
+			final int first = bspoMatcher.start();
+			final int last = bspoMatcher.end();
+			final String id = s.substring(first,last);
+			String name = lookupIDToName(id);
+			s = s.substring(0,first)+name+s.substring(last);
+			//System.out.println("New string is " + s);
+			bspoMatcher = BSPOPATTERN.matcher(s);			
+		}
+		//System.out.println("New string is " + s);
+		return s;
 	}
 	
+	OBOClass getTerm(Collection<OBOClass> terms, String id){
+		for(OBOClass term : terms){
+			if (id.equals(term.getID()))
+				return term;
+		}
+		return null;
+	}
+
 	
+	
+	
+	
+	public String getNodeName(int id){
+		return nodeNames.get(id);
+	}
+	
+	public boolean hasNodeName(int id){
+		return nodeNames.containsKey(id);
+	}
+	
+	public void putNodeName(int id, String name){
+		nodeNames.put(id, name);
+	}
+	
+	public String getNodeUID(int nodeId){
+		return nodeUIDs.get(nodeId);
+	}
+	
+	public boolean hasNodeUID(int nodeId){
+		return nodeUIDs.containsKey(nodeId);
+	}
+	
+	public void putNodeUID(int nodeId, String name){
+		nodeUIDs.put(nodeId, name);
+	}
+	
+	public Set<Integer> getNodeSet(){
+		return nodeUIDs.keySet();
+	}
+	
+	public String oboIDtoNodeName(String OBOId){
+		for(Entry<Integer,String> ent : nodeUIDs.entrySet()){
+			if (ent.getValue().equals(OBOId)){
+				return nodeNames.get(ent.getKey());
+			}
+		}
+		return null;
+	}
+	
+	public void addParent(Integer nodeID, Integer parentID){
+		if (parents.containsKey(nodeID)){
+			parents.get(nodeID).add(parentID);
+		}
+		else{
+			Set<Integer> parentSet = new HashSet<Integer>(5);
+			parentSet.add(parentID);
+			parents.put(nodeID, parentSet);
+		}
+	}
+	
+	public Set<Integer> getParents(Integer nodeID){
+		return parents.get(nodeID);
+	}
+	
+	public void printTableReport(){
+		System.out.println("nodeUIDs.size() = " + nodeUIDs.size());
+		System.out.println("parents.size() = " + parents.size());
+	}
 	
 	final Set<JsonObject> emptySJO = new HashSet<JsonObject>();
 	public Set<JsonObject> getGeneAnnotations(){
@@ -76,58 +228,6 @@ public class Utils {
 			JsonArray geneArray = root.get("annotations").getAsJsonArray();
 			for(JsonElement annotationElement : geneArray){
 					JsonObject annotationObject = annotationElement.getAsJsonObject();
-					JsonObject geneObject = annotationObject.get(GENESTR).getAsJsonObject();
-					String geneID = geneObject.get(IDSTR).getAsString();
-					if (!allTerms.contains(geneID)){
-						allTerms.add(geneID);
-					}
-					if (!termNames.containsKey(geneID)){
-						String geneName = geneObject.get(NAMESTR).getAsString();
-						termNames.put(geneID, geneName);
-					}
-					JsonObject entityObject = annotationObject.get(ENTITYSTR).getAsJsonObject();
-					String entityID = entityObject.get(IDSTR).getAsString();
-					if (entityID.indexOf('^') == -1){
-						if (!allTerms.contains(entityID)){
-							allTerms.add(entityID);
-						}
-						if (!termNames.containsKey(entityID)){
-							String entityName = entityObject.get(NAMESTR).getAsString();
-							termNames.put(entityID, entityName);
-						}
-					}
-					else { //need to parse postcomp
-						String[] entityComps = CIRCUMFLEXPATTERN.split(entityID);
-						String entityGenus = entityComps[0];
-						if (!allTerms.contains(entityGenus)){
-							allTerms.add(entityGenus);
-						}
-						if (!termNames.containsKey(entityGenus)){
-							String entityName = entityObject.get(NAMESTR).getAsString();
-							termNames.put(entityID, entityName);
-						}
-						String entityDifferentiaFinal = entityComps[entityComps.length-1];   //tEntityComps seems to parse out each component of the postcomp...
-						if (entityDifferentiaFinal.indexOf('(') != -1 && entityDifferentiaFinal.indexOf(')') != -1){
-							entityDifferentiaFinal = entityDifferentiaFinal.substring(entityDifferentiaFinal.indexOf('(')+1,entityDifferentiaFinal.indexOf(')'));
-							if (!allTerms.contains(entityDifferentiaFinal)){
-								allTerms.add(entityDifferentiaFinal);
-							}
-							if (!termNames.containsKey(entityID)){
-								String entityName = entityObject.get(NAMESTR).getAsString();
-								termNames.put(entityID, entityName);
-							}
-						}
-						else System.out.println("Questionable post-comp parse: " +  entityDifferentiaFinal);
-					}
-					JsonObject qualityObject = annotationObject.get(QUALITYSTR).getAsJsonObject();
-					String qualityID = qualityObject.get(IDSTR).getAsString();
-					if (!allTerms.contains(qualityID)){
-						allTerms.add(qualityID);
-					}
-					if (!termNames.containsKey(qualityID)){
-						String qualityName = qualityObject.get(NAMESTR).getAsString();
-						termNames.put(qualityID, qualityName);
-					}
 					result.add(annotationObject);
 				}
 			return result;
@@ -157,55 +257,6 @@ public class Utils {
 				JsonArray taxonArray = root.get("annotations").getAsJsonArray();
 				for (JsonElement annotationElement : taxonArray){
 					JsonObject annotationObject = annotationElement.getAsJsonObject();
-					JsonObject taxonObject = annotationObject.get(TAXONSTR).getAsJsonObject();
-					String taxonID = taxonObject.get(IDSTR).getAsString();
-					if (!allTerms.contains(taxonID)){
-						allTerms.add(taxonID);
-					}
-					if (!termNames.containsKey(taxonID)){
-						String taxonName = taxonObject.get(NAMESTR).getAsString();
-						termNames.put(taxonID, taxonName);						
-					}
-					JsonObject entityObject = annotationObject.get(ENTITYSTR).getAsJsonObject();
-					String entityID = entityObject.get(IDSTR).getAsString();
-					if (entityID.indexOf('^') == -1){
-						if (!allTerms.contains(entityID)){
-							allTerms.add(entityID);
-						}
-						if (!termNames.containsKey(entityID)){
-							String entityName = entityObject.get(NAMESTR).getAsString();
-							termNames.put(entityID, entityName);
-						}
-					}
-					else { //need to parse postcomp
-						String[] entityComps = CIRCUMFLEXPATTERN.split(entityID);
-						String entityGenus = entityComps[0];
-						String entityDifferentiaFinal = entityComps[entityComps.length-1];   //tEntityComps seems to parse out each component of the postcomp...
-						entityDifferentiaFinal = entityDifferentiaFinal.substring(entityDifferentiaFinal.indexOf('(')+1,entityDifferentiaFinal.indexOf(')'));
-						if (!allTerms.contains(entityGenus)){
-							allTerms.add(entityGenus);
-						}
-						if (!termNames.containsKey(entityGenus)){
-							String entityName = entityObject.get(NAMESTR).getAsString();
-							termNames.put(entityID, entityName);
-						}
-						if (!allTerms.contains(entityDifferentiaFinal)){
-							allTerms.add(entityDifferentiaFinal);
-						}
-						if (!termNames.containsKey(entityID)){
-							String entityName = entityObject.get(NAMESTR).getAsString();
-							termNames.put(entityID, entityName);
-						}
-					}
-					JsonObject qualityObject = annotationObject.get(QUALITYSTR).getAsJsonObject();
-					String qualityID = qualityObject.get(IDSTR).getAsString();
-					if (!allTerms.contains(qualityID)){
-						allTerms.add(qualityID);
-					}
-					if (!termNames.containsKey(qualityID)){
-						String qualityName = qualityObject.get(NAMESTR).getAsString();
-						termNames.put(qualityID, qualityName);
-					}
 					result.add(annotationObject);
 				}
 				return result;
@@ -217,192 +268,111 @@ public class Utils {
 	}
 	
 	
-	// modified to force adding all accessible parents to the parent table
-	public void buildParents(){
-		System.out.println("Starting to build parents");
-		long startTime = System.nanoTime();
-		while(buildParentsaux());
-		parentsBuilt = true;
-		double setTime =  (System.nanoTime() - startTime)/1.0e9;
-		System.out.println("Parent table size = " + parents.size());
-		System.out.println("Time to add parents =" + setTime);
-
-	}
-	
-	private boolean buildParentsaux(){
-		final String[] dummyStrs = new String[0];
-		final String[] termArray =  allTerms.toArray(dummyStrs);  // to avoid concurrentModification...
-		boolean termsAdded = false;
-		for(String termID : termArray){
-			if (!parents.containsKey(termID)){
-				if (termID.indexOf('^') == -1){
-					String formattedQuery = null;
-					try {
-						//String jasonQuery = termID ;
-						formattedQuery = pathStrRoot + URLEncoder.encode(termID, "UTF-8") + pathSuffix;
-						//System.out.println("Request is " + URLDecoder.decode(formattedQuery, "UTF-8"));
-					} catch (UnsupportedEncodingException e) {
-						System.err.println("Error encoding query for retrieving taxa");
-						e.printStackTrace();
-					}
-					JsonObject root = parseFromURLStr(formattedQuery);
-					JsonArray pathArray = root.get("path").getAsJsonArray();
-					if (pathArray != null){
-						for (JsonElement pathElement : pathArray){
-							String elementID = pathElement.getAsJsonObject().get("id").getAsString();
-							if (!allTerms.contains(elementID)){
-								allTerms.add(elementID);
-							}
-							if (!termNames.containsKey(elementID)){
-								String elementName = pathElement.getAsJsonObject().get(NAMESTR).getAsString();
-								termNames.put(elementID, elementName);
-								termsAdded = true;
-							}
-							if (!parents.containsKey(elementID)){
-								//System.out.print("Adding parents to " + elementID + "(" + termNames.get(elementID) + "): ");
-								JsonArray parentArray = pathElement.getAsJsonObject().get("parents").getAsJsonArray();
-								Set<String> parentSet = new HashSet<String>();
-								for (JsonElement parentElement : parentArray){
-									JsonObject parentObject = parentElement.getAsJsonObject();
-									String parentRelation = parentObject.get("relation").getAsJsonObject().get("id").getAsString();
-									if ("OBO_REL:is_a".equals(parentRelation) || "is_a".equals(parentRelation)){
-										JsonObject parentTarget = parentObject.get("target").getAsJsonObject();
-										String parentID = parentTarget.get("id").getAsString();
-										parentSet.add(parentID);
-										if (!allTerms.contains(parentID)){
-											allTerms.add(parentID);
-										}
-										if (!termNames.containsKey(parentID)){
-											if (parentTarget.get(NAMESTR) != null){
-												String elementName = parentTarget.get(NAMESTR).getAsString();
-												termNames.put(parentID, elementName);
-												termsAdded = true;
-											}
-											else System.err.println("Warning: " + parentObject + "has no name?");
-										}
-										//System.out.println(termNames.get(parentID) + " ");
-									}
-								}
-								parents.put(elementID, parentSet);
-								//System.out.println(" ");
-							}
-						}
-					}
-					else {
-						System.err.println("Term " + termID + " returned no path");
-					}
-				}
-				else {	//TODO - deal with postcomps
-				
-				}
-			}
-		}
-		return termsAdded;
-	}
 	
 	
-	//is term1 a parent of term2
-	public boolean matchParent(String term1, String term2){
-		if (term1.equals(term2))
-			return true;
-		else if (parents.containsKey(term2))
-			return parents.get(term2).contains(term1);
-		else
-			return false;
-	}
+//	
+//	//is term1 a parent of term2
+//	public boolean matchParent(String term1, String term2){
+//		if (term1.equals(term2))
+//			return true;
+//		else if (parents.containsKey(term2))
+//			return parents.get(term2).contains(term1);
+//		else
+//			return false;
+//	}
+//	
+//	//
+//	public void buildAncestors(){
+//		if (!parentsBuilt)
+//			//buildParents();
+//		final Integer[] dummyStrs = new Integer[0];
+//		final Integer[] termArray = allTerms.toArray(dummyStrs);  // to avoid concurrentModification...
+//		//System.out.println("Started Building Ancestors");
+//		long startTime = System.nanoTime();
+//		Queue<Integer> workingList = new ArrayDeque<Integer>();
+//		for(Integer termID : termArray){
+//			if (!ancestors.containsKey(termID)){
+//				Set<Integer>ancestorSet = new HashSet<Integer>();
+//				workingList.add(termID);
+//				while(!workingList.isEmpty()){
+//					Integer nextParent = workingList.remove();  //shouldn't be here if queue is empty
+//					Set<Integer> aSet = parents.get(nextParent);
+//					if (aSet != null){
+//						ancestorSet.addAll(aSet);
+//						for(Integer anc : aSet)
+//							workingList.add(anc);  //not sure addAll would work here
+//					}
+//					else {
+//						
+//					}
+//				}
+//				ancestors.put(termID,ancestorSet);
+//			}
+//		}
+//		double setTime =  (System.nanoTime() - startTime)/1.0e9;
+////		System.out.println("Ancestor table size = " + ancestors.size());
+////		System.out.println("Time to add ancestors =" + setTime);
+////		System.out.println("Finished building ancestors");
+//        BufferedWriter bw;
+////        try {
+////        	bw = new BufferedWriter(new FileWriter("parents.txt"));
+////        	for(Entry<String,Set<String>> s : parents.entrySet()){
+////        		if (true){
+////        			bw.write(s.getKey()+ " : ");
+////        			for(String a : s.getValue()){
+////        				bw.write(a + ": ");
+////        			}
+////        			bw.newLine();
+////        		}
+////        	}
+////        	bw.close();
+////        } catch (IOException e) {
+////        	// TODO Auto-generated catch block
+////        	e.printStackTrace();
+////        }
+////
+////        try {
+////        	bw = new BufferedWriter(new FileWriter("Ancestors.txt"));
+////        	for(Entry<String,Set<String>> s : ancestors.entrySet()){
+////        		if (true){
+////        			bw.write(s.getKey()+ " : ");
+////        			for(String a : s.getValue()){
+////        				bw.write(a + ": ");
+////        			}
+////        			bw.newLine();
+////        		}
+////        	}
+////        	bw.close();
+////        } catch (IOException e) {
+////        	// TODO Auto-generated catch block
+////        	e.printStackTrace();
+////        }
+//	}
 	
-	//
-	public void buildAncestors(){
-		if (!parentsBuilt)
-			buildParents();
-		final String[] dummyStrs = new String[0];
-		final String[] termArray = allTerms.toArray(dummyStrs);  // to avoid concurrentModification...
-		//System.out.println("Started Building Ancestors");
-		long startTime = System.nanoTime();
-		Queue<String> workingList = new ArrayDeque<String>();
-		for(String termID : termArray){
-			if (!ancestors.containsKey(termID)){
-				Set<String>ancestorSet = new HashSet<String>();
-				workingList.add(termID);
-				while(!workingList.isEmpty()){
-					String nextParent = workingList.remove();  //shouldn't be here if queue is empty
-					Set<String> aSet = parents.get(nextParent);
-					if (aSet != null){
-						ancestorSet.addAll(aSet);
-						for(String anc : aSet)
-							workingList.add(anc);  //not sure addAll would work here
-					}
-					else {
-						
-					}
-				}
-				ancestors.put(termID,ancestorSet);
-			}
-		}
-		double setTime =  (System.nanoTime() - startTime)/1.0e9;
-//		System.out.println("Ancestor table size = " + ancestors.size());
-//		System.out.println("Time to add ancestors =" + setTime);
-//		System.out.println("Finished building ancestors");
-        BufferedWriter bw;
-//        try {
-//        	bw = new BufferedWriter(new FileWriter("parents.txt"));
-//        	for(Entry<String,Set<String>> s : parents.entrySet()){
-//        		if (true){
-//        			bw.write(s.getKey()+ " : ");
-//        			for(String a : s.getValue()){
-//        				bw.write(a + ": ");
-//        			}
-//        			bw.newLine();
-//        		}
-//        	}
-//        	bw.close();
-//        } catch (IOException e) {
-//        	// TODO Auto-generated catch block
-//        	e.printStackTrace();
-//        }
-//
-//        try {
-//        	bw = new BufferedWriter(new FileWriter("Ancestors.txt"));
-//        	for(Entry<String,Set<String>> s : ancestors.entrySet()){
-//        		if (true){
-//        			bw.write(s.getKey()+ " : ");
-//        			for(String a : s.getValue()){
-//        				bw.write(a + ": ");
-//        			}
-//        			bw.newLine();
-//        		}
-//        	}
-//        	bw.close();
-//        } catch (IOException e) {
-//        	// TODO Auto-generated catch block
-//        	e.printStackTrace();
-//        }
-	}
-	
-	//is term1 an ancestor of term2 (not fully implemented yet)
-	public boolean matchAncestor(String term1, String term2){
-		if (term1.equals(term2))
-			return true;
-		else if (ancestors.containsKey(term2))
-			return ancestors.get(term2).contains(term1);
-		else{
-			buildAncestors();
-			if (ancestors.containsKey(term2))
-				return ancestors.get(term2).contains(term1);
-			else return false;
-		}
-	}
-	
-	public String getAncestors(String term){
-		StringBuilder result = new StringBuilder();
-		if (ancestors.get(term) == null)
-			return "Ancestors for term was null";
-    	for(String s : ancestors.get(term)){
-    		result.append(s);
-    		result.append(" ");
-    	}
-    	return result.toString();
-	}
+//	//is term1 an ancestor of term2 (not fully implemented yet)
+//	public boolean matchAncestor(String term1, String term2){
+//		if (term1.equals(term2))
+//			return true;
+//		else if (ancestors.containsKey(term2))
+//			return ancestors.get(term2).contains(term1);
+//		else{
+//			buildAncestors();
+//			if (ancestors.containsKey(term2))
+//				return ancestors.get(term2).contains(term1);
+//			else return false;
+//		}
+//	}
+//	
+//	public String getAncestors(String term){
+//		StringBuilder result = new StringBuilder();
+//		if (ancestors.get(term) == null)
+//			return "Ancestors for term was null";
+//    	for(Integer s : ancestors.get(term)){
+//    		result.append(s.toString());
+//    		result.append(" ");
+//    	}
+//    	return result.toString();
+//	}
 	
 	
 	public int getTaxonAnnotationCount() {
@@ -420,6 +390,29 @@ public class Utils {
 			}
 	}
 
+	
+	public String lookupIDToName(String id){
+		String formattedQuery = null;
+		try {
+			formattedQuery = termRoot + URLEncoder.encode(id, "UTF-8");
+			//System.out.println("Request is " + URLDecoder.decode(formattedQuery, "UTF-8"));
+		} catch (UnsupportedEncodingException e) {
+			System.err.println("Error encoding query for retrieving taxa");
+			e.printStackTrace();
+		}
+		JsonObject nameResponse = parseFromURLStr(formattedQuery);
+		if (nameResponse == null || nameResponse.get("name") == null){
+			if (RELATIONALSHAPEQUALITYID.equals(id))    //ugly hard coded solution to PATO and annotation KB being out of synch
+				return RELATIONALSHAPEQUALITYNAME;
+			if (RELATIONALSPATIALQUALITYID.equals(id))
+				return RELATIONALSPATIALQUALITYNAME;
+			if (RELATIONALSTRUCTURALQUALITYID.equals(id))
+				return RELATIONALSTRUCTURALQUALITYNAME;
+			System.err.println("Null response to lookup of " + id);
+			return id.substring(0,1) + "x" + id.substring(2);  // avoid infinite loop in substitution
+		}
+		else return nameResponse.get("name").getAsString();
+	}
 		
 	private JsonObject parseFromURLStr(String urlStr){
 		URL taxonURL;
@@ -444,51 +437,55 @@ public class Utils {
 			return null;
 		}
 	}
-
 	
-	/**
-	 * This returns a map containing the id -> name mapping of all the pubs in the database
-	 * @return
-	 */
-	public Map<String,String> getPublications(){
-		Map<String,String>result = new HashMap<String,String>(100);
-		final String publicationString = StringConsts.KBBASEURL + "publication/annotated?media=txt";
+	/** PSQL support stuff   */
+	
+	public Connection openKB(){
+		final Properties properties = new Properties();
 		try {
-			URL timeStampURL = new URL(publicationString);
-			Object response = timeStampURL.getContent();
-			if (response instanceof InputStream){
-				BufferedReader responseReader
-				   = new BufferedReader(new InputStreamReader((InputStream)response));
-				String line = responseReader.readLine();
-				while(line != null){
-					String[] lineSplit = line.split("\t");
-					if (lineSplit.length == 2){
-						result.put(lineSplit[0],lineSplit[1]);
-					}
-					else{
-						System.out.println("Bad line encountered: " + line);
-					}
-					line = responseReader.readLine();
-				}
-				((InputStream) response).close();
-			}
-			else if (response != null){
-				System.out.println("Returned value was not a string; received a " + (response.getClass().toString()) + " instead");
-				System.out.println("Value was " + response.toString());
-			}
-			else 
-				System.out.println("Query returned null");
-		} catch (MalformedURLException e) {
+			properties.load(this.getClass().getResourceAsStream(CONNECTION_PROPERTIES_FILENAME));
+		} catch (IOException e1) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} 
+		try {
+			Class.forName("org.postgresql.Driver");
+		} catch(ClassNotFoundException e){
+			System.err.println("Couldn't load PSQL Driver");
 			e.printStackTrace();
 		}
+		Connection c= null;
+		final String host = properties.getProperty("host");
+		final String db = properties.getProperty("db");
+		final String user = properties.getProperty("user");
+		final String password = properties.getProperty("pw");
+		try{
+			c = DriverManager.getConnection(String.format("jdbc:postgresql://%s/%s",host,db),user,password);
+			return c;
+		} catch (SQLException e){
+			System.err.println("Cound't connect to server");
+			e.printStackTrace();
+			return null;
+		}
 
-		return result;
 	}
 
+	public void writeOrDump(String contents, BufferedWriter b){
+		if (b == null)
+			System.out.println(contents);
+		else {
+			try {
+				b.write(contents);
+				b.newLine();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
+
+	
 
 	
 }
