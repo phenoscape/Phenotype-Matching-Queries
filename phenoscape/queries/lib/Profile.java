@@ -7,7 +7,7 @@ import java.util.Set;
 
 public class Profile {
 	
-	private Map<Integer,Map<Integer,Set<Integer>>> table = new HashMap<Integer,Map<Integer,Set<Integer>>>();  //Attribute, entities, phenotypes
+	private Map<Integer,Map<Integer,Set<Integer>>> table = new HashMap<Integer,Map<Integer,Set<Integer>>>();  //Attributes, entities, phenotypes
 	
 	
 	public void addPhenotype(Integer attribute_node_id, Integer entity_node_id, Integer phenotype_node_id){
@@ -54,6 +54,31 @@ public class Profile {
 		}
 	}
 	
+	public boolean isEmpty(){
+		return table.isEmpty();
+	}
+	
+	public String summary(){
+		StringBuilder b = new StringBuilder(200);
+		b.append("Profile has " + getUsedAttributes().size() + " attributes by " + getUsedEntities().size() + " entities");
+		int count = 0;
+		int fillCount = 0;
+		int entries = 0;
+		for(Integer att : getUsedAttributes()){
+			for(Integer ent : getUsedEntities()){
+				if (hasPhenotypeSet(att,ent)){
+					count++;
+					if (getPhenotypeSet(att,ent).size()>0){
+						fillCount++;
+						entries += getPhenotypeSet(att,ent).size();
+					}
+				}
+			}
+		}
+		b.append("Profile has " + getUsedAttributes().size() + " attributes by " + getUsedEntities().size() + " entities" + " with " + count + " cells and " + fillCount + " filled cells with " + entries + " phenotypes in them");
+		return b.toString();
+	}
+	
 	public boolean hasPhenotypeSet(Integer attribute, Integer entity){
 		if (table.containsKey(attribute))
 			return (table.get(attribute).containsKey(entity));
@@ -71,7 +96,6 @@ public class Profile {
 	public Set<Integer> getUsedEntities(){
 		Set<Integer>result = new HashSet<Integer>();
 		for (Map<Integer,Set<Integer>> attribute_value : table.values()){
-			Set <Integer>foo = attribute_value.keySet();
 			result.addAll(attribute_value.keySet());
 		}
 		return result;

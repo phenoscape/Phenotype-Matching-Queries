@@ -1,16 +1,18 @@
 package phenoscape.queries.lib;
 
+import java.io.BufferedWriter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 
+
 // Could have a class hierarchy with this and Profile under a common parent, or maybe a common member that does the table operations...
 
 public class VariationTable {
 	
-	private Map<Integer,Map<Integer,Set<Integer>>> table = new HashMap<Integer,Map<Integer,Set<Integer>>>();  //Attribute, entities, taxa
+	private Map<Integer,Map<Integer,Set<Integer>>> table = new HashMap<Integer,Map<Integer,Set<Integer>>>();  //Attributes, entities, taxa
 	
 	
 	public void addTaxon(Integer attribute_node_id, Integer entity_node_id, Integer taxon_node_id){
@@ -60,56 +62,60 @@ public class VariationTable {
 		return result;
 	}
 	
-	public void variationReport(Map<Integer,String> UIDCache){
+	public void variationReport(Utils u, Map<Integer,String> UIDCache, BufferedWriter bw){
 		int sum = 0;
 		Map<Integer,Integer> attributeSums = new HashMap<Integer,Integer>();
 		Map<Integer,Integer> entitySums = new HashMap<Integer,Integer>();
+		Map<Integer,String> taxonList = new HashMap<Integer,String>();
 		for(Integer att : getUsedAttributes()){
 			for (Integer ent : getUsedEntities()){
 				if (hasTaxonSet(att,ent)){
-					sum += getTaxonSet(att,ent).size();
+					Set <Integer> taxa = getTaxonSet(att,ent);
+					sum += taxa.size();
 					if (attributeSums.containsKey(att)){
-						attributeSums.put(att,attributeSums.get(att).intValue()+getTaxonSet(att,ent).size());
+						attributeSums.put(att,attributeSums.get(att).intValue()+taxa.size());
 					}
 					else
-						attributeSums.put(att,getTaxonSet(att,ent).size());
+						attributeSums.put(att,taxa.size());
 					if (entitySums.containsKey(ent)){
-						entitySums.put(ent,entitySums.get(ent).intValue()+getTaxonSet(att,ent).size());
+						entitySums.put(ent,entitySums.get(ent).intValue()+taxa.size());
 					}
 					else
-						entitySums.put(ent,getTaxonSet(att,ent).size());
-				}
-			}
-		}
-		System.out.println("Summary of detected variation");
-		System.out.println("-- Attribute Summary --");
-		for(Integer att : attributeSums.keySet()){
-			if (UIDCache.containsKey(att)){
-				System.out.println(UIDCache.get(att) + "   " + attributeSums.get(att).intValue());
-			}
-			else
-				System.out.println(att.intValue() + "   " + attributeSums.get(att).intValue());
-		}
-		System.out.println("\n-- Entity Summary --");
-		for (Integer ent : entitySums.keySet()){
-			if (UIDCache.containsKey(ent)){
-				System.out.println(UIDCache.get(ent) + "   " + entitySums.get(ent).intValue());
-			}
-			else
-				System.out.println(ent.intValue() + "   " + entitySums.get(ent).intValue());
-			if (ent.intValue() == 7 || ent.intValue() == 9 || ent.intValue() == 11 || ent.intValue() == 12 || ent.intValue() == 13 || ent.intValue() == 14 || ent.intValue() == 15){
-				for (Integer att : getUsedAttributes()){
-					if (hasTaxonSet(att, ent)){
-						System.out.println("Bad entity: " + ent.intValue() + " with attribute: " + att.intValue());
-						Set<Integer> badSet = getTaxonSet(att,ent);
-						for(Integer badtaxon : badSet){
-							System.out.println(" Bad taxon: " + badtaxon.intValue());
+						entitySums.put(ent,taxa.size());
+					for(Integer taxon : taxa){
+						if (taxonList.containsKey(taxon)){
+							taxonList.put(taxon, taxonList.get(taxon)+ "\n\t" + u.doSubstitutions(UIDCache.get(ent)) + "\t" + u.lookupIDToName(UIDCache.get(att)));
+						}
+						else{
+							taxonList.put(taxon, "\n" + u.lookupIDToName(UIDCache.get(taxon)) + "\n\t" + u.doSubstitutions(UIDCache.get(ent)) + "\t" + u.lookupIDToName(UIDCache.get(att)));
 						}
 					}
 				}
 			}
 		}
-		System.out.println("\n\n Total is: " + sum);
+		u.writeOrDump("Summary of detected variation",bw);
+		u.writeOrDump("-- Attribute Summary --",bw);
+		for(Integer att : attributeSums.keySet()){
+			if (UIDCache.containsKey(att)){
+				u.writeOrDump(u.lookupIDToName(UIDCache.get(att)) + "\t" + attributeSums.get(att).intValue(),bw);
+			}
+			else
+				u.writeOrDump(att.intValue() + "   " + attributeSums.get(att).intValue(),bw);
+		}
+		u.writeOrDump("\n-- Entity Summary --",bw);
+		for (Integer ent : entitySums.keySet()){
+			if (UIDCache.containsKey(ent)){
+				u.writeOrDump(u.doSubstitutions(UIDCache.get(ent)) + "\t" + entitySums.get(ent).intValue(),bw);
+			}
+			else
+				u.writeOrDump(ent.intValue() + "   " + entitySums.get(ent).intValue(),bw);
+		}
+		u.writeOrDump("\n-- Taxon Summary --",bw);
+		for (Integer taxon : taxonList.keySet()){
+			u.writeOrDump(taxonList.get(taxon),bw);
+		}
+		u.writeOrDump("\n Taxon count is:\t" + taxonList.size(),bw);
+		u.writeOrDump("\n\n Total is:\t" + sum,bw);
 	}
 
 }

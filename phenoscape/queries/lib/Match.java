@@ -7,84 +7,107 @@ public class Match {
 	
 	public enum MatchType{
 		EXACT, 
+		ENTITY_QUALITY_INDEPENDENTLY,
 		ENTITY_PARENT, 
 		ENTITY_ANCESTOR, 
 		QUALITY_PARENT, 
 		QUALITY_ANCESTOR,
+		EQ_PARENT,
 		EQ_ANCESTOR};
 
 	final private MatchType myType;
-	final private String taxonID;
-	final private String geneID;
-	final private String tEntityID;
-	final private String tQualityID;
-	final private String gEntityID;
-	final private String gQualityID;
+	final private PhenoRec gRec;
+	final private PhenoRec tRec;
 	
 
-	public Match(String taxon, String gene, String entity, String quality){
+	public Match(PhenoRec t, PhenoRec g){
 		myType = MatchType.EXACT;
-		taxonID = taxon;
-		geneID = gene;
-		tEntityID = entity;
-		tQualityID = quality;
-		gEntityID = entity;
-		gQualityID = quality;
+		tRec = t;
+		gRec = g;
 	}
 
-	
-	public Match(String taxon, String gene, String tEntity, String tQuality, String gEntity, String gQuality){
-		myType = MatchType.EXACT;
-		taxonID = taxon;
-		geneID = gene;
-		tEntityID = tEntity;
-		tQualityID = tQuality;
-		gEntityID = gEntity;
-		gQualityID = gQuality;
-	}
-	
-	public Match(MatchType type, String taxon, String gene, String tEntity, String tQuality, String gEntity, String gQuality){
+	public Match(MatchType type, PhenoRec t, PhenoRec g){
 		myType = type;
-		taxonID = taxon;
-		geneID = gene;
-		tEntityID = tEntity;
-		tQualityID = tQuality;
-		gEntityID = gEntity;
-		gQualityID = gQuality;
-		
+		tRec = t;
+		gRec = g;
 	}
+
+	
 
 	public String toString(){
 		StringBuilder sb = new StringBuilder();
-		Formatter formatter = new Formatter(sb,Locale.US);
-		formatter.format("taxon: %s; gene: %s; taxon entity: %s; taxon quality %s; gene entity: %s; gene quality %s; type", taxonID, geneID, tEntityID, tQualityID, gEntityID, gQualityID, myType);
-		return formatter.toString();
-	}
+		sb.append("taxon: ");
+		sb.append(tRec.getExhibitorNodeID());
+		sb.append("; gene: ");
+		sb.append(gRec.getExhibitorNodeID());
+		sb.append("; taxon entity: ");
+		sb.append(tRec.getEntityUID());
+		sb.append("; gene entity: ");
+		sb.append(gRec.getEntityUID());
+		sb.append("; taxon quality: ");
+		sb.append(tRec.getQualityUID());
+		sb.append("; gene quality: ");
+		sb.append(gRec.getQualityUID());
+		sb.append("; type: ");
+		sb.append(myType);
+		return sb.toString();
+	}		
+		
 	
 	public String report(){
 		StringBuilder sb = new StringBuilder();
-		Formatter formatter = new Formatter(sb,Locale.US);
-		formatter.format("%s\t%s\t%s\t%s\t%s\t%s\t%s",taxonID,geneID,tEntityID,tQualityID,gEntityID,gQualityID,myType);
-		return formatter.toString();
+		sb.append(tRec.getExhibitorNodeID());
+		sb.append("\t");
+		sb.append(gRec.getExhibitorNodeID());
+		sb.append("\t");
+		sb.append(tRec.getEntityUID());
+		sb.append("\t");
+		sb.append(gRec.getEntityUID());
+		sb.append("\t");
+		sb.append(tRec.getQualityUID());
+		sb.append("\t");
+		sb.append(gRec.getQualityUID());
+		sb.append("\t");
+		sb.append(myType);
+		return sb.toString();
 	}
 	
 	public String reportWithNames(Utils u){
 		StringBuilder sb = new StringBuilder();
-		Formatter formatter = new Formatter(sb,Locale.US);
-		formatter.format("%s(%s)\t%s(%s)\t%s(%s)\t%s(%s)\t%s(%s)\t%s(%s)\t%s",taxonID,
-				                              u.getTermName(taxonID),
-				                              geneID,
-				                              u.getTermName(geneID),
-				                              tEntityID,
-				                              u.getTermName(tEntityID),
-				                              tQualityID,
-				                              u.getTermName(tQualityID),
-				                              gEntityID,
-				                              u.getTermName(gEntityID),
-				                              gQualityID,
-				                              u.getTermName(gQualityID),
-				                              myType);
-		return formatter.toString();		
+		sb.append(u.getNodeName(tRec.getExhibitorNodeID()));
+		sb.append("(");
+		sb.append(u.getNodeUID(tRec.getExhibitorNodeID()));
+		sb.append(")\t");
+		sb.append(u.getNodeName(gRec.getExhibitorNodeID()));
+		sb.append("(");
+		sb.append(u.getNodeUID(gRec.getExhibitorNodeID()));
+		sb.append(")\t");
+
+//		sb.append(tRec.getUID());
+//		sb.append("\t");
+//		sb.append(gRec.getUID());
+//		sb.append("\t");
+
+		
+		
+		sb.append(tRec.getEntityUID());
+		sb.append("(");
+		//sb.append(u.getTermName(tRec.getEntityUID());
+		sb.append(")\t");
+		sb.append(tRec.getQualityUID());
+		sb.append("(");
+		//sb.append(u.getTermName(tRec.getQualityUID());
+		sb.append(")\t");
+		sb.append(gRec.getEntityUID());
+		sb.append("(");
+		//sb.append(u.getTermName(gRec.getEntityUID());
+		sb.append(")\t");
+		sb.append(gRec.getQualityUID());
+		sb.append("(");
+		//sb.append(u.getTermName(gRec.getQualityUID());
+		sb.append(")\t");
+		sb.append(myType);
+		return sb.toString();		
 	}
 	
 }

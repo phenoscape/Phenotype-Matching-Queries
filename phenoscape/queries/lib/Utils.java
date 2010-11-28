@@ -74,6 +74,7 @@ public class Utils {
 
 	final private Map<Integer,String> nodeNames = new HashMap<Integer,String>(40000);
 	final private Map<Integer,String> nodeUIDs = new HashMap<Integer, String>(40000);
+	final private Map<String,String> UIDtoName = new HashMap<String,String>(40000);
 	
 	final private Map<Integer,Set<Integer>> parents = new HashMap<Integer,Set<Integer>>(30000);
 	final private Map<Integer,Set<Integer>> ancestors = new HashMap<Integer,Set<Integer>>(30000);
@@ -178,14 +179,18 @@ public class Utils {
 	public Set<Integer> getNodeSet(){
 		return nodeUIDs.keySet();
 	}
+
+	public void cacheUIDtoName(String name, String UID){
+		if (!hasUIDtoName(UID))
+			UIDtoName.put(UID,name);
+	}
 	
-	public String oboIDtoNodeName(String OBOId){
-		for(Entry<Integer,String> ent : nodeUIDs.entrySet()){
-			if (ent.getValue().equals(OBOId)){
-				return nodeNames.get(ent.getKey());
-			}
-		}
-		return null;
+	public boolean hasUIDtoName(String UID){
+		return UIDtoName.containsKey(UID);
+	}
+	
+	public String getNameFromUID(String UID){
+		return UIDtoName.get(UID);
 	}
 	
 	public void addParent(Integer nodeID, Integer parentID){
@@ -270,16 +275,6 @@ public class Utils {
 	
 	
 	
-//	
-//	//is term1 a parent of term2
-//	public boolean matchParent(String term1, String term2){
-//		if (term1.equals(term2))
-//			return true;
-//		else if (parents.containsKey(term2))
-//			return parents.get(term2).contains(term1);
-//		else
-//			return false;
-//	}
 //	
 //	//
 //	public void buildAncestors(){
@@ -392,7 +387,10 @@ public class Utils {
 
 	
 	public String lookupIDToName(String id){
+		if (hasUIDtoName(id))
+			return getNameFromUID(id);
 		String formattedQuery = null;
+		String result = null;
 		try {
 			formattedQuery = termRoot + URLEncoder.encode(id, "UTF-8");
 			//System.out.println("Request is " + URLDecoder.decode(formattedQuery, "UTF-8"));
@@ -409,9 +407,11 @@ public class Utils {
 			if (RELATIONALSTRUCTURALQUALITYID.equals(id))
 				return RELATIONALSTRUCTURALQUALITYNAME;
 			System.err.println("Null response to lookup of " + id);
-			return id.substring(0,1) + "x" + id.substring(2);  // avoid infinite loop in substitution
+			result = id.substring(0,1) + "x" + id.substring(2);  // avoid infinite loop in substitution
 		}
-		else return nameResponse.get("name").getAsString();
+		else result = nameResponse.get("name").getAsString();
+		cacheUIDtoName(id,result);
+		return result;
 	}
 		
 	private JsonObject parseFromURLStr(String urlStr){

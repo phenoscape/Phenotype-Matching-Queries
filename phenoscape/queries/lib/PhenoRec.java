@@ -40,33 +40,76 @@ public class PhenoRec {
 	}
 
 
-	public boolean matchPhenotypeParentIDs(int phenoNodeID, Utils u) {
-		for(Integer parentId : u.getParents(phenoNodeID)){
-			if (phenoNode == parentId.intValue())
+	public boolean matchPhenotypeParentIDs(PhenoRec other, Utils u) {
+		for(Integer parentId : u.getParents(other.getPhenoNodeID())){
+			if (getPhenoNodeID() == parentId.intValue())
 				return true;
+			if (u.getNodeUID(getPhenoNodeID()) == null){
+			//	System.err.println("Null UID found in   " + getPhenoNodeID());
+			}
+			else if (u.getNodeUID(parentId.intValue()) == null){
+			//	System.err.println("Null UID found in   " + parentId.intValue());
+			}
+			else if (u.getNodeUID(getPhenoNodeID()).equals(u.getNodeUID(parentId.intValue())))
+				return true;
+		}
+		for(Integer parentId : u.getParents(getPhenoNodeID())){
+			if (other.getPhenoNodeID() == parentId.intValue())
+				return true;
+			if (u.getNodeUID(other.getPhenoNodeID()) == null){
+				return false;
+			//	System.err.println("Null UID found in   " + getPhenoNodeID());
+			}
+			else if (u.getNodeUID(parentId.intValue()) == null){
+			//	System.err.println("Null UID found in   " + parentId.intValue());
+			}			
+			else if (u.getNodeUID(other.getPhenoNodeID()).equals(u.getNodeUID(parentId.intValue())))
+				return true;	
 		}
 		return false;
 	}
 
-	public boolean matchPhenotypeIDs(int pNode){
-		return (pNode == phenoNode);
+	public boolean matchPhenotypeIDs(PhenoRec other){
+		return (other.phenoNode == phenoNode);
 	}
 
-	public boolean exactMatchPhenotype(String phenoUID){
-		return phenoUID.equals(phenoUID);
+	public boolean uidMatchPhenotype(PhenoRec other){
+		return getUID().equals(other.getUID());
 	}
 
-	public boolean matchEntityIDs(int entityID){
-		return (entityNode == entityID);
+	public boolean matchEntityIDs(PhenoRec other){
+		return (entityNode == other.getPhenoEntityID());
 	}
 
-	public boolean matchQualityIDs(int qualityID){
-		return (qualityNode == qualityID);
+	public boolean matchQualityIDs(PhenoRec other){
+		return (qualityNode == other.getPhenoEntityID());
 	}
 
-	public boolean matchEntityParentIDs(int entityID, Utils u){
-		for(Integer parentId : u.getParents(entityID)){
-			if (entityNode == parentId.intValue())
+	public boolean matchEntityParentIDs(PhenoRec other, Utils u){
+		for(Integer parentId : u.getParents(other.getPhenoEntityID())){
+			if (getPhenoEntityID() == parentId.intValue())
+				return true;
+			if (u.getNodeUID(getPhenoEntityID()) == null){
+			//	System.err.println("Null UID found in   " + getPhenoEntityID());
+				return false;
+			}
+			else if (u.getNodeUID(parentId.intValue()) == null){
+			//	System.err.println("Null UID found in   " + parentId.intValue());
+			}
+			else if (u.getNodeUID(getPhenoEntityID()).equals(u.getNodeUID(other.getPhenoEntityID())))
+				return true;
+		}
+		for(Integer parentId : u.getParents(getPhenoEntityID())){
+			if (other.getPhenoEntityID() == parentId.intValue())
+				return true;
+			if (u.getNodeUID(other.getPhenoEntityID()) == null){
+				return false;
+			//	System.err.println("Null UID found in   " + other.getPhenoEntityID());
+			}
+			else if (u.getNodeUID(parentId.intValue()) == null){
+				//System.err.println("Null UID found in   " + parentId.intValue());
+			}
+			else if (u.getNodeUID(other.getPhenoEntityID()).equals(u.getNodeUID(parentId.intValue())))
 				return true;
 		}
 		return false;
@@ -99,6 +142,17 @@ public class PhenoRec {
 	public String getQualityUID(){
 		return qualityUID;
 	}
+
+	public boolean matchEntityUIDs(PhenoRec other) {
+		return getEntityUID().equals(other.getEntityUID());
+	}
+
+	public boolean matchQualityUIDs(PhenoRec other) {
+		return getQualityUID().equals(other.getQualityUID());
+	}
+
+
+	
 }
 
 
