@@ -31,7 +31,7 @@ public class PhenotypeReport {
 		Connection c = u.openKB();
 		Map<Integer,String> uidCache = new HashMap<Integer,String>();
 		File outFile = new File(REPORTFILENAME);
-		BufferedWriter bw;
+		BufferedWriter bw;  
 
 		try{
 			bw = new BufferedWriter(new FileWriter(outFile));
@@ -43,14 +43,6 @@ public class PhenotypeReport {
 		} catch (IOException e) {
 			System.err.println("Problem opening report file");
 			e.printStackTrace();
-		}
-		finally{
-			try {
-				c.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 		}
 
 

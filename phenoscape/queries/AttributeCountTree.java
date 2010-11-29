@@ -19,6 +19,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
+import phenoscape.queries.lib.Profile;
 import phenoscape.queries.lib.Utils;
 
 public class AttributeCountTree {
@@ -104,11 +105,15 @@ public class AttributeCountTree {
 		}
 	}
 
-
 	public void test(Utils u, Connection c, Map<Integer,String>uids) throws SQLException{
+		build(u,c,null,null,uids);
+		writeTrees(u);
+	}
+	
+	
+	public void build(Utils u, Connection c, Map<Integer,Profile> taxonProfiles, Map<Integer,Profile> geneProfiles,Map<Integer,String>uids) throws SQLException{
 		if (c == null)
 			return;
-
 		final Statement s = c.createStatement();
 		ResultSet rs1 = s.executeQuery("select distinct n2.label,n2.uid,entity.node_id, entity.uid, count (distinct ata.taxon_node_id), count (distinct dga.gene_node_id) from node entity " +
 				"join phenotype as p on (entity.node_id = p.entity_node_id) " +
@@ -168,14 +173,6 @@ public class AttributeCountTree {
 		}
 		countChildren(TAOROOT,ontologyTable,grandTotal,grandTotalChildren,null);
 		grandSum += grandTotalChildren.get(TAOROOT).intValue();
-
-		for (String att : taxonCountsMap.keySet()){
-			writeTREfile(TAOROOT,ontologyTable,u,AnnotationType.taxon,att);
-			writeTREfile(TAOROOT,ontologyTable,u,AnnotationType.gene,att);
-			writeTREfile(TAOROOT,ontologyTable,u,AnnotationType.combined,att);
-		}
-		writeTREfile(TAOROOT,ontologyTable,u,AnnotationType.grandtotal,null);
-
 	}
 
 	private void traverseOntologyTree(String nodeUID,Map<String,List<String>> ontologyTable) throws SQLException{
@@ -461,6 +458,15 @@ public class AttributeCountTree {
 		default:
 			return null;
 		}
+	}
+
+	private void writeTrees(Utils u){
+		for (String att : taxonCountsMap.keySet()){
+			writeTREfile(TAOROOT,ontologyTable,u,AnnotationType.taxon,att);
+			writeTREfile(TAOROOT,ontologyTable,u,AnnotationType.gene,att);
+			writeTREfile(TAOROOT,ontologyTable,u,AnnotationType.combined,att);
+		}
+		writeTREfile(TAOROOT,ontologyTable,u,AnnotationType.grandtotal,null);
 	}
 
 
