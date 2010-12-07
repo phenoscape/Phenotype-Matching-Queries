@@ -101,6 +101,15 @@ public class Profile {
 		return result;
 	}
 	
-	
+	public Set<Integer> getAllPhenotypes(){
+		Set<Integer> result = new HashSet<Integer>();
+		for (Integer curAtt : getUsedAttributes()){ 
+			Map<Integer,Set<Integer>> attValue = table.get(curAtt);
+			for (Set<Integer> entValue : attValue.values()){
+				result.addAll(entValue);
+			}
+		}
+		return result;
+	}
 
 }

@@ -15,7 +15,7 @@ public class VariationTable {
 	private Map<Integer,Map<Integer,Set<Integer>>> table = new HashMap<Integer,Map<Integer,Set<Integer>>>();  //Attributes, entities, taxa
 	
 	
-	public void addTaxon(Integer attribute_node_id, Integer entity_node_id, Integer taxon_node_id){
+	public void addExhibitor(Integer attribute_node_id, Integer entity_node_id, Integer taxon_node_id){
 		if (table.containsKey(attribute_node_id)){
 			Map<Integer,Set<Integer>> attribute_entry = table.get(attribute_node_id);
 			if (attribute_entry.containsKey(entity_node_id)){
@@ -38,7 +38,7 @@ public class VariationTable {
 	}
 	
 	
-	public boolean hasTaxonSet(Integer attribute, Integer entity){
+	public boolean hasExhibitorSet(Integer attribute, Integer entity){
 		if (table.containsKey(attribute))
 			return (table.get(attribute).containsKey(entity));
 		else
@@ -46,7 +46,7 @@ public class VariationTable {
 	}
 	
 	
-	public Set<Integer> getTaxonSet (Integer attribute, Integer entity){
+	public Set<Integer> getExhibitorSet (Integer attribute, Integer entity){
 		return table.get(attribute).get(entity);
 	}
 	
@@ -69,8 +69,8 @@ public class VariationTable {
 		Map<Integer,String> taxonList = new HashMap<Integer,String>();
 		for(Integer att : getUsedAttributes()){
 			for (Integer ent : getUsedEntities()){
-				if (hasTaxonSet(att,ent)){
-					Set <Integer> taxa = getTaxonSet(att,ent);
+				if (hasExhibitorSet(att,ent)){
+					Set <Integer> taxa = getExhibitorSet(att,ent);
 					sum += taxa.size();
 					if (attributeSums.containsKey(att)){
 						attributeSums.put(att,attributeSums.get(att).intValue()+taxa.size());
@@ -110,11 +110,11 @@ public class VariationTable {
 			else
 				u.writeOrDump(ent.intValue() + "   " + entitySums.get(ent).intValue(),bw);
 		}
-		u.writeOrDump("\n-- Taxon Summary --",bw);
+		u.writeOrDump("\n-- Exhibitor (Taxon/Gene) Summary --",bw);
 		for (Integer taxon : taxonList.keySet()){
 			u.writeOrDump(taxonList.get(taxon),bw);
 		}
-		u.writeOrDump("\n Taxon count is:\t" + taxonList.size(),bw);
+		u.writeOrDump("\n Exhibitor count is:\t" + taxonList.size(),bw);
 		u.writeOrDump("\n\n Total is:\t" + sum,bw);
 	}
 
