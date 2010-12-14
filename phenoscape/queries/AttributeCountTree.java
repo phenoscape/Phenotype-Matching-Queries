@@ -33,15 +33,6 @@ public class AttributeCountTree {
 		grandtotal
 	}
 
-	private static final String CAROROOT = "CARO:0000000";
-	private static final String PATOROOT = "PATO:0000001";
-	private static final String PATOSHAPE = "PATO:0000052";
-	private static final String PATOSIZE = "PATO:0000117";
-	private static final String PATOSTRUCTURE = "PATO:0000141";
-	private static final String PATOTEXTURE = "PATO:0000150";
-	private static final String PATOPOSITION = "PATO:0000140";
-	private static final String PATOCOLOR = "PATO:0000014";
-	private static final String PATOCOUNT = "PATO:0000070";
 
 	private static final String INFINITYSTR = "inf";
 
@@ -52,7 +43,7 @@ public class AttributeCountTree {
 	private boolean useIC = true;
 
 
-	final Map<Integer, Map <Integer,Integer>> taxonCountsMap = new HashMap<Integer, Map<Integer,Integer>>();
+	final Map<Integer, Map <Integer,Integer>> taxonCountsMap = new HashMap<Integer, Map<Integer,Integer>>();  // att -> (ent -> count)
 	final Map<Integer, Map <Integer,Integer>> geneCountsMap = new HashMap<Integer, Map<Integer,Integer>>();
 	final Map<Integer, Map <Integer,Integer>> combinedCountsMap = new HashMap<Integer, Map<Integer,Integer>>();
 
@@ -64,7 +55,7 @@ public class AttributeCountTree {
 	final Map<Integer, Integer>geneSums = new HashMap<Integer, Integer>();
 	final Map<Integer, Integer>combinedSums = new HashMap<Integer, Integer>();
 
-	final Map<Integer, Integer> grandTotal = new HashMap<Integer, Integer>();
+	final Map<Integer, Integer> grandTotal = new HashMap<Integer, Integer>();   //ent -> count
 
 	final Map<Integer, Integer> grandTotalChildren = new HashMap<Integer,Integer>();
 
@@ -72,26 +63,21 @@ public class AttributeCountTree {
 
 	final Set<String> nexusTaxa = new HashSet<String>();
 
-	static Map<Integer,String> UIDCache = new HashMap<Integer,String>();
 
 	private int grandSum;
 
 	private int rootNodeID;
 
-	final static private String ROOTQUERY = "SELECT node_id FROM node WHERE (uid = '"; 
+	final static private String ROOTQUERY = "SELECT node_id,label FROM node WHERE (uid = '"; 
 
-	final static private String ONTOLOGYTREEQUERY = "SELECT n.node_id,n.uid FROM link AS l "+   
+	final static private String ONTOLOGYTREEQUERY = "SELECT n.node_id,n.uid,n.label FROM link AS l "+   
 	"JOIN node AS n ON (n.node_id = l.node_id) " +
 	"WHERE l.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:is_a') " +
 	"AND l.object_id = ? AND is_inferred=false";
 
 
-	private static final int COLOR0 = 4095;
-	private static final int COLOR1 = 16773120;
-	private static final int COLORWHITE = 16777215;
-	private static final int COLORBLACK = 0;
-
 	/**
+	 * commented out to avoid accidently launching this when GenusVariationList was wanted
 	 * @param args
 	 */
 //	public static void main(String[] args) {
@@ -115,17 +101,17 @@ public class AttributeCountTree {
 //		}
 //	}
 
-	public void test(Utils u, Connection c, Map<Integer,String>uids, String rootUID) throws SQLException{
-		build(u,c,null,null,uids,rootUID);
-		writeTrees(u,uids);
+	public void test(Utils u, Connection c, String rootUID) throws SQLException{
+		build(u,c,null,null,rootUID);
+		writeTrees(u);
 	}
 
 
-	public void build(Utils u, Connection c, Map<Integer,Profile> taxonProfiles, Map<Integer,Profile> geneProfiles,Map<Integer,String>uids,String rootUID) throws SQLException{
+	public void build(Utils u, Connection c, Map<Integer,Profile> taxonProfiles, Map<Integer,Profile> geneProfiles,String rootUID) throws SQLException{
 		if (c == null)
 			return;
 		System.out.println("Starting Ontology traversal");
-		traverseOntologyTree(c,ontologyTable,rootUID);
+		traverseOntologyTree(c,ontologyTable,rootUID,u);
 		System.out.println("Finished Ontology traversal");
 		final Statement s = c.createStatement();
 		for(Integer taxonKey : taxonProfiles.keySet()){
@@ -138,8 +124,8 @@ public class AttributeCountTree {
 					if (!combinedCountsMap.containsKey(att))
 						combinedCountsMap.put(att, new HashMap<Integer, Integer>());
 				}
-				Map<Integer,Integer> taxonCounts = taxonCountsMap.get(att);
-				Map<Integer,Integer> combinedCounts = combinedCountsMap.get(att);
+				Map<Integer,Integer> taxonCounts = taxonCountsMap.get(att);       //ent -> count
+				Map<Integer,Integer> combinedCounts = combinedCountsMap.get(att); //ent -> count
 				for(Integer ent : entities){
 					int taxonCount;
 					if (taxonCounts.containsKey(ent)){
@@ -159,7 +145,7 @@ public class AttributeCountTree {
 					}
 					combinedCount++;
 					combinedCounts.put(ent, combinedCount);
-					if (grandTotal.containsKey(ent)){
+					if (grandTotal.containsKey(ent)){                            //ent -> count
 						grandTotal.put(ent, grandTotal.get(ent).intValue()+1);
 					}
 					else
@@ -210,59 +196,76 @@ public class AttributeCountTree {
 		}
 		
 		grandSum = 0;
-		for (Integer att : combinedCountsMap.keySet()){
-			if (taxonCountsMap.containsKey(att)){
-				taxonChildCountsMap.put(att,new HashMap<Integer,Integer>());
-				countChildren(rootNodeID,ontologyTable,taxonCountsMap.get(att),taxonChildCountsMap.get(att),att);
-				taxonSums.put(att, taxonChildCountsMap.get(att).get(rootNodeID).intValue());
+		BufferedWriter dumpWriter = null;
+		try {
+			dumpWriter = new BufferedWriter(new FileWriter("TreeTest.txt"));
+			for (Integer att : combinedCountsMap.keySet()){
+				if (taxonCountsMap.containsKey(att)){
+					taxonChildCountsMap.put(att,new HashMap<Integer,Integer>());
+					countChildren(rootNodeID,ontologyTable,taxonCountsMap.get(att),taxonChildCountsMap.get(att),att,u,dumpWriter);
+					taxonSums.put(att, taxonChildCountsMap.get(att).get(rootNodeID).intValue());
+				}
+				if (geneCountsMap.containsKey(att)){
+					geneChildCountsMap.put(att,new HashMap<Integer,Integer>());
+					countChildren(rootNodeID,ontologyTable,geneCountsMap.get(att),geneChildCountsMap.get(att),att,u,dumpWriter);
+					geneSums.put(att, geneChildCountsMap.get(att).get(rootNodeID).intValue());
+				}
+				combinedChildCountsMap.put(att,new HashMap<Integer,Integer>());
+				countChildren(rootNodeID,ontologyTable,combinedCountsMap.get(att),combinedChildCountsMap.get(att),att,u,dumpWriter);
+				combinedSums.put(att, combinedChildCountsMap.get(att).get(rootNodeID).intValue());
 			}
-			if (geneCountsMap.containsKey(att)){
-				geneChildCountsMap.put(att,new HashMap<Integer,Integer>());
-				countChildren(rootNodeID,ontologyTable,geneCountsMap.get(att),geneChildCountsMap.get(att),att);
-				geneSums.put(att, geneChildCountsMap.get(att).get(rootNodeID).intValue());
-			}
-			combinedChildCountsMap.put(att,new HashMap<Integer,Integer>());
-			countChildren(rootNodeID,ontologyTable,combinedCountsMap.get(att),combinedChildCountsMap.get(att),att);
-			combinedSums.put(att, combinedChildCountsMap.get(att).get(rootNodeID).intValue());
+			countChildren(rootNodeID,ontologyTable,grandTotal,grandTotalChildren,null,u,dumpWriter);
+			grandSum = grandTotalChildren.get(rootNodeID).intValue();
+			System.out.println("Grandsum = " + grandSum);
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		countChildren(rootNodeID,ontologyTable,grandTotal,grandTotalChildren,null);
-		grandSum = grandTotalChildren.get(rootNodeID).intValue();
-		System.out.println("Grandsum = " + grandSum);
+		finally{
+			try {
+				dumpWriter.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
 	}
 
-	private void traverseOntologyTree(Connection c, Map<Integer, List<Integer>> ontologyTable, String rootUID) throws SQLException{
+	public void traverseOntologyTree(Connection c, Map<Integer, List<Integer>> ontologyTable, String rootUID, Utils u) throws SQLException{
 		final Statement s = c.createStatement();
 		ResultSet r = s.executeQuery(ROOTQUERY + rootUID + "')");
 		if(r.next()){
 			rootNodeID = r.getInt(1);
+			String rootNodeLabel = r.getString(2);
+			u.putNodeUIDName(rootNodeID, rootUID,rootNodeLabel); 
 		}
-		UIDCache.put(rootNodeID, rootUID);
 		PreparedStatement p1 = c.prepareStatement(ONTOLOGYTREEQUERY);
-		traverseOntologyTreeAux(rootNodeID,ontologyTable,p1);
+		traverseOntologyTreeAux(rootNodeID,ontologyTable,p1,u);
 	}
 
 
-	private void traverseOntologyTreeAux(int node_id, Map<Integer, List<Integer>> ontologyTable, PreparedStatement p)throws SQLException{	
+	private void traverseOntologyTreeAux(int node_id, Map<Integer, List<Integer>> ontologyTable, PreparedStatement p, Utils u)throws SQLException{	
 		final List<Integer> childList = new ArrayList<Integer>();
 		p.setInt(1, node_id);
 		ResultSet ts = p.executeQuery();
 		while(ts.next()){
 			int nodeID = ts.getInt(1);
-			if (!UIDCache.containsKey(nodeID)){
-				final String nodeUID = ts.getString(2);
-				UIDCache.put(nodeID, nodeUID);
-			}
+			final String nodeUID = ts.getString(2);
+			final String nodeName = ts.getString(3);
+			u.putNodeUIDName(nodeID,nodeUID,nodeName);
 			childList.add(nodeID);
 		}
 		ontologyTable.put(node_id,childList);
 		ts.close();
 		//listIntegerMembers(childList);
 		for(Integer child : childList){
-			traverseOntologyTreeAux(child, ontologyTable,p);
+			traverseOntologyTreeAux(child, ontologyTable,p,u);
 		}
 	}
 
-	private void writeTREfile(Integer root, Map<Integer, List<Integer>> oTable, Utils u, AnnotationType aType, Integer att, Map<Integer, String> uids){
+	private void writeTREfile(Integer root, Map<Integer, List<Integer>> oTable, Utils u, AnnotationType aType, Integer att){
 		if (!checkChildren(aType, att))
 			return;
 		StringBuilder nexusBuilder = new StringBuilder(500); 
@@ -272,7 +275,7 @@ public class AttributeCountTree {
 		writeTREfooter(nexusBuilder);
 		File treOutput;
 		if (att != null){
-			String attStr = u.doSubstitutions(uids.get(att));
+			String attStr = u.getNodeName(att);
 			if (useIC){
 				treOutput = new File(DESTDIR + aType + "_" + attStr+ "_IC.tre");				
 			}
@@ -304,11 +307,20 @@ public class AttributeCountTree {
 	}
 
 
-	private int countChildren(Integer node, Map<Integer, List<Integer>> ontologyTable, Map<Integer, Integer> entityCounts,Map<Integer, Integer> childCounts, Integer att){
-		if (nodeIsInternal(node,ontologyTable)){
+	private int countChildren(Integer node, Map<Integer, List<Integer>> ontologyTable, Map<Integer, Integer> entityCounts,Map<Integer, Integer> childCounts, Integer att,Utils u, BufferedWriter dumpWriter){
+		if (node.intValue() == 3150){
+			System.out.println("Found Integument");
+		}
+		if (nodeIsInternal(node,ontologyTable,u)){
 			int count = 0;
+			if (att == null){
+				u.writeOrDump("Node is: " + u.getNodeName(node.intValue()),dumpWriter);
+			}
 			for(Integer daughter : ontologyTable.get(node)){
-				count += countChildren(daughter,ontologyTable,entityCounts,childCounts, att);
+				if (att == null){
+					u.writeOrDump("   Child is: " + u.getNodeName(daughter.intValue()),dumpWriter);
+				}
+				count += countChildren(daughter,ontologyTable,entityCounts,childCounts, att,u,dumpWriter);
 			}
 			if (entityCounts.containsKey(node))
 				count += entityCounts.get(node).intValue();
@@ -316,6 +328,9 @@ public class AttributeCountTree {
 			return count;
 		}
 		else {
+//			if (att == null){
+//				System.out.println("Node is: " + u.doSubstitutions(u.getNodeUID(node.intValue())));
+//			}
 			if (entityCounts == null){
 				System.out.println("Null count table?, node = " + node);
 			}
@@ -350,7 +365,7 @@ public class AttributeCountTree {
 			childCounts = grandTotalChildren;
 		}
 		}
-		if (nodeIsInternal(node,ontologyTable)) {
+		if (nodeIsInternal(node,ontologyTable,u)) {
 			final List<Integer> daughters = ontologyTable.get(node);
 			int annotatedChildCount = 0;	
 			for(int i = 0; i< daughters.size();i++){
@@ -399,10 +414,10 @@ public class AttributeCountTree {
 	}
 	// 
 
-	private boolean nodeIsInternal(Integer node_id,Map<Integer, List<Integer>> ontologyTable){
+	private boolean nodeIsInternal(Integer node_id,Map<Integer, List<Integer>> ontologyTable, Utils u){
 		final List<Integer> children = ontologyTable.get(node_id);
 		if (children == null){
-			System.out.println("Node with no child list: " + UIDCache.get(node_id));
+			System.out.println("Node with no child list: " + u.getNodeUID(node_id));
 			return false;
 		}
 		else if (children.size() == 0)
@@ -412,7 +427,7 @@ public class AttributeCountTree {
 	}
 
 	private String sanitizeID(final Integer node_id, Set<String> node_ids,Utils u){
-		String newNode = u.doSubstitutions(UIDCache.get(node_id));
+		String newNode = u.getNodeName(node_id);
 		while(node_ids.contains(newNode)){
 			newNode = newNode+"+";
 		}
@@ -508,13 +523,13 @@ public class AttributeCountTree {
 		return '"' + sanitizedID + "_" + label +'"' ;						
 	}
 
-	public void writeTrees(Utils u, Map<Integer, String> uids){
+	public void writeTrees(Utils u){
 		for (Integer att : taxonCountsMap.keySet()){
-			writeTREfile(rootNodeID,ontologyTable,u,AnnotationType.taxon,att,uids);
-			writeTREfile(rootNodeID,ontologyTable,u,AnnotationType.gene,att,uids);
-			writeTREfile(rootNodeID,ontologyTable,u,AnnotationType.combined,att,uids);
+			//writeTREfile(rootNodeID,ontologyTable,u,AnnotationType.taxon,att);
+			//writeTREfile(rootNodeID,ontologyTable,u,AnnotationType.gene,att);
+			writeTREfile(rootNodeID,ontologyTable,u,AnnotationType.combined,att);
 		}
-		writeTREfile(rootNodeID,ontologyTable,u,AnnotationType.grandtotal,null,uids);
+		writeTREfile(rootNodeID,ontologyTable,u,AnnotationType.grandtotal,null);
 	}
 
 

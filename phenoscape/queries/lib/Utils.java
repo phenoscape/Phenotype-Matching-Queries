@@ -2,7 +2,6 @@ package phenoscape.queries.lib;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -14,19 +13,13 @@ import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.ArrayDeque;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Map.Entry;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Queue;
-import java.util.Set;
-
-import org.obo.datamodel.OBOClass;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -74,7 +67,6 @@ public class Utils {
 
 	final private Map<Integer,String> nodeNames = new HashMap<Integer,String>(40000);
 	final private Map<Integer,String> nodeUIDs = new HashMap<Integer, String>(40000);
-	final private Map<String,String> UIDtoName = new HashMap<String,String>(40000);
 	
 	final private Map<Integer,Set<Integer>> parents = new HashMap<Integer,Set<Integer>>(30000);
 	final private Map<Integer,Set<Integer>> ancestors = new HashMap<Integer,Set<Integer>>(30000);
@@ -82,72 +74,6 @@ public class Utils {
 	private boolean parentsBuilt = false;
 	
 	
-	public String doSubstitutions(String s){
-		Matcher taoMatcher = TAOPATTERN.matcher(s);
-		while (taoMatcher.find()){
-			final int first = taoMatcher.start();
-			final int last = taoMatcher.end();
-			final String id = s.substring(first,last);
-			String name = lookupIDToName(id);
-			s = s.substring(0,first)+name+s.substring(last);
-			//System.out.println("New string is " + s );
-			taoMatcher = TAOPATTERN.matcher(s);
-		}
-		Matcher zfaMatcher = ZFAPATTERN.matcher(s);
-		while (zfaMatcher.find()){
-			final int first = zfaMatcher.start();
-			final int last = zfaMatcher.end();
-			final String id = s.substring(first,last);
-			String name = lookupIDToName(id);
-			s = s.substring(0,first)+name+s.substring(last);
-			//System.out.println("New string is " + s);
-			zfaMatcher = ZFAPATTERN.matcher(s);
-			
-		}
-		Matcher goMatcher = GOPATTERN.matcher(s);
-		while (goMatcher.find()){
-			final int first = goMatcher.start();
-			final int last = goMatcher.end();
-			final String id = s.substring(first,last);
-			String name = lookupIDToName(id);
-			s = s.substring(0,first)+name+s.substring(last);
-			//System.out.println("New string is " + s);
-			goMatcher = GOPATTERN.matcher(s);
-			
-		}
-		Matcher patoMatcher = PATOPATTERN.matcher(s);
-		while (patoMatcher.find()){
-			final int first = patoMatcher.start();
-			final int last = patoMatcher.end();
-			final String id = s.substring(first,last);
-			String name = lookupIDToName(id);
-			s = s.substring(0,first)+name+s.substring(last);
-			//System.out.println("New string is " + s);
-			patoMatcher = PATOPATTERN.matcher(s);
-			
-		}
-		Matcher bspoMatcher = BSPOPATTERN.matcher(s);
-		while (bspoMatcher.find()){
-			final int first = bspoMatcher.start();
-			final int last = bspoMatcher.end();
-			final String id = s.substring(first,last);
-			String name = lookupIDToName(id);
-			s = s.substring(0,first)+name+s.substring(last);
-			//System.out.println("New string is " + s);
-			bspoMatcher = BSPOPATTERN.matcher(s);			
-		}
-		//System.out.println("New string is " + s);
-		return s;
-	}
-	
-	OBOClass getTerm(Collection<OBOClass> terms, String id){
-		for(OBOClass term : terms){
-			if (id.equals(term.getID()))
-				return term;
-		}
-		return null;
-	}
-
 	
 	
 	
@@ -160,7 +86,8 @@ public class Utils {
 		return nodeNames.containsKey(id);
 	}
 	
-	public void putNodeName(int id, String name){
+	public void putNodeUIDName(int id, String uid, String name){
+		nodeUIDs.put(id, uid);
 		nodeNames.put(id, name);
 	}
 	
@@ -172,26 +99,16 @@ public class Utils {
 		return nodeUIDs.containsKey(nodeId);
 	}
 	
-	public void putNodeUID(int nodeId, String name){
-		nodeUIDs.put(nodeId, name);
-	}
-	
 	public Set<Integer> getNodeSet(){
 		return nodeUIDs.keySet();
 	}
 
-	public void cacheUIDtoName(String name, String UID){
-		if (!hasUIDtoName(UID))
-			UIDtoName.put(UID,name);
-	}
 	
-	public boolean hasUIDtoName(String UID){
-		return UIDtoName.containsKey(UID);
-	}
 	
-	public String getNameFromUID(String UID){
-		return UIDtoName.get(UID);
+	public boolean hasNodeIDToName(int nodeId){
+		return nodeNames.containsKey(nodeId);
 	}
+			
 	
 	public void addParent(Integer nodeID, Integer parentID){
 		if (parents.containsKey(nodeID)){
@@ -386,33 +303,6 @@ public class Utils {
 	}
 
 	
-	public String lookupIDToName(String id){
-		if (hasUIDtoName(id))
-			return getNameFromUID(id);
-		String formattedQuery = null;
-		String result = null;
-		try {
-			formattedQuery = termRoot + URLEncoder.encode(id, "UTF-8");
-			//System.out.println("Request is " + URLDecoder.decode(formattedQuery, "UTF-8"));
-		} catch (UnsupportedEncodingException e) {
-			System.err.println("Error encoding query for retrieving taxa");
-			e.printStackTrace();
-		}
-		JsonObject nameResponse = parseFromURLStr(formattedQuery);
-		if (nameResponse == null || nameResponse.get("name") == null){
-			if (RELATIONALSHAPEQUALITYID.equals(id))    //ugly hard coded solution to PATO and annotation KB being out of synch
-				return RELATIONALSHAPEQUALITYNAME;
-			if (RELATIONALSPATIALQUALITYID.equals(id))
-				return RELATIONALSPATIALQUALITYNAME;
-			if (RELATIONALSTRUCTURALQUALITYID.equals(id))
-				return RELATIONALSTRUCTURALQUALITYNAME;
-			System.err.println("Null response to lookup of " + id);
-			result = id.substring(0,1) + "x" + id.substring(2);  // avoid infinite loop in substitution
-		}
-		else result = nameResponse.get("name").getAsString();
-		cacheUIDtoName(id,result);
-		return result;
-	}
 		
 	private JsonObject parseFromURLStr(String urlStr){
 		URL taxonURL;
@@ -443,6 +333,7 @@ public class Utils {
 	public Connection openKB(){
 		final Properties properties = new Properties();
 		try {
+			System.out.println("Connect path = " + this.getClass().getResource(CONNECTION_PROPERTIES_FILENAME));
 			properties.load(this.getClass().getResourceAsStream(CONNECTION_PROPERTIES_FILENAME));
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block

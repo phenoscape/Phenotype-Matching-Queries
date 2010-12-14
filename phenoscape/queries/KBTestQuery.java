@@ -73,16 +73,13 @@ public class KBTestQuery {
 						qualityID,
 						qualityUID));
 				if (!u.hasNodeName(geneID)){
-					u.putNodeName(geneID,geneLabel);
-				}
-				if (!u.hasNodeUID(geneID)){
-					u.putNodeUID(geneID,geneUID);
+					u.putNodeUIDName(geneID,geneUID,geneLabel);
 				}
 				if (!u.hasNodeUID(entityID) ){
-					u.putNodeUID(entityID,entityUID);
+					u.putNodeUIDName(entityID,entityUID,entityLabel);
 				}
 				if (!u.hasNodeUID(qualityID)){
-					u.putNodeUID(qualityID,qualityUID);
+					u.putNodeUIDName(qualityID,qualityUID,qualityLabel);
 				}
 			}
 			ResultSet rs2 = s.executeQuery("select ata.taxon_node_id,ata.phenotype_node_id,p.* from asserted_taxon_annotation AS ata join phenotype as p on (ata.phenotype_node_id = p.node_id);");
@@ -97,17 +94,14 @@ public class KBTestQuery {
 			}
 			System.out.println("Finished Phenotypes");
 			// Taxon labels need a separate pass because asserted_taxon_annotation is just node_ids
-			PreparedStatement ts = c.prepareStatement("select label,uid from taxon where node_id = ?");
+			PreparedStatement ts = c.prepareStatement("select uid,label from taxon where node_id = ?");
 			for(PhenoRec tp : taxonPhenos){
 				final int taxonID = tp.getExhibitorNodeID();
 				if (!u.hasNodeName(taxonID)){
 					ts.setInt(1,taxonID);
 					ResultSet tr = ts.executeQuery();
 					if (tr.next()){
-						u.putNodeName(taxonID, tr.getString(1));  //column for "label"
-						if (!u.hasNodeUID(taxonID)){
-							u.putNodeUID(taxonID,tr.getString(2));  // column for "uid"
-						}
+						u.putNodeUIDName(taxonID, tr.getString(1),tr.getString(2));  //column for "label"
 					}
 					tr.close();
 				}

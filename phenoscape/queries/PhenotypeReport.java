@@ -120,7 +120,7 @@ public class PhenotypeReport {
 				b.append(state_comment + DELIMITER);
 			if (phenotype_entity_label == null){
 				if (phenotype_entity_uid != null){
-					b.append(u.doSubstitutions(phenotype_entity_uid) + DELIMITER);
+					b.append(u.getNodeName(phenotype_entity_uid) + DELIMITER);
 				}
 				else
 					b.append(DELIMITER);

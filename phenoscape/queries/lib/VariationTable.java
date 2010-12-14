@@ -62,7 +62,7 @@ public class VariationTable {
 		return result;
 	}
 	
-	public void variationReport(Utils u, Map<Integer,String> UIDCache, BufferedWriter bw){
+	public void variationReport(Utils u, BufferedWriter bw){
 		int sum = 0;
 		Map<Integer,Integer> attributeSums = new HashMap<Integer,Integer>();
 		Map<Integer,Integer> entitySums = new HashMap<Integer,Integer>();
@@ -84,10 +84,10 @@ public class VariationTable {
 						entitySums.put(ent,taxa.size());
 					for(Integer taxon : taxa){
 						if (taxonList.containsKey(taxon)){
-							taxonList.put(taxon, taxonList.get(taxon)+ "\n\t" + u.doSubstitutions(UIDCache.get(ent)) + "\t" + u.lookupIDToName(UIDCache.get(att)));
+							taxonList.put(taxon, taxonList.get(taxon)+ "\n\t" + u.getNodeName(ent) + "\t" + u.getNodeName(att));
 						}
 						else{
-							taxonList.put(taxon, "\n" + u.lookupIDToName(UIDCache.get(taxon)) + "\n\t" + u.doSubstitutions(UIDCache.get(ent)) + "\t" + u.lookupIDToName(UIDCache.get(att)));
+							taxonList.put(taxon, "\n" + u.getNodeName(taxon) + "\n\t" + u.getNodeName(ent) + "\t" + u.getNodeName(att));
 						}
 					}
 				}
@@ -96,16 +96,16 @@ public class VariationTable {
 		u.writeOrDump("Summary of detected variation",bw);
 		u.writeOrDump("-- Attribute Summary --",bw);
 		for(Integer att : attributeSums.keySet()){
-			if (UIDCache.containsKey(att)){
-				u.writeOrDump(u.lookupIDToName(UIDCache.get(att)) + "\t" + attributeSums.get(att).intValue(),bw);
+			if (u.hasNodeUID(att)){
+				u.writeOrDump(u.getNodeName(att) + "\t" + attributeSums.get(att).intValue(),bw);
 			}
 			else
 				u.writeOrDump(att.intValue() + "   " + attributeSums.get(att).intValue(),bw);
 		}
 		u.writeOrDump("\n-- Entity Summary --",bw);
 		for (Integer ent : entitySums.keySet()){
-			if (UIDCache.containsKey(ent)){
-				u.writeOrDump(u.doSubstitutions(UIDCache.get(ent)) + "\t" + entitySums.get(ent).intValue(),bw);
+			if (u.hasNodeUID(ent)){
+				u.writeOrDump(u.getNodeName(ent) + "\t" + entitySums.get(ent).intValue(),bw);
 			}
 			else
 				u.writeOrDump(ent.intValue() + "   " + entitySums.get(ent).intValue(),bw);

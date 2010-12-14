@@ -4,22 +4,11 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.obo.dataadapter.DefaultOBOParser;
-import org.obo.dataadapter.OBOParseEngine;
-import org.obo.dataadapter.OBOParseException;
-import org.obo.datamodel.IdentifiedObject;
-import org.obo.datamodel.OBOClass;
-import org.obo.datamodel.OBOSession;
-import org.obo.util.TermUtil;
 
 import phenoscape.queries.lib.StringConsts;
 import phenoscape.queries.lib.Utils;
@@ -108,7 +97,7 @@ public class PostCompList {
 			final int first = taoMatcher.start();
 			final int last = taoMatcher.end();
 			final String id = s.substring(first,last);
-			String name = u.lookupIDToName  (id);
+			String name = u.lookupNameFromID  (id);
 			s = s.substring(0,first)+name+s.substring(last);
 			//System.out.println("New string is " + s);
 			taoMatcher = TAOPATTERN.matcher(s);
@@ -118,7 +107,7 @@ public class PostCompList {
 			final int first = zfaMatcher.start();
 			final int last = zfaMatcher.end();
 			final String id = s.substring(first,last);
-			String name = u.lookupIDToName(id);
+			String name = u.lookupNameFromID(id);
 			s = s.substring(0,first)+name+s.substring(last);
 			//System.out.println("New string is " + s);
 			zfaMatcher = ZFAPATTERN.matcher(s);
@@ -129,7 +118,7 @@ public class PostCompList {
 			final int first = goMatcher.start();
 			final int last = goMatcher.end();
 			final String id = s.substring(first,last);
-			String name = u.lookupIDToName(id);
+			String name = u.lookupNameFromID(id);
 			s = s.substring(0,first)+name+s.substring(last);
 			//System.out.println("New string is " + s);
 			goMatcher = GOPATTERN.matcher(s);
@@ -140,7 +129,7 @@ public class PostCompList {
 			final int first = patoMatcher.start();
 			final int last = patoMatcher.end();
 			final String id = s.substring(first,last);
-			String name = u.lookupIDToName(id);
+			String name = u.lookupNameFromID(id);
 			s = s.substring(0,first)+name+s.substring(last);
 			patoMatcher = PATOPATTERN.matcher(s);
 			
@@ -150,21 +139,13 @@ public class PostCompList {
 			final int first = bspoMatcher.start();
 			final int last = bspoMatcher.end();
 			final String id = s.substring(first,last);
-			String name = u.lookupIDToName(id);
+			String name = u.lookupNameFromID(id);
 			s = s.substring(0,first)+name+s.substring(last);
 			//System.out.println("New string is " + s);
 			bspoMatcher = BSPOPATTERN.matcher(s);			
 		}
 		//System.out.println("New string is " + s);
 		return s;
-	}
-	
-	OBOClass getTerm(Collection<OBOClass> terms, String id){
-		for(OBOClass term : terms){
-			if (id.equals(term.getID()))
-				return term;
-		}
-		return null;
 	}
 	
 	
