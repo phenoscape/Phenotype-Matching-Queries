@@ -63,6 +63,7 @@ public class VariationTable {
 	}
 	
 	public void variationReport(Utils u, BufferedWriter bw){
+		
 		int sum = 0;
 		Map<Integer,Integer> attributeSums = new HashMap<Integer,Integer>();
 		Map<Integer,Integer> entitySums = new HashMap<Integer,Integer>();
@@ -70,8 +71,10 @@ public class VariationTable {
 		for(Integer att : getUsedAttributes()){
 			for (Integer ent : getUsedEntities()){
 				if (hasExhibitorSet(att,ent)){
+					
+					
 					Set <Integer> taxa = getExhibitorSet(att,ent);
-					sum += taxa.size();
+					sum += taxa.size(); 
 					if (attributeSums.containsKey(att)){
 						attributeSums.put(att,attributeSums.get(att).intValue()+taxa.size());
 					}
@@ -83,16 +86,16 @@ public class VariationTable {
 					else
 						entitySums.put(ent,taxa.size());
 					for(Integer taxon : taxa){
-						if (taxonList.containsKey(taxon)){
-							taxonList.put(taxon, taxonList.get(taxon)+ "\n\t" + u.getNodeName(ent) + "\t" + u.getNodeName(att));
-						}
-						else{
-							taxonList.put(taxon, "\n" + u.getNodeName(taxon) + "\n\t" + u.getNodeName(ent) + "\t" + u.getNodeName(att));
-						}
+						String addition = "\n\t" + u.getNodeName(ent) + "\t" + u.getNodeName(att);
+						if (!taxonList.containsKey(taxon))
+							taxonList.put(taxon, "\n" + u.getNodeName(taxon));
+						String tl = taxonList.get(taxon);
+						taxonList.put(taxon, tl+ addition);					
 					}
 				}
 			}
 		}
+		System.out.print(taxonList.get(70111));
 		u.writeOrDump("Summary of detected variation",bw);
 		u.writeOrDump("-- Attribute Summary --",bw);
 		for(Integer att : attributeSums.keySet()){

@@ -25,6 +25,7 @@ import phenoscape.queries.lib.VariationTable;
 public class GenusVariationList {
 
 	private static final String CAROROOT = "CARO:0000000";
+	private static final String TAOROOT = "TAO:0100000";
 	private static final String PATOROOT = "PATO:0000001";
 
 
@@ -111,14 +112,14 @@ public class GenusVariationList {
 		// process taxa annotations
 
 		processTaxonVariation(c, u, bw1);
-		//taxonVariation.variationReport(u,bw1);
-
+		taxonVariation.variationReport(u,bw1);
+		
 		processGeneExpression(c, u, bw2);
-		//geneVariation.variationReport(u, bw2);
+		geneVariation.variationReport(u, bw2);
 
 		/* These need to happen after the profiles have been constructed, since we don't want to count taxon annotations that don't reflect change */
 		AttributeCountTree entityCounts = new AttributeCountTree();  
-		entityCounts.build(u,c,taxonProfiles,geneProfiles,CAROROOT);
+		entityCounts.build(u,c,taxonProfiles,geneProfiles,TAOROOT);   //will be CAROROOT when things are cleaned up
 			
 		AttributeCountTree phenotypeCounts = new AttributeCountTree();
 		phenotypeCounts.build(u, c, taxonProfiles, geneProfiles,PATOROOT);
@@ -450,8 +451,6 @@ public class GenusVariationList {
 			p1.setInt(1, taxonID);
 			ResultSet linkResults = p1.executeQuery();
 			while(linkResults.next()){
-				if (taxonID == 19402)
-					System.out.println("Parent?");
 				final int child_id = linkResults.getInt(1);
 				final int phenotype_id = linkResults.getInt(2);
 				final int entity_id = linkResults.getInt(3);
@@ -481,7 +480,6 @@ public class GenusVariationList {
 						childProfiles.put(child_id, new Profile());
 						childProfiles.get(child_id).addPhenotype(qualityNodeID,entity_id, phenotype_id);
 					}
-					taxonVariation.addExhibitor(quality_id, entity_id, child_id);
 					if (badTaxonQualities.containsKey(quality_id)){
 						badTaxonQualities.put(quality_id, badTaxonQualities.get(quality_id).intValue()+1);
 					}
@@ -490,7 +488,7 @@ public class GenusVariationList {
 						u.putNodeUIDName(quality_id, quality_uid, quality_label);
 					}
 				}
-				u.putNodeUIDName(entity_id, entity_uid,quality_label);
+				u.putNodeUIDName(entity_id, entity_uid,entity_label);
 			}
 			if (!childProfiles.isEmpty()){
 				if (!taxonProfiles.containsKey(taxonID)){
@@ -505,7 +503,6 @@ public class GenusVariationList {
 					for (Integer att : childProfile.getUsedAttributes()){
 						for (Integer ent : childProfile.getUsedEntities()){
 							if (childProfile.hasPhenotypeSet(att, ent)){
-								//listIntegerMembers(childProfile.getPhenotypeSet(att, ent));
 								currentTaxonProfile.addAlltoPhenotypeSet(att, ent, childProfile.getPhenotypeSet(att, ent));
 							}
 						}
@@ -517,6 +514,7 @@ public class GenusVariationList {
 						for (Integer childID : childProfiles.keySet()){
 							Profile childProfile = childProfiles.get(childID);
 							if (childProfile.hasPhenotypeSet(att, ent)){
+
 								if (currentTaxonProfile.getPhenotypeSet(att, ent) == null)
 									System.out.println("fail while adding taxon variation: att = " + att + "; ent = " + ent + "; taxon = " + u.getNodeUID(taxonID));
 								if (currentTaxonProfile.getPhenotypeSet(att,ent).size() != childProfile.getPhenotypeSet(att, ent).size()){
@@ -534,6 +532,7 @@ public class GenusVariationList {
 				emptyCount++;
 			}
 		}
+		
 		u.writeOrDump("Count of taxa with derived annotations " + taxonProfiles.keySet().size() + "; taxa with no children with phenotypes: " + emptyCount + " Total children with phenotypes: " + childCount, reportWriter);
 		u.writeOrDump("\nList of qualities that were placed under quality as an attribute by default\n", reportWriter);
 		for(Integer bad_id : badTaxonQualities.keySet()){
@@ -549,7 +548,7 @@ public class GenusVariationList {
 		int usableAnnotationCount = 0;
 		Set<Integer>uniqueGenes = new HashSet<Integer>();
 
-		final PreparedStatement p2 = c.prepareStatement("SELECT gene_node_id, gene_uid, gene_label, dga.phenotype_node_id, p1.entity_node_id, p1.quality_node_id, p1.quality_uid,p1.uid,simple_label(dga.phenotype_node_id), simple_label(p1.entity_node_id),simple_label(p1.quality_node_id) FROM distinct_gene_annotation AS dga " +
+		final PreparedStatement p2 = c.prepareStatement("SELECT gene_node_id, gene_uid, gene_label, dga.phenotype_node_id, p1.entity_node_id, p1.entity_uid, p1.quality_node_id, p1.quality_uid,p1.uid,simple_label(dga.phenotype_node_id), simple_label(p1.entity_node_id),simple_label(p1.quality_node_id) FROM distinct_gene_annotation AS dga " +
 		"JOIN phenotype AS p1 ON (p1.node_id = dga.phenotype_node_id) ");
 		ResultSet annotationResults = p2.executeQuery();
 		while(annotationResults.next()){
@@ -558,12 +557,13 @@ public class GenusVariationList {
 			final String gene_label = annotationResults.getString(3);
 			final int phenotype_id = annotationResults.getInt(4);
 			final int entity_id = annotationResults.getInt(5);
-			final int quality_id = annotationResults.getInt(6);
-			final String quality_uid = annotationResults.getString(7);
-			final String phenotype_uid = annotationResults.getString(8);
-			final String phenotype_label = annotationResults.getString(9);
-			final String entity_label = annotationResults.getString(10);
-			final String quality_label = annotationResults.getString(11);
+			final String entity_uid = annotationResults.getString(6);
+			final int quality_id = annotationResults.getInt(7);
+			final String quality_uid = annotationResults.getString(8);
+			final String phenotype_uid = annotationResults.getString(9);
+			final String phenotype_label = annotationResults.getString(10);
+			final String entity_label = annotationResults.getString(11);
+			final String quality_label = annotationResults.getString(12);
 			u.putNodeUIDName(phenotype_id, phenotype_uid, phenotype_label);
 			annotationCount++;
 			uniqueGenes.add(geneID);
@@ -596,6 +596,7 @@ public class GenusVariationList {
 				}
 			}
 			u.putNodeUIDName(quality_id, quality_uid,quality_label);
+			u.putNodeUIDName(entity_id, entity_uid, entity_label);
 			u.putNodeUIDName(geneID, gene_uid,gene_label);
 		}
 

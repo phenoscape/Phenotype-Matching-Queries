@@ -35,7 +35,7 @@ public class Profile {
 	public void addAlltoPhenotypeSet(Integer attribute_node_id, Integer entity_node_id,Set<Integer> toAdd){
 		if (table.containsKey(attribute_node_id)){
 			Map<Integer,Set<Integer>> attribute_entry = table.get(attribute_node_id);
-			if (attribute_entry.containsKey(attribute_node_id)){
+			if (attribute_entry.containsKey(entity_node_id)){
 				Set<Integer> phenotypeSet = attribute_entry.get(entity_node_id);
 				phenotypeSet.addAll(toAdd);
 			}
