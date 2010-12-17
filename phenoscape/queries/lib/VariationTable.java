@@ -95,7 +95,6 @@ public class VariationTable {
 				}
 			}
 		}
-		System.out.print(taxonList.get(70111));
 		u.writeOrDump("Summary of detected variation",bw);
 		u.writeOrDump("-- Attribute Summary --",bw);
 		for(Integer att : attributeSums.keySet()){

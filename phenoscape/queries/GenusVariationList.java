@@ -35,6 +35,24 @@ public class GenusVariationList {
 	private static final String PROFILEMATCHREPORTFILENAME = "../ProfileMatchReport.txt";
 	
 	
+	private static final String TAXONQUERY = "SELECT node_id,uid,label FROM taxon WHERE node_id = 94146";
+	
+	private static final String GENEANNOTATIONQUERY = 		
+		"SELECT gene_node_id, gene_uid, gene_label, dga.phenotype_node_id, p1.entity_node_id, p1.entity_uid, p1.quality_node_id, p1.quality_uid,p1.uid,simple_label(dga.phenotype_node_id), simple_label(p1.entity_node_id),simple_label(p1.quality_node_id) FROM distinct_gene_annotation AS dga " +
+		"JOIN phenotype AS p1 ON (p1.node_id = dga.phenotype_node_id) WHERE gene_node_id = 1230365";
+	
+	//Note: these queries are currently identical, but they are constructed separately to allow divergence
+	private static final String TAXONPHENOTYPENEIGHBORQUERY = 
+		"SELECT target.node_id FROM node AS entity " +
+	    "JOIN link ON (entity.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:inheres_in_part_of')) " + 
+	    "JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? " +
+        "GROUP BY entity.uid, target.uid,target.node_id";
+	private static final String GENEPHENOTYPENEIGHBORQUERY =
+		"SELECT target.node_id FROM node AS entity " +
+		"JOIN link ON (entity.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:inheres_in_part_of')) " + 
+		"JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? " +
+		"GROUP BY entity.uid, target.uid, target.node_id";
+	
 
 	Map<Integer,Profile> taxonProfiles = new HashMap<Integer,Profile>();  //taxon_node_id -> Phenotype profile for taxon
 	Map<Integer,Profile> geneProfiles = new HashMap<Integer,Profile>();   //gene_node_id -> Phenotype profile for gene
@@ -104,36 +122,35 @@ public class GenusVariationList {
 			return;
 		uidCacheEntities(c,u);    // this will retrieve entities that appear in EQ's
 
-
 		qualityNodeID = getQualityNodeID(c,u);   //set to the root of PATO
 
 		attributeMap = setupAttributes(c,u);
 		
 		// process taxa annotations
-
 		processTaxonVariation(c, u, bw1);
-		taxonVariation.variationReport(u,bw1);
-		
+		taxonVariation.variationReport(u,bw1);	
+
 		processGeneExpression(c, u, bw2);
 		geneVariation.variationReport(u, bw2);
 
+
+		
 		/* These need to happen after the profiles have been constructed, since we don't want to count taxon annotations that don't reflect change */
 		AttributeCountTree entityCounts = new AttributeCountTree();  
 		entityCounts.build(u,c,taxonProfiles,geneProfiles,TAOROOT);   //will be CAROROOT when things are cleaned up
-			
+
+		
 		AttributeCountTree phenotypeCounts = new AttributeCountTree();
 		phenotypeCounts.build(u, c, taxonProfiles, geneProfiles,PATOROOT);
 		
+
+
 		//counts.writeTrees(u,UIDCache);
 
-		System.out.println("Generating p3");
+		System.out.println("Building entity neighbors of taxon phenotypes");
 		int hitCount = 0;
 		int attOverlaps = 0;
-		//Note: p3 and p4 might turn out to be identical, but they are constructed separately to allow divergence
-		final PreparedStatement p3 = c.prepareStatement("select target.node_id from node as entity " +
-				"join link on (entity.node_id=link.node_id AND link.predicate_id = (select node_id from node where uid = 'OBO_REL:inheres_in_part_of')) " + 
-				"join node as target on (target.node_id = link.object_id) where entity.node_id = ? " +
-		"group by entity.uid, target.uid,target.node_id");
+		final PreparedStatement p3 = c.prepareStatement(TAXONPHENOTYPENEIGHBORQUERY);
 		Map <Integer,Set<Integer>> phenotypeNeighborCache = new HashMap<Integer,Set<Integer>>();
 		for(Integer currentTaxon : taxonProfiles.keySet()){
 			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
@@ -152,10 +169,10 @@ public class GenusVariationList {
 			}
 		}
 		
-		final PreparedStatement p4 = c.prepareStatement("select target.node_id from node as entity " +
-				"join link on (entity.node_id=link.node_id AND link.predicate_id = (select node_id from node where uid = 'OBO_REL:inheres_in_part_of')) " + 
-				"join node as target on (target.node_id = link.object_id) where entity.node_id = ? " +
-		"group by entity.uid, target.uid, target.node_id");
+
+		
+		System.out.println("Building entity neighbors of gene phenotypes");
+		final PreparedStatement p4 = c.prepareStatement(GENEPHENOTYPENEIGHBORQUERY);
 
 		for(Integer currentGene : geneProfiles.keySet()){
 			Profile currentGeneProfile = geneProfiles.get(currentGene);
@@ -173,6 +190,7 @@ public class GenusVariationList {
 				}
 			}
 		}
+
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		for(Integer currentTaxon : taxonProfiles.keySet()){
 			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
@@ -248,7 +266,6 @@ public class GenusVariationList {
 				}
 			}
 		}
-		
 		System.out.println("Finished building phenotype match cache");
 		System.out.println("Writing Phenotype match summary");
 		for(Integer currentTaxon : taxonProfiles.keySet()){
@@ -268,15 +285,16 @@ public class GenusVariationList {
 					}
 				}
 				if (hasOverLap)
-					u.writeOrDump("Taxon: " + u.getNodeName(currentTaxon) + "\tGene: " + u.getNodeName(currentGene),bw3);
+					u.writeOrDump("Taxon: " + u.getNodeName(currentTaxon) + "\tGene: " + u.getNodeName(currentGene),null);
 				for(Integer tPhenotype : taxonPhenotypes){
 					for(Integer gPhenotype : genePhenotypes){
 						if (phenotypeScores.hasScore(tPhenotype, gPhenotype)){
 							if (phenotypeScores.getScore(tPhenotype, gPhenotype)>-1){
-								u.writeOrDump("\t\t" + u.getNodeName(tPhenotype) + "\t" + u.getNodeName(gPhenotype) + "\t" + phenotypeScores.getScore(tPhenotype, gPhenotype),bw3);
+								u.writeOrDump("tPhenotype: " + tPhenotype + "; gPhenotype: " + gPhenotype, null);
+								u.writeOrDump("\t\t" + u.getNodeName(tPhenotype) + "\t" + u.getNodeName(gPhenotype) + "\t" + phenotypeScores.getScore(tPhenotype, gPhenotype),null);
 							}
 							else {
-								u.writeOrDump("\t\t" + u.getNodeName(tPhenotype) + "\t" + u.getNodeName(gPhenotype) + "\t No Match",bw3);								
+								u.writeOrDump("\t\t" + u.getNodeName(tPhenotype) + "\t" + u.getNodeName(gPhenotype) + "\t No Match",null);								
 							}
 						}
 					}
@@ -359,28 +377,6 @@ public class GenusVariationList {
 				
 			}
 		}
-		
-		for(Integer currentTaxon : taxonProfiles.keySet()){
-			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
-			for(Integer currentGene : geneProfiles.keySet()){
-				Profile currentGeneProfile = geneProfiles.get(currentGene);
-				u.writeOrDump("Taxon: " + u.getNodeName(currentTaxon) + "\tGene: " + u.getNodeName(currentGene),bw3);
-				Set<Integer> taxonPhenotypes = currentTaxonProfile.getAllPhenotypes();
-				Set<Integer> genePhenotypes = currentGeneProfile.getAllPhenotypes();
-				for(Integer tPhenotype : taxonPhenotypes){
-					for(Integer gPhenotype : genePhenotypes){
-						if (phenotypeScores.hasScore(tPhenotype, gPhenotype)){
-							if (phenotypeScores.getScore(tPhenotype, gPhenotype)>-1){
-								u.writeOrDump("\t\t" + u.getNodeName(tPhenotype) + "\t" + u.getNodeName(gPhenotype) + "\t" + phenotypeScores.getScore(tPhenotype, gPhenotype),bw3);
-							}
-							else {
-								u.writeOrDump("\t\t" + u.getNodeName(tPhenotype) + "\t" + u.getNodeName(gPhenotype) + "\t No Match",bw3);								
-							}
-						}
-					}
-				}
-			}
-		}
 		u.writeOrDump("gene and taxon profiles overlapping on an attribute:  " + attOverlaps,bw1);
 
 	}
@@ -437,7 +433,7 @@ public class GenusVariationList {
 		int childCount = 0;
 
 		Statement s1 = c.createStatement();
-		ResultSet taxaResults = s1.executeQuery("select node_id,uid,label from taxon");
+		ResultSet taxaResults = s1.executeQuery(TAXONQUERY);
 
 		while(taxaResults.next()){
 			int taxonID = taxaResults.getInt(1);
@@ -513,16 +509,19 @@ public class GenusVariationList {
 					for (Integer ent : currentTaxonProfile.getUsedEntities()){
 						for (Integer childID : childProfiles.keySet()){
 							Profile childProfile = childProfiles.get(childID);
-							if (childProfile.hasPhenotypeSet(att, ent)){
-
-								if (currentTaxonProfile.getPhenotypeSet(att, ent) == null)
-									System.out.println("fail while adding taxon variation: att = " + att + "; ent = " + ent + "; taxon = " + u.getNodeUID(taxonID));
-								if (currentTaxonProfile.getPhenotypeSet(att,ent).size() != childProfile.getPhenotypeSet(att, ent).size()){
-									taxonVariation.addExhibitor(att, ent, taxonID);
+							if (!childProfile.isEmpty()){       //if nothing has been reported for this child then absent annotations are uninformative
+								if (childProfile.hasPhenotypeSet(att, ent)){
+									//System.out.println("att = " + att.intValue() + " ;ent = " + ent.intValue() + " ;parent profile size " + currentTaxonProfile.getPhenotypeSet(att,ent).size() + " ; child profile size" + childProfile.getPhenotypeSet(att, ent).size());
+									if (currentTaxonProfile.getPhenotypeSet(att,ent).size() != childProfile.getPhenotypeSet(att, ent).size()){
+										taxonVariation.addExhibitor(att, ent, taxonID);
+									}
+								}
+								else if (currentTaxonProfile.hasPhenotypeSet(att, ent)){  //child not represented = change in sibling
+									taxonVariation.addExhibitor(att,ent,taxonID);
 								}
 							}
-							else if (currentTaxonProfile.hasPhenotypeSet(att, ent)){  //child not represented = change in sibling
-								taxonVariation.addExhibitor(att,ent,taxonID);
+							else {
+								System.out.println("Empty Child: " + u.getNodeName(childID));
 							}
 						}
 					}
@@ -548,9 +547,9 @@ public class GenusVariationList {
 		int usableAnnotationCount = 0;
 		Set<Integer>uniqueGenes = new HashSet<Integer>();
 
-		final PreparedStatement p2 = c.prepareStatement("SELECT gene_node_id, gene_uid, gene_label, dga.phenotype_node_id, p1.entity_node_id, p1.entity_uid, p1.quality_node_id, p1.quality_uid,p1.uid,simple_label(dga.phenotype_node_id), simple_label(p1.entity_node_id),simple_label(p1.quality_node_id) FROM distinct_gene_annotation AS dga " +
-		"JOIN phenotype AS p1 ON (p1.node_id = dga.phenotype_node_id) ");
-		ResultSet annotationResults = p2.executeQuery();
+		final Statement s2 = c.createStatement();
+		ResultSet annotationResults = s2.executeQuery(GENEANNOTATIONQUERY);
+
 		while(annotationResults.next()){
 			final int geneID = annotationResults.getInt(1);
 			final String gene_uid = annotationResults.getString(2);

@@ -70,7 +70,7 @@ public class AttributeCountTree {
 
 	final static private String ROOTQUERY = "SELECT node_id,label FROM node WHERE (uid = '"; 
 
-	final static private String ONTOLOGYTREEQUERY = "SELECT n.node_id,n.uid,n.label FROM link AS l "+   
+	final static private String ONTOLOGYTREEQUERY = "SELECT n.node_id,n.uid,simple_label(n.node_id) FROM link AS l "+   
 	"JOIN node AS n ON (n.node_id = l.node_id) " +
 	"WHERE l.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:is_a') " +
 	"AND l.object_id = ? AND is_inferred=false";
@@ -110,11 +110,19 @@ public class AttributeCountTree {
 	public void build(Utils u, Connection c, Map<Integer,Profile> taxonProfiles, Map<Integer,Profile> geneProfiles,String rootUID) throws SQLException{
 		if (c == null)
 			return;
+		System.out.println("Checkpoint1: " + u.getNodeName(335627));
+
 		System.out.println("Starting Ontology traversal");
 		traverseOntologyTree(c,ontologyTable,rootUID,u);
 		System.out.println("Finished Ontology traversal");
+
 		final Statement s = c.createStatement();
+		
 		for(Integer taxonKey : taxonProfiles.keySet()){
+
+			
+
+
 			Profile taxonProfile = taxonProfiles.get(taxonKey);
 			Set<Integer>attributes = taxonProfile.getUsedAttributes();
 			Set<Integer>entities = taxonProfile.getUsedEntities();
@@ -251,10 +259,12 @@ public class AttributeCountTree {
 		p.setInt(1, node_id);
 		ResultSet ts = p.executeQuery();
 		while(ts.next()){
-			int nodeID = ts.getInt(1);
-			final String nodeUID = ts.getString(2);
-			final String nodeName = ts.getString(3);
-			u.putNodeUIDName(nodeID,nodeUID,nodeName);
+			final int nodeID = ts.getInt(1);
+			if (!u.hasNodeName(nodeID)){
+				final String nodeUID = ts.getString(2);
+				final String nodeName = ts.getString(3);
+				u.putNodeUIDName(nodeID,nodeUID,nodeName);
+			}
 			childList.add(nodeID);
 		}
 		ontologyTable.put(node_id,childList);
