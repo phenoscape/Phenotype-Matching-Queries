@@ -12,7 +12,10 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -73,7 +76,7 @@ public class Utils {
 	
 	private boolean parentsBuilt = false;
 	
-	
+	private Connection connection;
 	
 	
 	
@@ -129,6 +132,30 @@ public class Utils {
 		System.out.println("nodeUIDs.size() = " + nodeUIDs.size());
 		System.out.println("parents.size() = " + parents.size());
 	}
+	
+	private final static String ATTRIBUTEQUERY = "SELECT quality_node_id,attribute_node_id,n.uid,simple_label(attribute_node_id) FROM quality_to_attribute " +
+	"JOIN node AS n ON (n.node_id = attribute_node_id)";
+	
+	/**
+	 * This creates and fills a Map from qualities to attributes, stored as node_ids
+	 * @param c
+	 * @param u
+	 * @throws SQLException
+	 */
+	public Map<Integer,Integer> setupAttributes() throws SQLException{
+		Map<Integer,Integer> attMap = new HashMap<Integer,Integer>();
+		Statement s1 = connection.createStatement();
+		ResultSet attributeResults = s1.executeQuery(ATTRIBUTEQUERY);
+		while(attributeResults.next()){
+			final int quality_id = attributeResults.getInt(1);
+			final int attribute_id = attributeResults.getInt(2);
+			attMap.put(quality_id,attribute_id);
+			if (!hasNodeUID(attribute_id))
+				putNodeUIDName(attribute_id,attributeResults.getString(3),attributeResults.getString(4));
+		}
+		return attMap;
+	}
+
 	
 	final Set<JsonObject> emptySJO = new HashSet<JsonObject>();
 	public Set<JsonObject> getGeneAnnotations(){
@@ -239,7 +266,7 @@ public class Utils {
 	public Connection openKB(){
 		final Properties properties = new Properties();
 		try {
-			System.out.println("Connect path = " + this.getClass().getResource(CONNECTION_PROPERTIES_FILENAME));
+			//System.out.println("Connect path = " + this.getClass().getResource(CONNECTION_PROPERTIES_FILENAME));
 			properties.load(this.getClass().getResourceAsStream(CONNECTION_PROPERTIES_FILENAME));
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
@@ -251,20 +278,28 @@ public class Utils {
 			System.err.println("Couldn't load PSQL Driver");
 			e.printStackTrace();
 		}
-		Connection c= null;
 		final String host = properties.getProperty("host");
 		final String db = properties.getProperty("db");
 		final String user = properties.getProperty("user");
 		final String password = properties.getProperty("pw");
 		try{
-			c = DriverManager.getConnection(String.format("jdbc:postgresql://%s/%s",host,db),user,password);
-			return c;
+			connection = DriverManager.getConnection(String.format("jdbc:postgresql://%s/%s",host,db),user,password);
+			return connection;
 		} catch (SQLException e){
-			System.err.println("Cound't connect to server");
+			System.err.println("Couldn't connect to server");
 			e.printStackTrace();
 			return null;
 		}
-
+	}
+	
+	public void closeKB(){
+		try {
+			connection.close();
+		} catch (SQLException e) {
+			System.err.println("Problem closing connection");
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public void writeOrDump(String contents, BufferedWriter b){
@@ -281,7 +316,13 @@ public class Utils {
 		}
 	}
 
-
+	public Statement getStatement() throws SQLException{
+		return connection.createStatement();
+	}
+	
+	public PreparedStatement getPreparedStatement(String sqlStatement) throws SQLException{
+		return connection.prepareStatement(sqlStatement);
+	}
 	
 
 	

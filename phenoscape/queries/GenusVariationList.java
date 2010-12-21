@@ -27,7 +27,7 @@ public class GenusVariationList {
 	private static final String CAROROOT = "CARO:0000000";
 	private static final String TAOROOT = "TAO:0100000";
 	private static final String PATOROOT = "PATO:0000001";
-
+	
 
 	private static final String TAXONREPORTFILENAME = "../TaxonVariationReport.txt";
 	private static final String GENEREPORTFILENAME = "../GeneVariationReport.txt";
@@ -35,11 +35,11 @@ public class GenusVariationList {
 	private static final String PROFILEMATCHREPORTFILENAME = "../ProfileMatchReport.txt";
 	
 	
-	private static final String TAXONQUERY = "SELECT node_id,uid,label FROM taxon WHERE node_id = 94146";
+	private static final String TAXONQUERY = "SELECT node_id,uid,label FROM taxon";
 	
 	private static final String GENEANNOTATIONQUERY = 		
 		"SELECT gene_node_id, gene_uid, gene_label, dga.phenotype_node_id, p1.entity_node_id, p1.entity_uid, p1.quality_node_id, p1.quality_uid,p1.uid,simple_label(dga.phenotype_node_id), simple_label(p1.entity_node_id),simple_label(p1.quality_node_id) FROM distinct_gene_annotation AS dga " +
-		"JOIN phenotype AS p1 ON (p1.node_id = dga.phenotype_node_id) WHERE gene_node_id = 1230365";
+		"JOIN phenotype AS p1 ON (p1.node_id = dga.phenotype_node_id)";
 	
 	//Note: these queries are currently identical, but they are constructed separately to allow divergence
 	private static final String TAXONPHENOTYPENEIGHBORQUERY = 
@@ -79,7 +79,7 @@ public class GenusVariationList {
 	public static void main(String[] args) {
 		GenusVariationList listQuery = new GenusVariationList();
 		Utils u = new Utils();
-		Connection c = u.openKB();
+		u.openKB();
 		File outFile1 = new File(TAXONREPORTFILENAME);
 		File outFile2 = new File(GENEREPORTFILENAME);
 		File outFile3 = new File(PHENOTYPEMATCHREPORTFILENAME);
@@ -94,7 +94,7 @@ public class GenusVariationList {
 			bw2 = new BufferedWriter(new FileWriter(outFile2));
 			bw3 = new BufferedWriter(new FileWriter(outFile3));
 			bw4 = new BufferedWriter(new FileWriter(outFile4));
-			listQuery.test(new Utils(), c, bw1, bw2, bw3, bw4);
+			listQuery.test(u, bw1, bw2, bw3, bw4);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -104,7 +104,7 @@ public class GenusVariationList {
 		}
 		finally{
 			try {
-				c.close();
+				u.closeKB();
 				bw1.close();
 				bw2.close();
 				bw3.close();
@@ -117,31 +117,29 @@ public class GenusVariationList {
 	}
 
 
-	private void test(Utils u,Connection c, BufferedWriter bw1, BufferedWriter bw2, BufferedWriter bw3, BufferedWriter bw4) throws SQLException{
-		if (c == null)
-			return;
-		uidCacheEntities(c,u);    // this will retrieve entities that appear in EQ's
+	private void test(Utils u,BufferedWriter bw1, BufferedWriter bw2, BufferedWriter bw3, BufferedWriter bw4) throws SQLException{
+		uidCacheEntities(u);    // this will retrieve entities that appear in EQ's
 
-		qualityNodeID = getQualityNodeID(c,u);   //set to the root of PATO
+		qualityNodeID = getQualityNodeID(u);   //set to the root of PATO
 
-		attributeMap = setupAttributes(c,u);
+		attributeMap = u.setupAttributes();
 		
 		// process taxa annotations
-		processTaxonVariation(c, u, bw1);
+		processTaxonVariation(u, bw1);
 		taxonVariation.variationReport(u,bw1);	
 
-		processGeneExpression(c, u, bw2);
+		processGeneExpression(u, bw2);
 		geneVariation.variationReport(u, bw2);
 
 
 		
 		/* These need to happen after the profiles have been constructed, since we don't want to count taxon annotations that don't reflect change */
-		AttributeCountTree entityCounts = new AttributeCountTree();  
-		entityCounts.build(u,c,taxonProfiles,geneProfiles,TAOROOT);   //will be CAROROOT when things are cleaned up
+		EntityCountTree entityCounts = new EntityCountTree(TAOROOT, u);  
+		entityCounts.build(u,taxonProfiles,geneProfiles);   //will be CAROROOT when things are cleaned up
 
 		
-		AttributeCountTree phenotypeCounts = new AttributeCountTree();
-		phenotypeCounts.build(u, c, taxonProfiles, geneProfiles,PATOROOT);
+		PhenotypeCountTree phenotypeCounts = new PhenotypeCountTree(PATOROOT,u);
+		phenotypeCounts.build(u, taxonProfiles, geneProfiles);
 		
 
 
@@ -150,7 +148,7 @@ public class GenusVariationList {
 		System.out.println("Building entity neighbors of taxon phenotypes");
 		int hitCount = 0;
 		int attOverlaps = 0;
-		final PreparedStatement p3 = c.prepareStatement(TAXONPHENOTYPENEIGHBORQUERY);
+		final PreparedStatement p3 = u.getPreparedStatement(TAXONPHENOTYPENEIGHBORQUERY);
 		Map <Integer,Set<Integer>> phenotypeNeighborCache = new HashMap<Integer,Set<Integer>>();
 		for(Integer currentTaxon : taxonProfiles.keySet()){
 			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
@@ -172,7 +170,7 @@ public class GenusVariationList {
 
 		
 		System.out.println("Building entity neighbors of gene phenotypes");
-		final PreparedStatement p4 = c.prepareStatement(GENEPHENOTYPENEIGHBORQUERY);
+		final PreparedStatement p4 = u.getPreparedStatement(GENEPHENOTYPENEIGHBORQUERY);
 
 		for(Integer currentGene : geneProfiles.keySet()){
 			Profile currentGeneProfile = geneProfiles.get(currentGene);
@@ -285,16 +283,16 @@ public class GenusVariationList {
 					}
 				}
 				if (hasOverLap)
-					u.writeOrDump("Taxon: " + u.getNodeName(currentTaxon) + "\tGene: " + u.getNodeName(currentGene),null);
+					u.writeOrDump("Taxon: " + u.getNodeName(currentTaxon) + "\tGene: " + u.getNodeName(currentGene),bw3);
 				for(Integer tPhenotype : taxonPhenotypes){
 					for(Integer gPhenotype : genePhenotypes){
 						if (phenotypeScores.hasScore(tPhenotype, gPhenotype)){
 							if (phenotypeScores.getScore(tPhenotype, gPhenotype)>-1){
-								u.writeOrDump("tPhenotype: " + tPhenotype + "; gPhenotype: " + gPhenotype, null);
-								u.writeOrDump("\t\t" + u.getNodeName(tPhenotype) + "\t" + u.getNodeName(gPhenotype) + "\t" + phenotypeScores.getScore(tPhenotype, gPhenotype),null);
+								u.writeOrDump("tPhenotype: " + tPhenotype + "; gPhenotype: " + gPhenotype, bw3);
+								u.writeOrDump("\t\t" + u.getNodeName(tPhenotype) + "\t" + u.getNodeName(gPhenotype) + "\t" + phenotypeScores.getScore(tPhenotype, gPhenotype),bw3);
 							}
 							else {
-								u.writeOrDump("\t\t" + u.getNodeName(tPhenotype) + "\t" + u.getNodeName(gPhenotype) + "\t No Match",null);								
+								u.writeOrDump("\t\t" + u.getNodeName(tPhenotype) + "\t" + u.getNodeName(gPhenotype) + "\t No Match",bw3);								
 							}
 						}
 					}
@@ -384,9 +382,9 @@ public class GenusVariationList {
 
 
 
-	private int getQualityNodeID(Connection c, Utils u) throws SQLException{
+	private int getQualityNodeID(Utils u) throws SQLException{
 		int result = -1;
-		Statement s1 = c.createStatement();
+		Statement s1 = u.getStatement();
 		ResultSet attResults = s1.executeQuery("SELECT node.node_id,node.uid,simple_label(node.node_id) FROM node WHERE node.label = 'quality'");
 		if(attResults.next()){
 			result = attResults.getInt(1);
@@ -395,8 +393,8 @@ public class GenusVariationList {
 		return result;
 	}
 
-	private void uidCacheEntities(Connection c, Utils u) throws SQLException{
-		final Statement s1 = c.createStatement();
+	private void uidCacheEntities(Utils u) throws SQLException{
+		final Statement s1 = u.getStatement();
 		ResultSet entResults = s1.executeQuery("SELECT DISTINCT entity_node_id,entity_uid,simple_label(entity_node_id) FROM phenotype");
 		while(entResults.next()){
 			Integer ent = new Integer(entResults.getInt(1));
@@ -406,33 +404,14 @@ public class GenusVariationList {
 	}
 
 	
-	/**
-	 * This creates and fills a Map from qualities to attributes, stored as node_ids
-	 * @param c
-	 * @param u
-	 * @throws SQLException
-	 */
-	private Map<Integer,Integer> setupAttributes(Connection c, Utils u) throws SQLException{
-		Map<Integer,Integer> attMap = new HashMap<Integer,Integer>();
-		Statement s1 = c.createStatement();
-		ResultSet attributeResults = s1.executeQuery("select quality_node_id,attribute_node_id,n.uid,simple_label(attribute_node_id) FROM quality_to_attribute " +
-		"JOIN node AS n ON (n.node_id = attribute_node_id)");
-		while(attributeResults.next()){
-			final int quality_id = attributeResults.getInt(1);
-			final int attribute_id = attributeResults.getInt(2);
-			attMap.put(quality_id,attribute_id);
-			u.putNodeUIDName(attribute_id,attributeResults.getString(3),attributeResults.getString(4));
-		}
-		return attMap;
-	}
 
 	
-	private void processTaxonVariation(Connection c, Utils u, BufferedWriter reportWriter) throws SQLException{
+	private void processTaxonVariation(Utils u, BufferedWriter reportWriter) throws SQLException{
 		
 		int emptyCount = 0;
 		int childCount = 0;
 
-		Statement s1 = c.createStatement();
+		Statement s1 = u.getStatement();
 		ResultSet taxaResults = s1.executeQuery(TAXONQUERY);
 
 		while(taxaResults.next()){
@@ -441,7 +420,7 @@ public class GenusVariationList {
 			String taxonlabel = taxaResults.getString(3);
 			u.putNodeUIDName(taxonID, taxonUID,taxonlabel);
 			Map<Integer,Profile> childProfiles = new HashMap<Integer,Profile>();
-			final PreparedStatement p1 = c.prepareStatement("SELECT child.node_id,phenotype.node_id, phenotype.entity_node_id, phenotype.entity_uid, phenotype.quality_node_id,phenotype.quality_uid,phenotype.uid,simple_label(phenotype.node_id),simple_label(phenotype.entity_node_id),simple_label(phenotype.quality_node_id) FROM link " +
+			final PreparedStatement p1 = u.getPreparedStatement("SELECT child.node_id,phenotype.node_id, phenotype.entity_node_id, phenotype.entity_uid, phenotype.quality_node_id,phenotype.quality_uid,phenotype.uid,simple_label(phenotype.node_id),simple_label(phenotype.entity_node_id),simple_label(phenotype.quality_node_id) FROM link " +
 					"JOIN taxon AS child ON (child.node_id = link.node_id AND child.parent_node_id = ? AND link.predicate_id = (select node_id FROM node WHERE uid = 'PHENOSCAPE:exhibits'))" +
 			"JOIN phenotype ON (link.object_id = phenotype.node_id) WHERE is_inferred = false");
 			p1.setInt(1, taxonID);
@@ -542,12 +521,12 @@ public class GenusVariationList {
 	/**
 	 * Name is a little dicy, but better than GeneVariation
 	 */
-	private void processGeneExpression(Connection c, Utils u, BufferedWriter reportWriter) throws SQLException{
+	private void processGeneExpression(Utils u, BufferedWriter reportWriter) throws SQLException{
 		int annotationCount = 0;
 		int usableAnnotationCount = 0;
 		Set<Integer>uniqueGenes = new HashSet<Integer>();
 
-		final Statement s2 = c.createStatement();
+		final Statement s2 = u.getStatement();
 		ResultSet annotationResults = s2.executeQuery(GENEANNOTATIONQUERY);
 
 		while(annotationResults.next()){
