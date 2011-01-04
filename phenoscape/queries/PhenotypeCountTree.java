@@ -116,6 +116,7 @@ public class PhenotypeCountTree extends CountTree {
 			countChildren(getRootNodeID(),ontologyTable,combinedCountsMap,combinedChildCountsMap,u,dumpWriter);
 			combinedSum = combinedChildCountsMap.get(getRootNodeID());
 			grandSum = combinedSum;
+			//writeTree(getRootNodeID(),ontologyTable,combinedCountsMap, combinedChildCountsMap,u,dumpWriter,0);
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -130,10 +131,24 @@ public class PhenotypeCountTree extends CountTree {
 			}
 		}
 		System.out.println("Grandsum = " + grandSum);
-
-
 	}
 
+	private void writeTree(Integer node, Map<Integer,List<Integer>> ontologyTable, Map<Integer,Integer> phenotypeCounts, Map<Integer,Integer>childCounts, Utils u, BufferedWriter dumpWriter, int indent) throws IOException{
+		char[] indentBuf = new char[indent];
+		for(int i=0;i<indent;i++){
+			indentBuf[i] = ' ';
+		}
+		dumpWriter.write(indentBuf);
+		dumpWriter.write(u.getNodeName(node) + " " + phenotypeCounts.get(node) + " " + childCounts.get(node) + "\n");
+		if (nodeIsInternal(node,ontologyTable,u)){
+			for(Integer daughter : ontologyTable.get(node)){
+				writeTree(daughter,ontologyTable,phenotypeCounts, childCounts,u, dumpWriter,indent+1);
+			}
+		}
+	}
+	
+	
+	
 	protected int countChildren(Integer node, Map<Integer, List<Integer>> ontologyTable, Map<Integer, Integer> phenotypeCounts,
 			Map<Integer, Integer> childCounts,Utils u, BufferedWriter dumpWriter) {
 		if (nodeIsInternal(node,ontologyTable,u)){

@@ -130,8 +130,6 @@ public class GenusVariationList {
 
 		processGeneExpression(u, bw2);
 		geneVariation.variationReport(u, bw2);
-
-
 		
 		/* These need to happen after the profiles have been constructed, since we don't want to count taxon annotations that don't reflect change */
 		EntityCountTree entityCounts = new EntityCountTree(TAOROOT, u);  
@@ -141,131 +139,22 @@ public class GenusVariationList {
 		PhenotypeCountTree phenotypeCounts = new PhenotypeCountTree(PATOROOT,u);
 		phenotypeCounts.build(u, taxonProfiles, geneProfiles);
 		
-
-
 		//counts.writeTrees(u,UIDCache);
-
-		System.out.println("Building entity neighbors of taxon phenotypes");
-		int hitCount = 0;
-		int attOverlaps = 0;
-		final PreparedStatement p3 = u.getPreparedStatement(TAXONPHENOTYPENEIGHBORQUERY);
 		Map <Integer,Set<Integer>> phenotypeNeighborCache = new HashMap<Integer,Set<Integer>>();
-		for(Integer currentTaxon : taxonProfiles.keySet()){
-			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
-			Set<Integer> taxonPhenotypes = currentTaxonProfile.getAllPhenotypes();
-			for (Integer currentPhenotype : taxonPhenotypes){
-				if (!phenotypeNeighborCache.containsKey(currentPhenotype)){
-					Set<Integer> neighborSet = new HashSet<Integer>();
-					phenotypeNeighborCache.put(currentPhenotype, neighborSet);
-					p3.setInt(1, currentPhenotype);
-					ResultSet entityNeighbors = p3.executeQuery();
-					while(entityNeighbors.next()){
-						int target_id = entityNeighbors.getInt(1);
-						neighborSet.add(target_id);
-					}
-				}
-			}
-		}
-		
+		System.out.println("Building entity neighbors of taxon phenotypes");
+		buildTaxonEntityNeighbors(phenotypeNeighborCache,u);
 
 		
 		System.out.println("Building entity neighbors of gene phenotypes");
-		final PreparedStatement p4 = u.getPreparedStatement(GENEPHENOTYPENEIGHBORQUERY);
-
-		for(Integer currentGene : geneProfiles.keySet()){
-			Profile currentGeneProfile = geneProfiles.get(currentGene);
-			Set<Integer> genePhenotypes = currentGeneProfile.getAllPhenotypes();
-			for (Integer currentPhenotype : genePhenotypes){
-				if (!phenotypeNeighborCache.containsKey(currentPhenotype)){
-					Set<Integer> neighborSet = new HashSet<Integer>();
-					phenotypeNeighborCache.put(currentPhenotype, neighborSet);
-					p4.setInt(1, currentPhenotype);
-					ResultSet entityNeighbors = p4.executeQuery();
-					while(entityNeighbors.next()){
-						int target_id = entityNeighbors.getInt(1);
-						neighborSet.add(target_id);
-					}
-				}
-			}
-		}
+		buildGeneEntityNeighbors(phenotypeNeighborCache,u);
 
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
-		for(Integer currentTaxon : taxonProfiles.keySet()){
-			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
-			for (Integer curAtt : attributeMap.keySet()){
-				for(Integer currentGene : geneProfiles.keySet()){
-					Profile currentGeneProfile = geneProfiles.get(currentGene);
-					if (currentTaxonProfile.getUsedAttributes().contains(curAtt) && 
-							currentGeneProfile.getUsedAttributes().contains(curAtt)){
-						attOverlaps++;
-						for(Integer currentTaxonEntity : currentTaxonProfile.getUsedEntities()){
-							if (currentGeneProfile.getUsedEntities().contains(currentTaxonEntity)){
-								Set<Integer> taxonPhenotypes = currentTaxonProfile.getPhenotypeSet(curAtt, currentTaxonEntity);
-								Set<Integer> genePhenotypes = currentGeneProfile.getPhenotypeSet(curAtt, currentTaxonEntity);
-								if (taxonPhenotypes != null && genePhenotypes != null){   //TODO make this unnecessary
-									Set<Integer>matches = new HashSet<Integer>();
-									for(Integer tPhenotype : taxonPhenotypes){
-										Set<Integer> tpNeighbors = phenotypeNeighborCache.get(tPhenotype);
-										for(Integer gPhenotype : genePhenotypes){
-											if (!phenotypeScores.hasScore(tPhenotype, gPhenotype)){
-												if (tPhenotype.equals(gPhenotype)){  													//check for tPhenotype = gPhenotype? 
-													Set<Integer>gpNeighbors = phenotypeNeighborCache.get(gPhenotype);
-													double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
-													for(Integer ent : gpNeighbors){  //simple (but slow) way to get the entity
-														double matchScore = entityCounts.combinedFraction(curAtt, ent);
-														if (matchScore<bestMatch && matchScore > 0.0){
-															bestMatch = matchScore;
-														}
-													}	
-													phenotypeScores.addScore(tPhenotype, gPhenotype, (-1*Math.log(bestMatch)));
-													hitCount++;
-													//System.out.println("Added phenotype match; total = " + hitCount);
-												}
-												else{
-													Set<Integer>gpNeighbors = phenotypeNeighborCache.get(gPhenotype);
-													for(Integer tNeighbor : tpNeighbors){
-														for (Integer gNeighbor : gpNeighbors){
-															if (tNeighbor.equals(gNeighbor))
-																matches.add(tNeighbor);
-														}
-													}
-													double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
-													Integer bestEntity = null;
-													for(Integer ent : matches){
-														double matchScore = entityCounts.combinedFraction(curAtt, ent);
-														if (matchScore<bestMatch && matchScore > 0.0){
-															bestMatch = matchScore;
-															bestEntity = ent;
-														}
-													}
-													if (bestEntity != null){  //either no matches, or none of them have a score (e.g. orphaned TAO terms)
-														phenotypeScores.addScore(tPhenotype, gPhenotype, (-1*Math.log(bestMatch)));
-														hitCount++;
-														//System.out.println("Added phenotype match; total = " + hitCount);
-													}
-													else{
-														System.out.println(" -- match fail -- " + tPhenotype + "; " + gPhenotype);
-														//listIntegerMembers(tpNeighbors);
-														//listIntegerMembers(gpNeighbors);
-														for(Integer ent : matches){
-															double matchScore = entityCounts.combinedFraction(curAtt, ent);
-															System.out.println("Entity: " + ent + "; score: " + matchScore);
-														}
-														phenotypeScores.addScore(tPhenotype, gPhenotype, -1.0);
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		System.out.println("Finished building phenotype match cache");
-		System.out.println("Writing Phenotype match summary");
+		
+		System.out.println("Done building entity neighbors; building phenotype match cache");
+		int attOverlaps = buildPhenotypeMatchCache(phenotypeNeighborCache, phenotypeScores, entityCounts);
+
+		System.out.println("Finished building phenotype match cache; Writing Phenotype match summary");
+
 		for(Integer currentTaxon : taxonProfiles.keySet()){
 			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
 			for(Integer currentGene : geneProfiles.keySet()){
@@ -375,6 +264,15 @@ public class GenusVariationList {
 				
 			}
 		}
+		
+		u.writeOrDump("Taxon \t Gene \t maxIC \t iccs \t simIC \t simJ",bw4);
+		for(Integer t : taxonProfiles.keySet()){
+			for(Integer g : geneProfiles.keySet()){
+				u.writeOrDump(u.getNodeName(t) + "\t" + u.getNodeName(g) + "\t" + maxICScores.getScore(t, g) + "\t" + iccsScores.getScore(t,g) + "\t" + simICScores.getScore(t,g) + "\t" + simJScores.getScore(t, g),bw4);
+				u.writeOrDump("\n", bw4);
+				
+			}
+		}
 		u.writeOrDump("gene and taxon profiles overlapping on an attribute:  " + attOverlaps,bw1);
 
 	}
@@ -405,12 +303,15 @@ public class GenusVariationList {
 
 	
 
-	
-	private void processTaxonVariation(Utils u, BufferedWriter reportWriter) throws SQLException{
-		
+	/**
+	 * 
+	 * @param u
+	 * @param reportWriter
+	 * @throws SQLException
+	 */
+	private void processTaxonVariation(Utils u, BufferedWriter reportWriter) throws SQLException{		
 		int emptyCount = 0;
 		int childCount = 0;
-
 		Statement s1 = u.getStatement();
 		ResultSet taxaResults = s1.executeQuery(TAXONQUERY);
 
@@ -586,6 +487,127 @@ public class GenusVariationList {
 		}
 	}
 	
+	private void buildTaxonEntityNeighbors(Map <Integer,Set<Integer>> phenotypeNeighborCache, Utils u) throws SQLException{
+		final PreparedStatement p3 = u.getPreparedStatement(TAXONPHENOTYPENEIGHBORQUERY);
+		for(Integer currentTaxon : taxonProfiles.keySet()){
+			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
+			Set<Integer> taxonPhenotypes = currentTaxonProfile.getAllPhenotypes();
+			for (Integer currentPhenotype : taxonPhenotypes){
+				if (!phenotypeNeighborCache.containsKey(currentPhenotype)){
+					Set<Integer> neighborSet = new HashSet<Integer>();
+					phenotypeNeighborCache.put(currentPhenotype, neighborSet);
+					p3.setInt(1, currentPhenotype);
+					ResultSet entityNeighbors = p3.executeQuery();
+					while(entityNeighbors.next()){
+						int target_id = entityNeighbors.getInt(1);
+						neighborSet.add(target_id);
+					}
+				}
+			}
+		}
 
+	}
 
+	private void buildGeneEntityNeighbors(Map <Integer,Set<Integer>> phenotypeNeighborCache, Utils u) throws SQLException{
+		final PreparedStatement p4 = u.getPreparedStatement(GENEPHENOTYPENEIGHBORQUERY);
+
+		for(Integer currentGene : geneProfiles.keySet()){
+			Profile currentGeneProfile = geneProfiles.get(currentGene);
+			Set<Integer> genePhenotypes = currentGeneProfile.getAllPhenotypes();
+			for (Integer currentPhenotype : genePhenotypes){
+				if (!phenotypeNeighborCache.containsKey(currentPhenotype)){
+					Set<Integer> neighborSet = new HashSet<Integer>();
+					phenotypeNeighborCache.put(currentPhenotype, neighborSet);
+					p4.setInt(1, currentPhenotype);
+					ResultSet entityNeighbors = p4.executeQuery();
+					while(entityNeighbors.next()){
+						int target_id = entityNeighbors.getInt(1);
+						neighborSet.add(target_id);
+					}
+				}
+			}
+		}
+
+	}
+	
+	private int buildPhenotypeMatchCache(Map <Integer,Set<Integer>> phenotypeNeighborCache, PhenotypeScoreTable phenotypeScores, EntityCountTree entityCounts){
+		int hitCount = 0;
+		int attOverlaps = 0;
+		for(Integer currentTaxon : taxonProfiles.keySet()){
+			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
+			for (Integer curAtt : attributeMap.keySet()){
+				for(Integer currentGene : geneProfiles.keySet()){
+					Profile currentGeneProfile = geneProfiles.get(currentGene);
+					if (currentTaxonProfile.getUsedAttributes().contains(curAtt) && 
+							currentGeneProfile.getUsedAttributes().contains(curAtt)){
+						attOverlaps++;
+						for(Integer currentTaxonEntity : currentTaxonProfile.getUsedEntities()){
+							if (currentGeneProfile.getUsedEntities().contains(currentTaxonEntity)){
+								Set<Integer> taxonPhenotypes = currentTaxonProfile.getPhenotypeSet(curAtt, currentTaxonEntity);
+								Set<Integer> genePhenotypes = currentGeneProfile.getPhenotypeSet(curAtt, currentTaxonEntity);
+								if (taxonPhenotypes != null && genePhenotypes != null){   //TODO make this unnecessary
+									Set<Integer>matches = new HashSet<Integer>();
+									for(Integer tPhenotype : taxonPhenotypes){
+										Set<Integer> tpNeighbors = phenotypeNeighborCache.get(tPhenotype);
+										for(Integer gPhenotype : genePhenotypes){
+											if (!phenotypeScores.hasScore(tPhenotype, gPhenotype)){
+												if (tPhenotype.equals(gPhenotype)){  													//check for tPhenotype = gPhenotype? 
+													Set<Integer>gpNeighbors = phenotypeNeighborCache.get(gPhenotype);
+													double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
+													for(Integer ent : gpNeighbors){  //simple (but slow) way to get the entity
+														double matchScore = entityCounts.combinedFraction(curAtt, ent);
+														if (matchScore<bestMatch && matchScore > 0.0){
+															bestMatch = matchScore;
+														}
+													}	
+													phenotypeScores.addScore(tPhenotype, gPhenotype, (-1*Math.log(bestMatch)));
+													hitCount++;
+													//System.out.println("Added phenotype match; total = " + hitCount);
+												}
+												else{
+													Set<Integer>gpNeighbors = phenotypeNeighborCache.get(gPhenotype);
+													for(Integer tNeighbor : tpNeighbors){
+														for (Integer gNeighbor : gpNeighbors){
+															if (tNeighbor.equals(gNeighbor))
+																matches.add(tNeighbor);
+														}
+													}
+													double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
+													Integer bestEntity = null;
+													for(Integer ent : matches){
+														double matchScore = entityCounts.combinedFraction(curAtt, ent);
+														if (matchScore<bestMatch && matchScore > 0.0){
+															bestMatch = matchScore;
+															bestEntity = ent;
+														}
+													}
+													if (bestEntity != null){  //either no matches, or none of them have a score (e.g. orphaned TAO terms)
+														phenotypeScores.addScore(tPhenotype, gPhenotype, (-1*Math.log(bestMatch)));
+														hitCount++;
+														//System.out.println("Added phenotype match; total = " + hitCount);
+													}
+													else{
+														System.out.println(" -- match fail -- " + tPhenotype + "; " + gPhenotype);
+														//listIntegerMembers(tpNeighbors);
+														//listIntegerMembers(gpNeighbors);
+														for(Integer ent : matches){
+															double matchScore = entityCounts.combinedFraction(curAtt, ent);
+															System.out.println("Entity: " + ent + "; score: " + matchScore);
+														}
+														phenotypeScores.addScore(tPhenotype, gPhenotype, -1.0);
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return attOverlaps;
+	}
+	
 }
