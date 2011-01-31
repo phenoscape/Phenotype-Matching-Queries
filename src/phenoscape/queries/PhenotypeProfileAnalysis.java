@@ -69,14 +69,26 @@ public class PhenotypeProfileAnalysis {
 
 	Map<Integer,Integer>childDist = new HashMap<Integer,Integer>();
 
+	/**
+	 * These two are (at present) strictly for generating the intermediate reports
+	 */
 	VariationTable taxonVariation = new VariationTable();    
 	VariationTable geneVariation = new VariationTable();
 
+	/**
+	 * This maps qualities to attributes
+	 */
 	Map<Integer,Integer> attributeMap;
 
+	/**
+	 * These hold usage counts for each quality that fails to map to an attribute.  These counts appear the appropriate reports.
+	 */
 	Map<Integer,Integer> badTaxonQualities = new HashMap<Integer,Integer>();
 	Map<Integer,Integer> badGeneQualities = new HashMap<Integer,Integer>();
 	
+	/**
+	 * This holds the node id for the term 'quality.'
+	 */
 	int qualityNodeID;
 
 
@@ -155,8 +167,8 @@ public class PhenotypeProfileAnalysis {
 		bw2.close();
 		
 		/* These need to happen after the profiles have been constructed, since we don't want to count taxon annotations that don't reflect change */
-		EntityCountTree entityCounts = new EntityCountTree(TAOROOT, u);  
-		entityCounts.build(u,taxonProfiles,geneProfiles);   //will be CAROROOT when things are cleaned up
+		EntityCountTree entityCounts = new EntityCountTree(TAOROOT, u);  //will be CAROROOT when things are cleaned up
+		entityCounts.build(u,taxonProfiles,geneProfiles);   
 		
 		PhenotypeCountTree phenotypeCounts = new PhenotypeCountTree(PATOROOT,u);
 		phenotypeCounts.build(u, taxonProfiles, geneProfiles);
