@@ -79,10 +79,10 @@ public class EntityCountTree extends CountTree {
 					}
 					else
 						getGrandTotal().put(ent, 1);
+
 				}
 			}
 		}
-
 		for (Integer geneKey : geneProfiles.keySet()){
 			Profile geneProfile = geneProfiles.get(geneKey);
 			Set<Integer>attributes = geneProfile.getUsedAttributes();
@@ -181,9 +181,6 @@ public class EntityCountTree extends CountTree {
 			return count;
 		}
 		else {
-			//			if (att == null){
-			//				System.out.println("Node is: " + u.doSubstitutions(u.getNodeUID(node.intValue())));
-			//			}
 			if (entityCounts == null){
 				System.out.println("Null count table?, node = " + node);
 			}

@@ -20,6 +20,10 @@ public class PhenotypeCountTree extends CountTree {
 	Integer geneSum;
 	Integer combinedSum;
 
+	final Map<Integer, Set<Integer>> taxonSetsMap = new HashMap<Integer, Set<Integer>>();
+	final Map<Integer, Set<Integer>> geneSetsMap = new HashMap<Integer, Set<Integer>>();
+	final Map<Integer, Set<Integer>> combinedSetsMap = new HashMap<Integer, Set<Integer>>();
+
 	final Map<Integer, Integer> taxonCountsMap = new HashMap<Integer, Integer>();
 	final Map<Integer, Integer> geneCountsMap = new HashMap<Integer, Integer>();
 	final Map<Integer, Integer> combinedCountsMap = new HashMap<Integer, Integer>();
@@ -28,12 +32,20 @@ public class PhenotypeCountTree extends CountTree {
 	final Map<Integer, Integer> geneChildCountsMap = new HashMap<Integer, Integer>();
 	final Map<Integer, Integer> combinedChildCountsMap = new HashMap<Integer, Integer>();
 
-
+	final Map<Integer, Integer> phenotypeOccurances = new HashMap<Integer, Integer>();
 
 
 	final Map<Integer, Integer> grandTotal = new HashMap<Integer, Integer>();
 	final Map<Integer, Integer> grandTotalChildren = new HashMap<Integer,Integer>();
 
+	final Map<Integer,Map<Integer,Set<Integer>>> phenotypeCounts = new HashMap<Integer,Map<Integer,Set<Integer>>>();
+	
+	private static final String TAXONPHENOQUERY = "SELECT phenotype.node_id FROM link " +
+	"JOIN taxon AS t ON (t.node_id = link.node_id AND link.predicate_id = (select node_id FROM node WHERE uid = 'PHENOSCAPE:exhibits'))" +
+	"JOIN phenotype ON (link.object_id = phenotype.node_id) WHERE is_inferred = false";
+	
+	private static final String GENEANNOTATIONQUERY = 		
+		"SELECT dga.phenotype_node_id FROM distinct_gene_annotation AS dga ";
 
 	public PhenotypeCountTree(String rootUID, Utils u) {
 		super(rootUID, u);
@@ -46,6 +58,9 @@ public class PhenotypeCountTree extends CountTree {
 
 		for(Integer taxon : taxonProfiles.keySet()){
 			Profile taxonProfile = taxonProfiles.get(taxon);
+			Set<Integer>attributes = taxonProfile.getUsedAttributes();
+			Set<Integer>entities = taxonProfile.getUsedEntities();
+			
 			Set<Integer>phenotypes = taxonProfile.getAllPhenotypes();
 			for(Integer phenotype : phenotypes){
 				int taxonCount;

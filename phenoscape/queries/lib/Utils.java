@@ -74,6 +74,9 @@ public class Utils {
 	final private Map<Integer,Set<Integer>> parents = new HashMap<Integer,Set<Integer>>(30000);
 	final private Map<Integer,Set<Integer>> ancestors = new HashMap<Integer,Set<Integer>>(30000);
 	
+	final private Map<Integer,Integer> linkPhenotypeMap = new HashMap<Integer,Integer>();   //link_node_id -> phenotype_node_id
+
+	
 	private boolean parentsBuilt = false;
 	
 	private Connection connection;
@@ -111,6 +114,20 @@ public class Utils {
 	public boolean hasNodeIDToName(int nodeId){
 		return nodeNames.containsKey(nodeId);
 	}
+	
+	public void addLinkPhenotypePair(int linkId, int phenotypeId) {
+		linkPhenotypeMap.put(linkId, phenotypeId);		
+	}
+	
+	public void hasLinkToPhenotype(int linkId){
+		linkPhenotypeMap.containsKey(linkId);
+	}
+	
+	public Integer getPhenotypeFromLink(int linkId){
+		return linkPhenotypeMap.get(linkId);
+	}
+	
+
 			
 	
 	public void addParent(Integer nodeID, Integer parentID){
@@ -136,6 +153,9 @@ public class Utils {
 	private final static String ATTRIBUTEQUERY = "SELECT quality_node_id,attribute_node_id,n.uid,simple_label(attribute_node_id) FROM quality_to_attribute " +
 	"JOIN node AS n ON (n.node_id = attribute_node_id)";
 	
+	private final static String COMPOSITIONQUERY = "select node.node_id FROM NODE WHERE node.label = 'composition'";
+	private final static String STRUCTUREQUERY = "select node.node_id FROM node where node.label = 'structure'";
+	
 	/**
 	 * This creates and fills a Map from qualities to attributes, stored as node_ids
 	 * @param c
@@ -145,14 +165,36 @@ public class Utils {
 	public Map<Integer,Integer> setupAttributes() throws SQLException{
 		Map<Integer,Integer> attMap = new HashMap<Integer,Integer>();
 		Statement s1 = connection.createStatement();
+		
+		int compositionNodeID = 0;
+		int structureNodeID = 0;
+		ResultSet compositionResults = s1.executeQuery(COMPOSITIONQUERY);
+		if (compositionResults.next()){
+			compositionNodeID = compositionResults.getInt(1);
+		}
+		ResultSet structureResults = s1.executeQuery(STRUCTUREQUERY);
+		if (structureResults.next()){
+			structureNodeID = structureResults.getInt(1);
+		}
+		
 		ResultSet attributeResults = s1.executeQuery(ATTRIBUTEQUERY);
 		while(attributeResults.next()){
 			final int quality_id = attributeResults.getInt(1);
 			final int attribute_id = attributeResults.getInt(2);
-			attMap.put(quality_id,attribute_id);
+			if (attribute_id == structureNodeID && attMap.containsKey(quality_id) && attMap.get(quality_id).intValue()==compositionNodeID){
+				// do nothing
+			}
+			else {
+				attMap.put(quality_id,attribute_id);				
+			}
 			if (!hasNodeUID(attribute_id))
 				putNodeUIDName(attribute_id,attributeResults.getString(3),attributeResults.getString(4));
-		}
+		}		
+		
+		System.out.println("Node 2366 now maps to " + attMap.get(2366).toString());
+		
+
+		
 		return attMap;
 	}
 
@@ -315,6 +357,31 @@ public class Utils {
 			}
 		}
 	}
+	
+	public void listIntegerMembers(Set<Integer> s, BufferedWriter b){
+		for(Integer v : s){
+			if (b == null){
+				System.out.print(v.intValue() + " ");
+			}
+			else{
+				try {
+					b.write(v.intValue() + " ");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+		if (b == null)
+			System.out.println();
+		else
+			try {
+				b.newLine();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	}
 
 	public Statement getStatement() throws SQLException{
 		return connection.createStatement();
@@ -323,7 +390,7 @@ public class Utils {
 	public PreparedStatement getPreparedStatement(String sqlStatement) throws SQLException{
 		return connection.prepareStatement(sqlStatement);
 	}
-	
+
 
 	
 }
