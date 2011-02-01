@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import phenoscape.queries.lib.CountTable;
 import phenoscape.queries.lib.PhenotypeScoreTable;
 import phenoscape.queries.lib.Profile;
 import phenoscape.queries.lib.ProfileScoreSet;
@@ -60,7 +61,20 @@ public class PhenotypeProfileAnalysis {
 		"JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? " +
 		"GROUP BY entity.uid, target.uid, target.node_id";
 	
-
+	private static final String TAXONPHENOTYPECOUNTQUERY = 
+		"SELECT count(*) FROM asserted_taxon_annotation  WHERE asserted_taxon_annotation.phenotype_node_id IN " +
+	     "(SELECT phenotype.node_id from phenotype " + 
+	      "JOIN link phenotype_inheres_in_part_of ON (phenotype_inheres_in_part_of.node_id = phenotype.node_id AND phenotype_inheres_in_part_of.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:inheres_in_part_of')) " +
+	      "JOIN link quality_is_a ON (quality_is_a.node_id = phenotype.node_id AND quality_is_a.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:is_a')) " + 
+	      "WHERE (phenotype_inheres_in_part_of.object_id = ?  AND quality_is_a.object_id = ? ))";
+	
+	private static final String GENEPHENOTYPECOUNTQUERY =
+	"SELECT count(*) FROM distinct_gene_annotation  WHERE distinct_gene_annotation.phenotype_node_id IN " +
+      "(SELECT phenotype.node_id from phenotype " +
+      "JOIN link phenotype_inheres_in_part_of ON (phenotype_inheres_in_part_of.node_id = phenotype.node_id AND phenotype_inheres_in_part_of.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:inheres_in_part_of')) " +
+      "JOIN link quality_is_a ON (quality_is_a.node_id = phenotype.node_id AND quality_is_a.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:is_a')) " +
+      "WHERE (phenotype_inheres_in_part_of.object_id = ?  AND quality_is_a.object_id = ? ))";
+	
 	Map<Integer,Profile> taxonProfiles = new HashMap<Integer,Profile>();  //taxon_node_id -> Phenotype profile for taxon
 	Map<Integer,Profile> geneProfiles = new HashMap<Integer,Profile>();   //gene_node_id -> Phenotype profile for gene
 
@@ -156,7 +170,7 @@ public class PhenotypeProfileAnalysis {
 		// process taxa annotations
 		System.out.println("Building Taxonomy Tree");
 		TaxonomyTree t = new TaxonomyTree(TTOROOT,u);
-		Map<Integer,List<Integer>> taxonomyTable = new HashMap<Integer,List<Integer>>(40000);
+		Map<Integer,List<Integer>> taxonomyTable = new HashMap<Integer,List<Integer>>(40000);  //This holds the taxonomy <parent, children> using node_ids
 		t.traverseOntologyTree(taxonomyTable,u);
 		processTaxonVariation(taxonomyTable, u, bw1);
 		t.report(u, bw1);
@@ -167,8 +181,9 @@ public class PhenotypeProfileAnalysis {
 		bw2.close();
 		
 		/* These need to happen after the profiles have been constructed, since we don't want to count taxon annotations that don't reflect change */
-		EntityCountTree entityCounts = new EntityCountTree(TAOROOT, u);  //will be CAROROOT when things are cleaned up
-		entityCounts.build(u,taxonProfiles,geneProfiles);   
+		CountTable phenotypeCountsForTaxa = new CountTable();  
+		CountTable phenotypeCountsForGenes = new CountTable();
+		CountTable phenotypeCountsCombined = new CountTable();
 		
 		PhenotypeCountTree phenotypeCounts = new PhenotypeCountTree(PATOROOT,u);
 		phenotypeCounts.build(u, taxonProfiles, geneProfiles);
@@ -181,11 +196,15 @@ public class PhenotypeProfileAnalysis {
 		System.out.println("Building entity neighbors of gene phenotypes");
 		buildGeneEntityNeighbors(phenotypeNeighborCache,u);
 
+		fillCountTable(taxonProfiles, phenotypeCountsForTaxa,phenotypeNeighborCache, u, TAXONPHENOTYPECOUNTQUERY);
+		fillCountTable(geneProfiles, phenotypeCountsForGenes,phenotypeNeighborCache, u, GENEPHENOTYPECOUNTQUERY);
+		sumCountTables(phenotypeCountsCombined,phenotypeCountsForTaxa,phenotypeCountsForGenes);
+
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		
 		
 		System.out.println("Done building entity neighbors; building phenotype match cache");
-		int attOverlaps = buildPhenotypeMatchCache(phenotypeNeighborCache, phenotypeScores, entityCounts, u);
+		int attOverlaps = buildPhenotypeMatchCache(phenotypeNeighborCache, phenotypeScores, phenotypeCountsCombined, u);
 		u.writeOrDump("gene and taxon profiles overlapping on an attribute:  " + attOverlaps,bw1);
 		bw1.close();
 		System.out.println("Finished building phenotype match cache; Writing Phenotype match summary");
@@ -504,6 +523,18 @@ public class PhenotypeProfileAnalysis {
 		}
 	}
 	
+	
+	
+	
+	
+	/**
+	 * For each phenotype in the taxonProfile, this builds the set of entity neighbors.
+	 * Note - this should really just loop through the entities, and calculate the set once per entity.
+	 * 
+	 * @param phenotypeNeighborCache
+	 * @param u
+	 * @throws SQLException
+	 */
 	private void buildTaxonEntityNeighbors(Map <Integer,Set<Integer>> phenotypeNeighborCache, Utils u) throws SQLException{
 		final PreparedStatement p3 = u.getPreparedStatement(TAXONPHENOTYPENEIGHBORQUERY);
 		for(Integer currentTaxon : taxonProfiles.keySet()){
@@ -525,6 +556,12 @@ public class PhenotypeProfileAnalysis {
 
 	}
 
+	/**
+	 * Similar to buildTaxonEntityNeighbors, perhaps these should be merged
+	 * @param phenotypeNeighborCache
+	 * @param u
+	 * @throws SQLException
+	 */
 	private void buildGeneEntityNeighbors(Map <Integer,Set<Integer>> phenotypeNeighborCache, Utils u) throws SQLException{
 		final PreparedStatement p4 = u.getPreparedStatement(GENEPHENOTYPENEIGHBORQUERY);
 
@@ -547,7 +584,57 @@ public class PhenotypeProfileAnalysis {
 
 	}
 	
-	private int buildPhenotypeMatchCache(Map <Integer,Set<Integer>> phenotypeNeighborCache, PhenotypeScoreTable phenotypeScores, EntityCountTree entityCounts, Utils u){
+	
+	/**
+	 * 
+	 * @param profiles
+	 * @param counts
+	 * @param neighbors
+	 * @throws SQLException 
+	 */
+	private void fillCountTable(Map<Integer,Profile> profiles, CountTable counts,Map <Integer,Set<Integer>> neighbors, Utils u, String query) throws SQLException{
+		final PreparedStatement p = u.getPreparedStatement(query);
+		for(Profile currentProfile : profiles.values()){
+			Set <Integer> usedEntities = currentProfile.getUsedEntities();
+			Set <Integer> usedAttributes = currentProfile.getUsedAttributes();
+			for(Integer profileEntity : usedEntities){
+				for (Integer curAttribute : usedAttributes){
+					Set<Integer> allEntities = neighbors.get(profileEntity);
+					for(Integer curEntity : allEntities){
+						if (!counts.hasCount(curEntity, curAttribute)){
+							p.setInt(1, curEntity);
+							p.setInt(2, curAttribute);
+							ResultSet eaResult = p.executeQuery();
+							if(eaResult.next()){
+								int count = eaResult.getInt(1);
+								counts.addCount(curEntity, curAttribute, count);
+							}
+						}
+					}
+				}
+			}
+		}		
+	}
+	
+	/**
+	 * 
+	 */
+	private void sumCountTables(CountTable sum, CountTable table1, CountTable table2){
+		
+	}
+
+	
+	
+	
+	/**
+	 * This is calculating the wrong set of matching phenotypes - it needs to be scoring matches at the EA level - all the phenotypes here are EQ level !!
+	 * @param phenotypeNeighborCache
+	 * @param phenotypeScores
+	 * @param entityCounts
+	 * @param u
+	 * @return
+	 */
+	private int buildPhenotypeMatchCache(Map <Integer,Set<Integer>> phenotypeNeighborCache, PhenotypeScoreTable phenotypeScores, CountTable eaCounts, Utils u){
 		int hitCount = 0;
 		int attOverlaps = 0;
 		for(Integer currentTaxon : taxonProfiles.keySet()){
@@ -572,13 +659,13 @@ public class PhenotypeProfileAnalysis {
 													Set<Integer>gpNeighbors = phenotypeNeighborCache.get(gPhenotype);
 													double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
 													for(Integer ent : gpNeighbors){  //simple (but slow) way to get the entity
-														double matchScore = entityCounts.combinedFraction(curAtt, ent);
+														double matchScore = eaCounts.getFraction(ent,curAtt);
 														if (matchScore<bestMatch && matchScore > 0.0){
 															bestMatch = matchScore;
 														}
 													}	
-													phenotypeScores.addScore(tPhenotype, gPhenotype, (-1*Math.log(bestMatch)));
-													System.out.println("Adding self score: " + u.getNodeName(tPhenotype) + " = " + (-1*Math.log(bestMatch)));
+													phenotypeScores.addScore(tPhenotype, gPhenotype, CountTable.calcIC(bestMatch));
+													System.out.println("Adding self score: " + u.getNodeName(tPhenotype) + " = " + (CountTable.calcIC(bestMatch)));
 													hitCount++;
 													//System.out.println("Added phenotype match; total = " + hitCount);
 												}
@@ -593,7 +680,7 @@ public class PhenotypeProfileAnalysis {
 													double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
 													Integer bestEntity = null;
 													for(Integer ent : matches){
-														double matchScore = entityCounts.combinedFraction(curAtt, ent);
+														double matchScore = eaCounts.getFraction(curAtt, ent);
 														if (matchScore<bestMatch && matchScore > 0.0){
 															bestMatch = matchScore;
 															bestEntity = ent;
@@ -609,36 +696,10 @@ public class PhenotypeProfileAnalysis {
 														u.listIntegerMembers(tpNeighbors,null);
 														u.listIntegerMembers(gpNeighbors,null);
 														for(Integer ent : matches){
-															double matchScore = entityCounts.combinedFraction(curAtt, ent);
+															double matchScore = eaCounts.getFraction(curAtt, ent);
 															System.out.println("Entity: " + ent + "Attribute: " + curAtt + "; score: " + matchScore);
 														}
 														phenotypeScores.addScore(tPhenotype, gPhenotype, 0.0);
-													}
-													if (!phenotypeScores.hasScore(tPhenotype, tPhenotype)){
-														Set<Integer>tsNeighbors = phenotypeNeighborCache.get(tPhenotype);
-														bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
-														for(Integer ent : tsNeighbors){  //simple (but slow) way to get the entity
-															double matchScore = entityCounts.combinedFraction(curAtt, ent);
-															if (matchScore<bestMatch && matchScore > 0.0){
-																bestMatch = matchScore;
-															}
-														}	
-														System.out.println("Adding self score: " + u.getNodeName(tPhenotype) + " = " + (-1*Math.log(bestMatch)));
-														phenotypeScores.addScore(tPhenotype, tPhenotype, (-1*Math.log(bestMatch)));
-
-													}
-													if (!phenotypeScores.hasScore(gPhenotype, gPhenotype)){
-														Set<Integer>gsNeighbors = phenotypeNeighborCache.get(gPhenotype);
-														bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
-														for(Integer ent : gsNeighbors){  //simple (but slow) way to get the entity
-															double matchScore = entityCounts.combinedFraction(curAtt, ent);
-															if (matchScore<bestMatch && matchScore > 0.0){
-																bestMatch = matchScore;
-															}
-														}	
-														System.out.println("Adding self score: " + u.getNodeName(gPhenotype) + " = " + (-1*Math.log(bestMatch)));
-														phenotypeScores.addScore(gPhenotype, gPhenotype, (-1*Math.log(bestMatch)));
-														
 													}
 												}
 											}
