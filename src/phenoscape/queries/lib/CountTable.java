@@ -1,5 +1,6 @@
 package phenoscape.queries.lib;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -33,6 +34,20 @@ public class CountTable {
 		StringBuilder b = new StringBuilder(2000);
 		//TDB
 		return b.toString();
+	}
+	
+	public Set<Integer> getEntities(){
+		return table.keySet();
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Set<Integer> getAttributesForEntity(Integer entity_id){
+		Map<Integer,Integer> entity_entry = table.get(entity_id);
+		if (entity_entry == null){
+			return (Set<Integer>)Collections.EMPTY_SET;
+		}
+		else
+			return entity_entry.keySet();
 	}
 
 	public boolean hasCount(Integer entity, Integer attribute){

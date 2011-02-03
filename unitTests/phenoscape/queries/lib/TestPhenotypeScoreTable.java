@@ -22,36 +22,37 @@ public class TestPhenotypeScoreTable {
 
 	@Test
 	public void testAddScore() {
-		table1.addScore(1006,6, 4.5);
+		table1.addScore(1006,1008,6, 4.5);
 	}
 
 	@Test
 	public void testIsEmpty() {
 		Assert.assertTrue(table1.isEmpty());
-		table1.addScore(1006,6, 4.5);
+		table1.addScore(1006,1008, 6, 4.5);
 		Assert.assertFalse(table1.isEmpty());
 	}
 
 	@Test
 	public void testSummary() {
-		table1.addScore(1006,6, 4.5);
-		table1.addScore(1006,7, 5.9);
+		table1.addScore(1006, 1008, 6, 4.5);
+		table1.addScore(1006, 1008, 7, 5.9);
 		table1.summary();
 	}
 
 	@Test
 	public void testHasScore() {
-		Assert.assertFalse(table1.hasScore(1006, 6));
-		table1.addScore(1006,6, 4.5);
-		Assert.assertTrue(table1.hasScore(1006, 6));
-		Assert.assertFalse(table1.hasScore(1006, 8));
-		Assert.assertFalse(table1.hasScore(10010, 6));
+		Assert.assertFalse(table1.hasScore(1006, 1008, 6));
+		table1.addScore(1006, 1008, 6, 4.5);
+		Assert.assertTrue(table1.hasScore(1006, 1008, 6));
+		Assert.assertFalse(table1.hasScore(1006, 1008, 8));
+		Assert.assertFalse(table1.hasScore(10010, 1008, 6));
+		Assert.assertFalse(table1.hasScore(1006,10012, 6));
 	}
 
 	@Test
 	public void testGetScore() {
-		table1.addScore(1006,6, 4.5);
-		Assert.assertTrue(table1.getScore(1006, 6)==4.5);
+		table1.addScore(1006, 1008, 6, 4.5);
+		Assert.assertTrue(table1.getScore(1006, 1008, 6)==4.5);
 	}
 
 }
