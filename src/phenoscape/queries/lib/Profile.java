@@ -101,6 +101,15 @@ public class Profile {
 		}
 		return result;
 	}
+
+	public boolean usesAttribute(Integer att){
+		for (Map<Integer,Set<Integer>> entity_value : table.values()){
+			if (entity_value.containsKey(att))
+				return true;
+		}
+		return false;
+	}
+
 	
 	public Set<Integer> getAllPhenotypes(){
 		Set<Integer> result = new HashSet<Integer>();

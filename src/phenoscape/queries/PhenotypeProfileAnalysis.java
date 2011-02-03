@@ -237,12 +237,12 @@ public class PhenotypeProfileAnalysis {
 				result.setICCSScore(iccs);
 
 				//calculate simIC score for this pair of profiles
-				double simICScore = calcSimIC(currentTaxonProfile, currentGeneProfile, phenotypeScores, phenotypeCountsCombined);
-				result.setSimICScore(simICScore);
+				//double simICScore = calcSimIC(currentTaxonProfile, currentGeneProfile, phenotypeScores, phenotypeCountsCombined);
+				result.setSimICScore(-1.0);
 
 				//calculate simJ score for this pair of profiles
-				double simJScore = calcSimJ(currentTaxonProfile, currentGeneProfile, phenotypeScores, phenotypeCountsCombined);
-				result.setSimJScore(simJScore);
+				//double simJScore = calcSimJ(currentTaxonProfile, currentGeneProfile, phenotypeScores, phenotypeCountsCombined);
+				result.setSimJScore(-1.0);
 				
 				if (result.isNonZero())
 					result.writeScores(u, bw4);
@@ -281,14 +281,14 @@ public class PhenotypeProfileAnalysis {
 						}
 					}
 				}
-			maxByTaxon.add(bestIC);
+				maxByTaxon.add(bestIC);
 			}
 		}
 		double sum =0;
 		for(Double s : maxByTaxon){
 			sum += s.doubleValue();
 		}
-	return sum/((double)maxByTaxon.size());
+		return sum/((double)maxByTaxon.size());
 	}
 	
 	private double calcSimIC(Profile taxonProfile, Profile geneProfile, PhenotypeScoreTable phenotypeScores, CountTable phenotypeCounts){
@@ -310,11 +310,9 @@ public class PhenotypeProfileAnalysis {
 			}
 		}
 		if (totalSum == 0){
-			System.err.println("Unexpected value in simIC: matchSum = " + matchSum + "; totalSum = " + totalSum);
-			simICScore = 0;
+			throw new RuntimeException("Unexpected value in simIC: matchSum = " + matchSum + "; totalSum = " + totalSum);
 		}
-		else
-			simICScore = matchSum/totalSum;
+		simICScore = matchSum/totalSum;
 		return simICScore;
 	}
 	
@@ -698,41 +696,44 @@ public class PhenotypeProfileAnalysis {
 	 * @return
 	 */
 	private int buildPhenotypeMatchCache(Map <Integer,Set<Integer>> phenotypeNeighborCache, PhenotypeScoreTable phenotypeScores, CountTable eaCounts, Utils u){
-		int hitCount = 0;
 		int attOverlaps = 0;
 
 		for (Integer curAtt : attributeSet){
 
 			for(Integer currentTaxon : taxonProfiles.keySet()){
-				u.writeOrDump("Processing taxon = " + u.getNodeName(currentTaxon) + " with " + u.getNodeName(curAtt), null);
 				Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
-				for (Integer taxonEntity : currentTaxonProfile.getUsedEntities()){
-					Set<Integer> teNeighbors = phenotypeNeighborCache.get(taxonEntity);
+				if (!currentTaxonProfile.isEmpty()){
+					for (Integer taxonEntity : currentTaxonProfile.getUsedEntities()){
+						Set<Integer> teNeighbors = phenotypeNeighborCache.get(taxonEntity);
 
-					for(Integer currentGene : geneProfiles.keySet()){
-						Profile currentGeneProfile = geneProfiles.get(currentGene);
-						if (currentTaxonProfile.getUsedAttributes().contains(curAtt) &&  
-								currentGeneProfile.getUsedAttributes().contains(curAtt)){
-							attOverlaps++;  //cases where a taxon profile and a gene profile share a particular attribute (not any attribute)
-							for (Integer geneEntity : currentGeneProfile.getUsedEntities()){
-								Set<Integer> geNeighbors = phenotypeNeighborCache.get(geneEntity);
-								Set<Integer>matches = new HashSet<Integer>();
-								for(Integer tNeighbor : teNeighbors){
-									for (Integer gNeighbor : geNeighbors){
-										if (tNeighbor.equals(gNeighbor))
-											matches.add(tNeighbor);
+						for(Integer currentGene : geneProfiles.keySet()){
+							Profile currentGeneProfile = geneProfiles.get(currentGene);
+							if (currentTaxonProfile.usesAttribute(curAtt) &&  
+									currentGeneProfile.usesAttribute(curAtt)){
+								u.writeOrDump("Processing taxon = " + u.getNodeName(currentTaxon) + " with " + u.getNodeName(curAtt), null);
+								attOverlaps++;  //cases where a taxon profile and a gene profile share a particular attribute (not any attribute)
+								for (Integer geneEntity : currentGeneProfile.getUsedEntities()){
+									Set<Integer> geNeighbors = phenotypeNeighborCache.get(geneEntity);
+									Set<Integer>matches = new HashSet<Integer>();
+									for(Integer tNeighbor : teNeighbors){
+										for (Integer gNeighbor : geNeighbors){
+											if (tNeighbor.equals(gNeighbor))
+												matches.add(tNeighbor);
+										}
 									}
-								}
-								double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
-								Integer bestEntity = null;
-								for(Integer ent : matches){
-									double matchScore = eaCounts.getFraction(ent, curAtt);
-									if (matchScore<bestMatch && matchScore > 0.0){
-										bestMatch = matchScore;
-										bestEntity = ent;
+									double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
+									Integer bestEntity = null;
+									for(Integer ent : matches){
+										double matchScore = eaCounts.getFraction(ent, curAtt);
+										if (matchScore<bestMatch){
+											bestMatch = matchScore;
+											bestEntity = ent;
+										}
+										else if (matchScore <= 0)
+											throw new RuntimeException("Bad match score value <= 0");
 									}
+									phenotypeScores.addScore(taxonEntity,geneEntity,curAtt,CountTable.calcIC(bestMatch));
 								}
-								phenotypeScores.addScore(taxonEntity,geneEntity,curAtt,CountTable.calcIC(bestMatch));
 							}
 						}
 					}
