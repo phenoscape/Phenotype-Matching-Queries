@@ -14,6 +14,7 @@ public class TestProfile {
 	
 	int testAttribute1 = 7;
 	int testAttribute2 = 9;
+	int testAttribute3 = 11;
 	
 	int testEntity1 = 4001;
 	int testEntity2 = 4002;
@@ -43,37 +44,37 @@ public class TestProfile {
 
 	@Test
 	public void testAddPhenotype() {
-		testProfile.addPhenotype(testAttribute1, testEntity1, testPhenotype1);
-		testProfile.addPhenotype(testAttribute1, testEntity1, testPhenotype2);
-		Assert.assertTrue(testProfile.hasPhenotypeSet(testAttribute1, testEntity1));
-		Assert.assertFalse(testProfile.hasPhenotypeSet(testAttribute2, testEntity1));
-		Assert.assertFalse(testProfile.hasPhenotypeSet(testAttribute1, testEntity2));
+		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype1);
+		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype2);
+		Assert.assertTrue(testProfile.hasPhenotypeSet(testEntity1, testAttribute1));
+		Assert.assertFalse(testProfile.hasPhenotypeSet(testEntity2, testAttribute1));
+		Assert.assertFalse(testProfile.hasPhenotypeSet(testEntity1, testAttribute2));
 	}
 
 	@Test
 	public void testAddAlltoPhenotypeSet() {
-		testProfile.addAlltoPhenotypeSet(testAttribute2, testEntity2, testSet1);
-		Assert.assertEquals(1,testProfile.getPhenotypeSet(testAttribute2,testEntity2).size());
-		testProfile.addAlltoPhenotypeSet(testAttribute2, testEntity2, testSet2);
-		Assert.assertEquals(2,testProfile.getPhenotypeSet(testAttribute2,testEntity2).size());
-		Assert.assertTrue(testProfile.hasPhenotypeSet(testAttribute2, testEntity2));
+		testProfile.addAlltoPhenotypeSet(testEntity2, testAttribute2, testSet1);
+		Assert.assertEquals(1,testProfile.getPhenotypeSet(testEntity2,testAttribute2).size());
+		testProfile.addAlltoPhenotypeSet(testEntity2, testAttribute2, testSet2);
+		Assert.assertEquals(2,testProfile.getPhenotypeSet(testEntity2,testAttribute2).size());
+		Assert.assertTrue(testProfile.hasPhenotypeSet(testEntity2, testAttribute2));
 	}
 
 	@Test
 	public void testHasPhenotypeSet() {
-		testProfile.addPhenotype(testAttribute1, testEntity1, testPhenotype1);
-		testProfile.addPhenotype(testAttribute1, testEntity1, testPhenotype2);
-		Assert.assertTrue(testProfile.hasPhenotypeSet(testAttribute1, testEntity1));
-		Assert.assertFalse(testProfile.hasPhenotypeSet(testAttribute2, testEntity1));
-		Assert.assertFalse(testProfile.hasPhenotypeSet(testAttribute1, testEntity2));
+		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype1);
+		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype2);
+		Assert.assertTrue(testProfile.hasPhenotypeSet(testEntity1, testAttribute1));
+		Assert.assertFalse(testProfile.hasPhenotypeSet(testEntity2, testAttribute1));
+		Assert.assertFalse(testProfile.hasPhenotypeSet(testEntity1, testAttribute2));
 	}
 
 	@Test
 	public void testGetPhenotypeSet() {
-		testProfile.addPhenotype(testAttribute1, testEntity1, testPhenotype1);
-		testProfile.addPhenotype(testAttribute1, testEntity1, testPhenotype2);
-		Assert.assertTrue(testProfile.hasPhenotypeSet(testAttribute1, testEntity1));
-		Set<Integer> result = testProfile.getPhenotypeSet(testAttribute1, testEntity1);
+		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype1);
+		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype2);
+		Assert.assertTrue(testProfile.hasPhenotypeSet(testEntity1, testAttribute1));
+		Set<Integer> result = testProfile.getPhenotypeSet(testEntity1, testAttribute1);
 		Assert.assertEquals(2, result.size());
 		Assert.assertTrue(result.contains(testPhenotype1));
 		Assert.assertTrue(result.contains(testPhenotype2));
@@ -84,9 +85,9 @@ public class TestProfile {
 
 	@Test
 	public void testGetUsedAttributes() {
-		testProfile.addPhenotype(testAttribute1, testEntity1, testPhenotype1);
-		testProfile.addPhenotype(testAttribute1, testEntity1, testPhenotype2);
-		testProfile.addAlltoPhenotypeSet(testAttribute2, testEntity2, testSet1);
+		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype1);
+		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype2);
+		testProfile.addAlltoPhenotypeSet(testEntity2, testAttribute2, testSet1);
 		Set<Integer> attributeList = testProfile.getUsedAttributes();
 		Assert.assertNotNull(attributeList);
 		Assert.assertEquals(2, attributeList.size());
@@ -98,9 +99,9 @@ public class TestProfile {
 
 	@Test
 	public void testGetUsedEntities() {
-		testProfile.addPhenotype(testAttribute1, testEntity1, testPhenotype1);
-		testProfile.addPhenotype(testAttribute1, testEntity1, testPhenotype2);
-		testProfile.addAlltoPhenotypeSet(testAttribute2, testEntity2, testSet1);
+		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype1);
+		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype2);
+		testProfile.addAlltoPhenotypeSet(testEntity2, testAttribute2, testSet1);
 		Set<Integer> entityList = testProfile.getUsedEntities();
 		Assert.assertNotNull(entityList);
 		Assert.assertEquals(2, entityList.size());
@@ -112,13 +113,23 @@ public class TestProfile {
 	
 	@Test
 	public void testGetAllPhenotypes(){
-		testProfile.addPhenotype(testAttribute1, testEntity1, testPhenotype1);
-		testProfile.addPhenotype(testAttribute1, testEntity1, testPhenotype2);
+		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype1);
+		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype2);
 		testProfile.addAlltoPhenotypeSet(testAttribute2, testEntity2, testSet3);
 		Set<Integer> allPhenotypes = testProfile.getAllPhenotypes();
 		Assert.assertEquals(4,allPhenotypes.size());
 		Assert.assertTrue(allPhenotypes.contains(testPhenotype1));
 		Assert.assertTrue(allPhenotypes.contains(testPhenotype2));
+	}
+	
+	@Test 
+	public void testUsesAttribute(){
+		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype1);
+		testProfile.addPhenotype(testEntity2, testAttribute2, testPhenotype2);
+		Assert.assertTrue(testProfile.usesAttribute(testAttribute1));
+		Assert.assertTrue(testProfile.usesAttribute(testAttribute2));
+		Assert.assertFalse(testProfile.usesAttribute(testAttribute3));
+		
 	}
 
 }

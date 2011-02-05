@@ -199,109 +199,35 @@ public class Utils {
 	}
 
 	
-	final Set<JsonObject> emptySJO = new HashSet<JsonObject>();
-	public Set<JsonObject> getGeneAnnotations(){
-		Set<JsonObject>result = new HashSet<JsonObject>();
-		String genesString = null; 
-		try {
-			//final String formattedQuery = URLEncoder.encode(jasonQuery, "UTF-8");
-			String jasonQuery = "annotation/gene?media=jason";
-			genesString = StringConsts.KBBASEURL + jasonQuery;
-			System.out.println("Request is " + URLDecoder.decode(genesString, "UTF-8"));
-		} catch (UnsupportedEncodingException e1) {
-			e1.printStackTrace();		
-			return emptySJO;
+	
+
+	public int getQualityNodeID() throws SQLException{
+		int result = -1;
+		Statement s1 = getStatement();
+		ResultSet attResults = s1.executeQuery("SELECT node.node_id,node.uid,simple_label(node.node_id) FROM node WHERE node.label = 'quality'");
+		if(attResults.next()){
+			result = attResults.getInt(1);
+			putNodeUIDName(result,attResults.getString(2),attResults.getString(3));
 		}
-		JsonObject root = parseFromURLStr(genesString);
-		if (root != null){
-			System.out.println("Root count is " + root.get("total"));
-			System.out.println("First annotation is " + root.get("annotations").getAsJsonArray().get(0).getAsJsonObject());
-			JsonArray geneArray = root.get("annotations").getAsJsonArray();
-			for(JsonElement annotationElement : geneArray){
-					JsonObject annotationObject = annotationElement.getAsJsonObject();
-					result.add(annotationObject);
-				}
-			return result;
-			}
-		else{ 
-			System.out.println("Query returned null");
-			return emptySJO;
+		else{
+			throw new RuntimeException("No node for 'quality' found in KB");
 		}
-	}
-	
-	
-	public Set<JsonObject> getTaxonAnnotations(int limit, int start){
-		Set<JsonObject>result = new HashSet<JsonObject>();
-		String jasonQuery = "limit=" + Integer.toString(limit) + "&index=" + Integer.toString(start);
-			String taxonString = null;
-			try {
-				String formattedQuery = URLEncoder.encode(jasonQuery, "UTF-8");
-				taxonString = StringConsts.KBBASEURL + "annotation/taxon/distinct?media=jason&" + formattedQuery;
-				System.out.println("Request is " + URLDecoder.decode(taxonString, "UTF-8"));
-			} catch (UnsupportedEncodingException e) {
-				System.err.println("Error encoding query for retrieving taxa");
-				e.printStackTrace();
-				return emptySJO;
-			}
-			JsonObject root = parseFromURLStr(taxonString);
-			if (root != null){
-				JsonArray taxonArray = root.get("annotations").getAsJsonArray();
-				for (JsonElement annotationElement : taxonArray){
-					JsonObject annotationObject = annotationElement.getAsJsonObject();
-					result.add(annotationObject);
-				}
-				return result;
-			}
-			else{ 
-				System.out.println("Query returned null");
-				return emptySJO;
-			}
-	}
-	
-	
-	
-	
-	
-	public int getTaxonAnnotationCount() {
-		int result = 0;
-			final String taxonString = StringConsts.KBBASEURL + "annotation/taxon/distinct?media=jason&limit=1";
-			JsonObject root = parseFromURLStr(taxonString);
-			if (root != null){
-				result = root.get("total").getAsInt();
-				System.out.println("Root count is " + result);
-				return result;
-			}
-			else{
-				System.out.println("Query returned null");
-				return -1;
-			}
+		return result;
 	}
 
-	
-		
-	private JsonObject parseFromURLStr(String urlStr){
-		URL taxonURL;
-		try {
-			taxonURL = new URL(urlStr);
-			Object response = taxonURL.getContent();
-			if (response instanceof InputStream){
-				BufferedReader responseReader = new BufferedReader(new InputStreamReader((InputStream)response));
-				JsonParser parser = new JsonParser();
-				JsonElement jroot = parser.parse(responseReader);
-				return jroot.getAsJsonObject();
-			}
-			else
-				return null;
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
+	public void uidCacheEntities() throws SQLException{
+		final Statement s1 = getStatement();
+		ResultSet entResults = s1.executeQuery("SELECT DISTINCT entity_node_id,entity_uid,simple_label(entity_node_id) FROM phenotype");
+		while(entResults.next()){
+			Integer ent = new Integer(entResults.getInt(1));
+			String uid = entResults.getString(2);
+			putNodeUIDName(ent,uid,entResults.getString(3));
 		}
 	}
+
+
+	
+	
 	
 	/** PSQL support stuff   */
 	

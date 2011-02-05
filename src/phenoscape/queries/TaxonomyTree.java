@@ -6,8 +6,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import phenoscape.queries.lib.Utils;
 
@@ -28,10 +30,12 @@ public class TaxonomyTree {
 	private final Map<String,Integer> rankCounts;
 	private int extinctCounter = 0;
 	private int taxonCounter = -1;
-
+	private final Map<Integer,List<Integer>> taxonomyTable = new HashMap<Integer,List<Integer>>(40000);  //This holds the taxonomy <parent, children> using node_ids
+	private final Set<Integer> allTaxa;
 
 	public TaxonomyTree(String rootUID,Utils u) {
 		super();
+		allTaxa = new HashSet<Integer>();
 		rankCounts = new HashMap<String,Integer>();
 		rankCounts.put("phylum", new Integer(0));
 		rankCounts.put("class", new Integer(0));
@@ -62,15 +66,35 @@ public class TaxonomyTree {
 		}
 	}
 
-	public final int getRootNodeID (){
+	public int getRootNodeID (){
 		return rootNodeID;
+	}
+	
+	public Map<Integer,List<Integer>> getTable(){
+		return taxonomyTable;
+	}
+
+	public boolean nodeIsInternal(Integer node_id,  Utils u) {
+		final List<Integer> children = taxonomyTable.get(node_id);
+		if (children == null){
+			throw new RuntimeException("Node with no child list: " + u.getNodeUID(node_id));
+		}
+		else if (children.size() == 0)
+			return false;
+		else
+			return true;
 	}
 
 	
-	public void traverseOntologyTree(Map<Integer, List<Integer>> ontologyTable, Utils u) throws SQLException {
+	 public Set<Integer> getAllTaxa(){
+		 return allTaxa;
+	 }
+	
+	public void traverseOntologyTree(Utils u) throws SQLException {
 		PreparedStatement p1 = u.getPreparedStatement(ONTOLOGYTREEQUERY);
-		traverseOntologyTreeAux(getRootNodeID(),ontologyTable,p1,u);
-		taxonCounter = ontologyTable.size();
+		allTaxa.add(getRootNodeID());
+		traverseOntologyTreeAux(getRootNodeID(),taxonomyTable,p1,u);
+		taxonCounter = taxonomyTable.size();
 	}
 
 	private void traverseOntologyTreeAux(int node_id, Map<Integer, List<Integer>> ontologyTable,PreparedStatement p, Utils u) throws SQLException {	
@@ -92,10 +116,10 @@ public class TaxonomyTree {
 					rankCounts.put(rankLabel,rCount.intValue()+1);
 			}
 			childList.add(nodeID);
+			allTaxa.add(nodeID);
 		}
 		ontologyTable.put(node_id,childList);
 		ts.close();
-		//listIntegerMembers(childList);
 		for(Integer child : childList){
 			traverseOntologyTreeAux(child, ontologyTable,p,u);
 		}

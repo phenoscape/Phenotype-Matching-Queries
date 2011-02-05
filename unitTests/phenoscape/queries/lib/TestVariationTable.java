@@ -46,29 +46,29 @@ public class TestVariationTable {
 	
 	@Test
 	public void testAddTaxon() {
-		testTable.addExhibitor(testAttribute1, testEntity1, testTaxon1);
-		testTable.addExhibitor(testAttribute1, testEntity1, testTaxon2);
-		Assert.assertTrue(testTable.hasExhibitorSet(testAttribute1, testEntity1));
-		Assert.assertFalse(testTable.hasExhibitorSet(testAttribute2, testEntity1));
-		Assert.assertFalse(testTable.hasExhibitorSet(testAttribute1, testEntity2));
+		testTable.addExhibitor(testEntity1, testAttribute1, testTaxon1);
+		testTable.addExhibitor(testEntity1, testAttribute1, testTaxon2);
+		Assert.assertTrue(testTable.hasExhibitorSet(testEntity1, testAttribute1));
+		Assert.assertFalse(testTable.hasExhibitorSet(testEntity2, testAttribute1));
+		Assert.assertFalse(testTable.hasExhibitorSet(testEntity1, testAttribute2));
 	}
 
 	
 	@Test
 	public void testHasTaxonSet() {
-		testTable.addExhibitor(testAttribute1, testEntity1, testTaxon1);
-		testTable.addExhibitor(testAttribute1, testEntity1, testTaxon2);
-		Assert.assertTrue(testTable.hasExhibitorSet(testAttribute1, testEntity1));
-		Assert.assertFalse(testTable.hasExhibitorSet(testAttribute2, testEntity1));
-		Assert.assertFalse(testTable.hasExhibitorSet(testAttribute1, testEntity2));
+		testTable.addExhibitor(testEntity1, testAttribute1, testTaxon1);
+		testTable.addExhibitor(testEntity1, testAttribute1, testTaxon2);
+		Assert.assertTrue(testTable.hasExhibitorSet(testEntity1, testAttribute1));
+		Assert.assertFalse(testTable.hasExhibitorSet(testEntity2, testAttribute1));
+		Assert.assertFalse(testTable.hasExhibitorSet(testEntity1, testAttribute2));
 	}
 
 	@Test
 	public void testGetTaxonSet() {
-		testTable.addExhibitor(testAttribute1, testEntity1, testTaxon1);
-		testTable.addExhibitor(testAttribute1, testEntity1, testTaxon2);
-		Assert.assertTrue(testTable.hasExhibitorSet(testAttribute1, testEntity1));
-		Set<Integer> result = testTable.getExhibitorSet(testAttribute1, testEntity1);
+		testTable.addExhibitor(testEntity1, testAttribute1, testTaxon1);
+		testTable.addExhibitor(testEntity1, testAttribute1, testTaxon2);
+		Assert.assertTrue(testTable.hasExhibitorSet(testEntity1, testAttribute1));
+		Set<Integer> result = testTable.getExhibitorSet(testEntity1, testAttribute1);
 		Assert.assertEquals(2, result.size());
 		Assert.assertTrue(result.contains(testTaxon1));
 		Assert.assertTrue(result.contains(testTaxon2));
@@ -79,10 +79,10 @@ public class TestVariationTable {
 
 	@Test
 	public void testGetUsedAttributes() {
-		testTable.addExhibitor(testAttribute1, testEntity1, testTaxon1);
-		testTable.addExhibitor(testAttribute1, testEntity1, testTaxon2);
-		testTable.addExhibitor(testAttribute2, testEntity2, 2030);
-		testTable.addExhibitor(testAttribute2, testEntity2, 2031);
+		testTable.addExhibitor(testEntity1, testAttribute1, testTaxon1);
+		testTable.addExhibitor(testEntity1, testAttribute1, testTaxon2);
+		testTable.addExhibitor(testEntity2, testAttribute2, 2030);
+		testTable.addExhibitor(testEntity2, testAttribute2, 2031);
 		Set<Integer> attributeList = testTable.getUsedAttributes();
 		Assert.assertNotNull(attributeList);
 		Assert.assertEquals(2, attributeList.size());
@@ -94,10 +94,10 @@ public class TestVariationTable {
 
 	@Test
 	public void testGetUsedEntities() {
-		testTable.addExhibitor(testAttribute1, testEntity1, testTaxon1);
-		testTable.addExhibitor(testAttribute1, testEntity1, testTaxon2);
-		testTable.addExhibitor(testAttribute2, testEntity2, 2030);
-		testTable.addExhibitor(testAttribute2, testEntity2, 2031);
+		testTable.addExhibitor(testEntity1, testAttribute1, testTaxon1);
+		testTable.addExhibitor(testEntity1, testAttribute1, testTaxon2);
+		testTable.addExhibitor(testEntity2, testAttribute2, 2030);
+		testTable.addExhibitor(testEntity2, testAttribute2, 2031);
 		Set<Integer> entityList = testTable.getUsedEntities();
 		Assert.assertNotNull(entityList);
 		Assert.assertEquals(2, entityList.size());

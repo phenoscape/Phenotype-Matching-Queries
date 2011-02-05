@@ -15,30 +15,30 @@ public class VariationTable {
 	private Map<Integer,Map<Integer,Set<Integer>>> table = new HashMap<Integer,Map<Integer,Set<Integer>>>();  //Attributes, entities, taxa
 	
 	
-	public void addExhibitor(Integer attribute_node_id, Integer entity_node_id, Integer taxon_node_id){
+	public void addExhibitor(Integer entity_node_id, Integer attribute_node_id, Integer exhibitor_node_id){
 		if (table.containsKey(attribute_node_id)){
 			Map<Integer,Set<Integer>> attribute_entry = table.get(attribute_node_id);
 			if (attribute_entry.containsKey(entity_node_id)){
-				Set<Integer> taxonSet = attribute_entry.get(entity_node_id);
-				taxonSet.add(taxon_node_id);
+				Set<Integer> exhibitorSet = attribute_entry.get(entity_node_id);
+				exhibitorSet.add(exhibitor_node_id);
 			}
 			else {
-				Set<Integer> taxonSet = new HashSet<Integer>();
-				taxonSet.add(taxon_node_id);
-				attribute_entry.put(entity_node_id,taxonSet);
+				Set<Integer> exhibitorSet = new HashSet<Integer>();
+				exhibitorSet.add(exhibitor_node_id);
+				attribute_entry.put(entity_node_id,exhibitorSet);
 			}
 		}
 		else {
 			Map<Integer,Set<Integer>> attribute_entry = new HashMap<Integer,Set<Integer>>();
-			Set<Integer> taxonSet = new HashSet<Integer>();
-			taxonSet.add(taxon_node_id);
-			attribute_entry.put(entity_node_id,taxonSet);
+			Set<Integer> exhibitorSet = new HashSet<Integer>();
+			exhibitorSet.add(exhibitor_node_id);
+			attribute_entry.put(entity_node_id,exhibitorSet);
 			table.put(attribute_node_id, attribute_entry);
 		}
 	}
 	
 	
-	public boolean hasExhibitorSet(Integer attribute, Integer entity){
+	public boolean hasExhibitorSet(Integer entity, Integer attribute){
 		if (table.containsKey(attribute))
 			return (table.get(attribute).containsKey(entity));
 		else
@@ -46,7 +46,7 @@ public class VariationTable {
 	}
 	
 	
-	public Set<Integer> getExhibitorSet (Integer attribute, Integer entity){
+	public Set<Integer> getExhibitorSet (Integer entity, Integer attribute){
 		return table.get(attribute).get(entity);
 	}
 	

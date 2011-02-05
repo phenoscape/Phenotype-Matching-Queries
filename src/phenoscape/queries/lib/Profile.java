@@ -122,4 +122,19 @@ public class Profile {
 		return result;
 	}
 
+	public void clearPhenotypeSet(Integer entity, Integer att) {
+		if (table.containsKey(entity)){
+			Map<Integer,Set<Integer>> entityValue = table.get(entity);
+			if (entityValue.containsKey(att)){
+				entityValue.remove(att);
+			}
+			if (entityValue.isEmpty()){
+				table.remove(entity);
+			}
+		}
+		
+		// TODO Auto-generated method stub
+		
+	}
+
 }
