@@ -11,6 +11,14 @@ public class TestPhenotypeScoreTable {
 
 	PhenotypeScoreTable table1;
 	
+	final static int TAXONENTITY = 1006;
+	final static int GENEENTITY = 1008;
+	final static int ATTRIBUTE = 6;
+	final static double SCORE1 = 0.12;
+	final static double SCORE2 = 0.024;
+	final static int BESTENTITY1 = 1400;
+	final static int BESTENTITY2 = 1506;
+	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 	}
@@ -22,37 +30,43 @@ public class TestPhenotypeScoreTable {
 
 	@Test
 	public void testAddScore() {
-		table1.addScore(1006,1008,6, 4.5);
+		table1.addScore(TAXONENTITY,GENEENTITY,ATTRIBUTE, SCORE1,BESTENTITY1);
 	}
 
 	@Test
 	public void testIsEmpty() {
 		Assert.assertTrue(table1.isEmpty());
-		table1.addScore(1006,1008, 6, 4.5);
+		table1.addScore(TAXONENTITY,GENEENTITY,ATTRIBUTE,SCORE1, BESTENTITY1);
 		Assert.assertFalse(table1.isEmpty());
 	}
 
 	@Test
 	public void testSummary() {
-		table1.addScore(1006, 1008, 6, 4.5);
-		table1.addScore(1006, 1008, 7, 5.9);
+		table1.addScore(TAXONENTITY, GENEENTITY, ATTRIBUTE, SCORE1,BESTENTITY1);
+		table1.addScore(TAXONENTITY, GENEENTITY, ATTRIBUTE, SCORE2,BESTENTITY2);
 		table1.summary();
 	}
 
 	@Test
 	public void testHasScore() {
-		Assert.assertFalse(table1.hasScore(1006, 1008, 6));
-		table1.addScore(1006, 1008, 6, 4.5);
-		Assert.assertTrue(table1.hasScore(1006, 1008, 6));
-		Assert.assertFalse(table1.hasScore(1006, 1008, 8));
-		Assert.assertFalse(table1.hasScore(10010, 1008, 6));
-		Assert.assertFalse(table1.hasScore(1006,10012, 6));
+		Assert.assertFalse(table1.hasScore(TAXONENTITY, GENEENTITY, ATTRIBUTE));
+		table1.addScore(TAXONENTITY, GENEENTITY, ATTRIBUTE, SCORE1, BESTENTITY1);
+		Assert.assertTrue(table1.hasScore(TAXONENTITY, GENEENTITY, ATTRIBUTE));
+		Assert.assertFalse(table1.hasScore(TAXONENTITY, GENEENTITY, 8));
+		Assert.assertFalse(table1.hasScore(10010, GENEENTITY, 6));
+		Assert.assertFalse(table1.hasScore(TAXONENTITY,10012, 6));
 	}
 
 	@Test
 	public void testGetScore() {
-		table1.addScore(1006, 1008, 6, 4.5);
-		Assert.assertTrue(table1.getScore(1006, 1008, 6)==4.5);
+		table1.addScore(TAXONENTITY, GENEENTITY, ATTRIBUTE, SCORE1,BESTENTITY1);
+		Assert.assertTrue(table1.getScore(TAXONENTITY, GENEENTITY, ATTRIBUTE)==SCORE1);
+	}
+
+	@Test
+	public void testGetBestEntity() {
+		table1.addScore(TAXONENTITY, GENEENTITY, ATTRIBUTE, SCORE1,BESTENTITY1);
+		Assert.assertTrue(table1.getBestEntity(TAXONENTITY, GENEENTITY, ATTRIBUTE)  == BESTENTITY1);
 	}
 
 }

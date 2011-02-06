@@ -9,7 +9,7 @@ public class CountTable {
 
 	final static double LOG2 = Math.log(2.0);
 	
-	private long sum = Long.MIN_VALUE;
+	private long sum;
 	
 	private Map<Integer,Map<Integer,Integer>> table = new HashMap<Integer,Map<Integer,Integer>>();  // entity -> (attribute -> count)
 	
@@ -62,29 +62,23 @@ public class CountTable {
 	}
 	
 	public double getFraction(Integer entity, Integer attribute){
-		if (sum == Long.MIN_VALUE)
-			recalculate();
 		return ((double)getRawCount(entity, attribute))/(double)sum;
 	}
 	
 	public double getIC(Integer entity, Integer attribute){
 		return -1*Math.log(getFraction(entity,attribute))/LOG2;
 	}
+
+	public void setSum(long count){
+		sum = count;
+	}
+	
+	public long getSum(){
+		return sum;
+	}
 	
 	public static double calcIC(double fraction){
 		return -1*Math.log(fraction)/LOG2;
-	}
-	
-	private void recalculate(){
-		long rawSum = 0;
-		for(Integer ent : table.keySet()){
-			Map<Integer,Integer> entityValues = table.get(ent);
-			for (Integer att : entityValues.keySet()){
-				int count = entityValues.get(att).intValue();
-				rawSum += count;
-			}	
-		}
-		sum = rawSum;
 	}
 	
 	

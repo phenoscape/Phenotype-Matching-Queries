@@ -6,25 +6,28 @@ import java.util.Map;
 public class PhenotypeScoreTable {
 
 	
-	private Map<Integer,Map<Integer,Map<Integer,Double>>> table = new HashMap<Integer,Map<Integer,Map<Integer,Double>>>();  //Taxon Phenotype, Gene Phenotype, Score
+	private Map<Integer,Map<Integer,Map<Integer,Result>>> table = new HashMap<Integer,Map<Integer,Map<Integer,Result>>>();  //Taxon Entity, Gene Entity, Attribute Result
 	
-	public void addScore(Integer tEntity, Integer gEntity, Integer attribute, Double score){
+	public void addScore(Integer tEntity, Integer gEntity, Integer attribute, Double score, Integer bestEntity){
 		if (table.containsKey(tEntity)){
-			Map<Integer,Map<Integer,Double>> taxon_entry = table.get(tEntity);
+			Map<Integer,Map<Integer,Result>> taxon_entry = table.get(tEntity);
 			if (taxon_entry.containsKey(gEntity)){
-				Map<Integer,Double> gene_entry = taxon_entry.get(gEntity);
-				gene_entry.put(attribute, score);
+				Map<Integer,Result> gene_entry = taxon_entry.get(gEntity);
+				Result r = new Result(score,bestEntity);
+				gene_entry.put(attribute, r);
 			}
 			else{
-				Map<Integer,Double> gene_entry = new HashMap<Integer,Double>();
-				gene_entry.put(attribute, score);
+				Map<Integer,Result> gene_entry = new HashMap<Integer,Result>();
+				Result r = new Result(score,bestEntity);
+				gene_entry.put(attribute, r);
 				taxon_entry.put(gEntity,gene_entry);
 			}
 		}
 		else {
-			Map <Integer,Map<Integer,Double>> taxon_entry = new HashMap<Integer,Map<Integer,Double>>();
-			Map<Integer,Double> gene_entry = new HashMap<Integer,Double>();
-			gene_entry.put(attribute, score);
+			Map <Integer,Map<Integer,Result>> taxon_entry = new HashMap<Integer,Map<Integer,Result>>();
+			Map<Integer,Result> gene_entry = new HashMap<Integer,Result>();
+			Result r = new Result(score,bestEntity);
+			gene_entry.put(attribute, r);
 			taxon_entry.put(gEntity, gene_entry);
 			table.put(tEntity, taxon_entry);
 		}
@@ -51,7 +54,33 @@ public class PhenotypeScoreTable {
 	}
 	
 	public double getScore(Integer tEntity, Integer gEntity, Integer attribute){
-		return table.get(tEntity).get(gEntity).get(attribute).doubleValue();
+		return table.get(tEntity).get(gEntity).get(attribute).getScore();
+	}
+	
+	public int getBestEntity(Integer tEntity, Integer gEntity, Integer attribute){
+		return table.get(tEntity).get(gEntity).get(attribute).getBestEntity();
 	}
 
+	
+	
+	static class Result {
+		double score;
+		int best;
+
+		Result(Double sc, Integer bestEntity){
+			score = sc.doubleValue();
+			best = bestEntity.intValue();
+		}
+		
+		double getScore(){
+			return score;
+		}
+		
+		int getBestEntity(){
+			return best;
+		}
+	
+	}
+
+	
 }

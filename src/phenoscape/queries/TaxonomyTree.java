@@ -30,7 +30,7 @@ public class TaxonomyTree {
 	private final Map<String,Integer> rankCounts;
 	private int extinctCounter = 0;
 	private int taxonCounter = -1;
-	private final Map<Integer,List<Integer>> taxonomyTable = new HashMap<Integer,List<Integer>>(40000);  //This holds the taxonomy <parent, children> using node_ids
+	private final Map<Integer,Set<Integer>> taxonomyTable = new HashMap<Integer,Set<Integer>>(40000);  //This holds the taxonomy <parent, children> using node_ids
 	private final Set<Integer> allTaxa;
 
 	public TaxonomyTree(String rootUID,Utils u) {
@@ -70,12 +70,12 @@ public class TaxonomyTree {
 		return rootNodeID;
 	}
 	
-	public Map<Integer,List<Integer>> getTable(){
+	public Map<Integer,Set<Integer>> getTable(){
 		return taxonomyTable;
 	}
 
 	public boolean nodeIsInternal(Integer node_id,  Utils u) {
-		final List<Integer> children = taxonomyTable.get(node_id);
+		final Set<Integer> children = taxonomyTable.get(node_id);
 		if (children == null){
 			throw new RuntimeException("Node with no child list: " + u.getNodeUID(node_id));
 		}
@@ -97,8 +97,8 @@ public class TaxonomyTree {
 		taxonCounter = taxonomyTable.size();
 	}
 
-	private void traverseOntologyTreeAux(int node_id, Map<Integer, List<Integer>> ontologyTable,PreparedStatement p, Utils u) throws SQLException {	
-		final List<Integer> childList = new ArrayList<Integer>();
+	private void traverseOntologyTreeAux(int node_id, Map<Integer, Set<Integer>> ontologyTable,PreparedStatement p, Utils u) throws SQLException {	
+		final Set<Integer> childList = new HashSet<Integer>();
 		p.setInt(1, node_id);
 		ResultSet ts = p.executeQuery();
 		while(ts.next()){

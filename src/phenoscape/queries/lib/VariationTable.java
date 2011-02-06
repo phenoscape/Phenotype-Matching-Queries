@@ -70,10 +70,10 @@ public class VariationTable {
 		Map<Integer,String> taxonList = new HashMap<Integer,String>();
 		for(Integer att : getUsedAttributes()){
 			for (Integer ent : getUsedEntities()){
-				if (hasExhibitorSet(att,ent)){
+				if (hasExhibitorSet(ent,att)){
 					
 					
-					Set <Integer> taxa = getExhibitorSet(att,ent);
+					Set <Integer> taxa = getExhibitorSet(ent,att);
 					sum += taxa.size(); 
 					if (attributeSums.containsKey(att)){
 						attributeSums.put(att,attributeSums.get(att).intValue()+taxa.size());
@@ -118,6 +118,15 @@ public class VariationTable {
 		}
 		u.writeOrDump("\n Exhibitor count is:\t" + taxonList.size(),bw);
 		u.writeOrDump("\n\n Total is:\t" + sum,bw);
+	}
+
+
+	public boolean taxonExhibits(Integer ent, Integer att,Integer taxon) {
+		if (hasExhibitorSet(ent, att)){
+			if (getExhibitorSet(ent,att).contains(taxon))
+				return true;
+		}
+		return false;
 	}
 
 }

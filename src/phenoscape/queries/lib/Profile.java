@@ -60,7 +60,6 @@ public class Profile {
 	
 	public String summary(){
 		StringBuilder b = new StringBuilder(200);
-		b.append("Profile has " + getUsedAttributes().size() + " attributes by " + getUsedEntities().size() + " entities");
 		int count = 0;
 		int fillCount = 0;
 		int entries = 0;

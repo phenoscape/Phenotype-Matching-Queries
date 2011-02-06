@@ -74,7 +74,7 @@ public class TestTaxonomyTree {
 
 	@Test
 	public void testGetTable() {
-		Map<Integer,List<Integer>> table = t1.getTable();
+		Map<Integer,Set<Integer>> table = t1.getTable();
 		Assert.assertNotNull(table);
 		Assert.assertEquals(23,table.keySet().size());
 		Assert.assertEquals(true,table.keySet().contains(t1.getRootNodeID()));

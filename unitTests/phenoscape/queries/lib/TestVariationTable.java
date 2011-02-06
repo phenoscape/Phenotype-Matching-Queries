@@ -77,6 +77,14 @@ public class TestVariationTable {
 		Assert.assertTrue(result.contains(testTaxon1shadow));
 	}
 
+	
+	@Test
+	public void testTaxonExhibits() {
+		testTable.addExhibitor(testEntity1, testAttribute1, testTaxon1);
+		testTable.addExhibitor(testEntity1, testAttribute1, testTaxon2);
+		Assert.assertTrue(testTable.taxonExhibits(testEntity1, testAttribute1,testTaxon1));
+		Assert.assertFalse(testTable.taxonExhibits(testEntity1, testAttribute1,testTaxon3));
+	}
 	@Test
 	public void testGetUsedAttributes() {
 		testTable.addExhibitor(testEntity1, testAttribute1, testTaxon1);
