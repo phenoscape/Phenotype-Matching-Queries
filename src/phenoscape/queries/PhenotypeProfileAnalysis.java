@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
+
 import phenoscape.queries.lib.CountTable;
 import phenoscape.queries.lib.PhenotypeScoreTable;
 import phenoscape.queries.lib.Profile;
@@ -35,7 +38,10 @@ public class PhenotypeProfileAnalysis {
 	private static final String OSTARIOPHYSIROOT = "TTO:302";
 	private static final String ASPIDORASROOT = "TTO:105426";
 	private static final String AMIIDAEROOT = "TTO:10360";
+	private static final String CALLICHTHYIDAEROOT = "TTO:11200";
 	private static final String SILURIFORMESROOT = "TTO:1380";
+	
+	private String ANALYSISROOT = CALLICHTHYIDAEROOT;
 
 
 	private static final String TAXONREPORTFILENAME = "../TaxonVariationReport.txt";
@@ -124,11 +130,13 @@ public class PhenotypeProfileAnalysis {
 	 */
 	int qualityNodeID;
 
+	static Logger logger = Logger.getLogger(PhenotypeProfileAnalysis.class.getName());
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		BasicConfigurator.configure();
 		PhenotypeProfileAnalysis listQuery = new PhenotypeProfileAnalysis();
 		Utils u = new Utils();
 		u.openKB();
@@ -180,18 +188,22 @@ public class PhenotypeProfileAnalysis {
 
 
 	void process(Utils u,BufferedWriter bw1, BufferedWriter bw2, BufferedWriter bw3, BufferedWriter bw4) throws IOException,SQLException{
+		logger.info("Caching entity UIDs and labels");
 		u.uidCacheEntities();    // this will retrieve entities that appear in EQ's
-
-		qualityNodeID = u.getQualityNodeID();   //set to the root of PATO
-
+		
+		logger.info("Setting up Attribute table");
 		attributeMap = u.setupAttributes();
 
 		attributeSet.addAll(attributeMap.values());
 		attributeSet.add(qualityNodeID);
 
+		
+		qualityNodeID = u.getQualityNodeID();   //set to the root of PATO
+
+
 		// process taxa annotations
-		System.out.println("Building Taxonomy Tree");
-		TaxonomyTree t = new TaxonomyTree(ASPIDORASROOT,u);
+		logger.info("Building Taxonomy Tree");
+		TaxonomyTree t = new TaxonomyTree(ANALYSISROOT,u);
 		t.traverseOntologyTree(u);
 		processTaxonVariation(t,u, bw1);
 		t.report(u, bw1);
@@ -207,10 +219,10 @@ public class PhenotypeProfileAnalysis {
 		CountTable phenotypeCountsCombined = new CountTable();
 
 		Map <Integer,Set<Integer>> phenotypeNeighborCache = new HashMap<Integer,Set<Integer>>();
-		System.out.println("Building entity parents of taxon phenotypes");
+		logger.info("Building entity parents of taxon phenotypes");
 		buildTaxonEntityParents(phenotypeNeighborCache,u);
 
-		System.out.println("Building entity parents of gene phenotypes");
+		logger.info("Building entity parents of gene phenotypes");
 		buildGeneEntityParents(phenotypeNeighborCache,u);
 
 		fillCountTable(taxonProfiles, phenotypeCountsForTaxa,phenotypeNeighborCache, u, TAXONPHENOTYPECOUNTQUERY, ASSERTEDTAXONPHENOTYPECOUNTQUERY);
@@ -220,22 +232,22 @@ public class PhenotypeProfileAnalysis {
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 
 
-		System.out.println("Done building entity parents; building phenotype match cache");
+		logger.info("Done building entity parents; building phenotype match cache");
 		int attOverlaps = buildPhenotypeMatchCache(phenotypeNeighborCache, phenotypeScores, phenotypeCountsCombined, u);
 		u.writeOrDump("gene and taxon profiles overlapping on an attribute:  " + attOverlaps,bw1);
 		bw1.close();
-		System.out.println("Finished building phenotype match cache; Writing Phenotype match summary");
+		logger.info("Finished building phenotype match cache; Writing Phenotype match summary");
 		writePhenotypeMatchSummary(phenotypeScores,u,bw3);		
 		bw3.close();
 
-		System.out.println("Finished Writing Phenotype match summary");
-		System.out.println("Calculating Profile Scores");
+		logger.info("Finished Writing Phenotype match summary");
+		logger.info("Calculating Profile Scores");
 
 		//List<ProfileScoreSet> results = new ArrayList<ProfileScoreSet>(1000);
 		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t maxIC \t iccs \t simIC \t simJ",bw4);
 
 		long zeroCount = 0;
-		u.writeOrDump("Sizes: Taxon profiles: " + taxonProfiles.keySet().size() + "; Gene profiles: " + geneProfiles.keySet().size(), null);
+		//u.writeOrDump("Sizes: Taxon profiles: " + taxonProfiles.keySet().size() + "; Gene profiles: " + geneProfiles.keySet().size(), null);
 		for(Integer currentTaxon : taxonProfiles.keySet()){
 			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
 			for(Integer currentGene : geneProfiles.keySet()){
@@ -265,6 +277,7 @@ public class PhenotypeProfileAnalysis {
 		}
 		u.writeOrDump("Pairs with zero score = " + zeroCount, bw4);
 		bw4.close();
+		logger.info("Done");
 	}
 
 	double calcMaxIC(Profile taxonProfile, Profile geneProfile, PhenotypeScoreTable phenotypeScores){
@@ -700,14 +713,14 @@ public class PhenotypeProfileAnalysis {
 
 
 	/**
-	 * This is calculating the wrong set of matching phenotypes - it needs to be scoring matches at the EA level - all the phenotypes here are EQ level !!
-	 * @param phenotypeNeighborCache
+	 * This is now correct - it calculates match scores of subsuming phenotypes where the quality is at the attribute level.
+	 * @param phenotypeParentCache maps entities to parent entities obtained from inheres_in_part_of parents of a (any) phenotype with the specified entity
 	 * @param phenotypeScores
 	 * @param entityCounts
 	 * @param u
 	 * @return
 	 */
-	int buildPhenotypeMatchCache(Map <Integer,Set<Integer>> phenotypeNeighborCache, PhenotypeScoreTable phenotypeScores, CountTable eaCounts, Utils u){
+	int buildPhenotypeMatchCache(Map <Integer,Set<Integer>> phenotypeParentCache, PhenotypeScoreTable phenotypeScores, CountTable eaCounts, Utils u){
 		int attOverlaps = 0;
 
 		for (Integer curAtt : attributeSet){
@@ -716,39 +729,39 @@ public class PhenotypeProfileAnalysis {
 				Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
 				if (!currentTaxonProfile.isEmpty()){
 					for (Integer taxonEntity : currentTaxonProfile.getUsedEntities()){
-						Set<Integer> teParents = phenotypeNeighborCache.get(taxonEntity);
+						Set<Integer> teParents = phenotypeParentCache.get(taxonEntity);
 
 						for(Integer currentGene : geneProfiles.keySet()){
 							Profile currentGeneProfile = geneProfiles.get(currentGene);
 							//u.writeOrDump("Checking taxon = " + u.getNodeName(currentTaxon) + " with " + u.getNodeName(curAtt) + " " + currentTaxonProfile.usesAttribute(curAtt) + " " + currentGeneProfile.usesAttribute(curAtt), null);
-							if (currentTaxonProfile.usesAttribute(curAtt) &&  
-									currentGeneProfile.usesAttribute(curAtt)){
 								//u.writeOrDump("Processing taxon = " + u.getNodeName(currentTaxon) + " with " + u.getNodeName(curAtt), null);
-								attOverlaps++;  //cases where a taxon profile and a gene profile share a particular attribute (not any attribute)
-								for (Integer geneEntity : currentGeneProfile.getUsedEntities()){
-									Set<Integer> geParents = phenotypeNeighborCache.get(geneEntity);
-									Set<Integer>matches = new HashSet<Integer>();
-									for(Integer tParent : teParents){
-										for (Integer gParent : geParents){
-											if (tParent.equals(gParent))
-												matches.add(tParent);
-										}
-									}
-									double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
-									Integer bestEntity = null;
-									for(Integer ent : matches){
-										if (eaCounts.hasCount(ent, curAtt)){
-											double matchScore = eaCounts.getFraction(ent, curAtt);
-											if (matchScore<bestMatch){
-												bestMatch = matchScore;
-												bestEntity = ent;
+							for (Integer geneEntity : currentGeneProfile.getUsedEntities()){
+								if (currentTaxonProfile.hasPhenotypeSet(taxonEntity, curAtt) && currentGeneProfile.hasPhenotypeSet(geneEntity, curAtt)){
+									if (!phenotypeScores.hasScore(taxonEntity, geneEntity, curAtt)){
+										Set<Integer> geParents = phenotypeParentCache.get(geneEntity);
+										Set<Integer>matches = new HashSet<Integer>();
+										for(Integer tParent : teParents){
+											for (Integer gParent : geParents){
+												if (tParent.equals(gParent))
+													matches.add(tParent);
 											}
-											else if (matchScore < 0)
-												throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.getNodeName(ent) + " " + u.getNodeName(curAtt));
 										}
-									}
-									if (bestMatch<Double.MAX_VALUE && bestEntity != null){
-										phenotypeScores.addScore(taxonEntity,geneEntity,curAtt,CountTable.calcIC(bestMatch),bestEntity);
+										double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
+										Integer bestEntity = null;
+										for(Integer ent : matches){
+											if (eaCounts.hasCount(ent, curAtt)){
+												double matchScore = eaCounts.getFraction(ent, curAtt);
+												if (matchScore<bestMatch){
+													bestMatch = matchScore;
+													bestEntity = ent;
+												}
+												else if (matchScore < 0)
+													throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.getNodeName(ent) + " " + u.getNodeName(curAtt));
+											}
+										}
+										if (bestMatch<Double.MAX_VALUE && bestEntity != null){
+											phenotypeScores.addScore(taxonEntity,geneEntity,curAtt,CountTable.calcIC(bestMatch),bestEntity);
+										}
 									}
 								}
 							}
@@ -770,13 +783,30 @@ public class PhenotypeProfileAnalysis {
 				for(Integer tEntity : currentTaxonProfile.getUsedEntities()){
 					for(Integer gEntity : currentGeneProfile.getUsedEntities()){
 						for (Integer att : attributeSet){
-							if (phenotypeScores.hasScore(tEntity, gEntity, att)){
-								String bestID =u.getNodeName(phenotypeScores.getBestEntity(tEntity, gEntity,att));
-								if (bestID == null)
-									bestID = u.getNodeUID(phenotypeScores.getBestEntity(tEntity, gEntity,att));
-								if (bestID == null)
-									bestID = Integer.toString(phenotypeScores.getBestEntity(tEntity, gEntity,att));
-								u.writeOrDump(u.getNodeName(currentTaxon) + "\t" + u.getNodeName(currentGene) + "\t" + u.getNodeName(tEntity) + "\t" +  u.getNodeName(gEntity)  + "\t" + u.getNodeName(att) + "\t" + bestID + "\t" + phenotypeScores.getScore(tEntity, gEntity,att),bw3);								
+							if (currentTaxonProfile.hasPhenotypeSet(tEntity, att) && currentGeneProfile.hasPhenotypeSet(gEntity, att)){
+								if (phenotypeScores.hasScore(tEntity, gEntity, att)){
+									Integer bestEntity = new Integer(phenotypeScores.getBestEntity(tEntity, gEntity,att));
+									StringBuilder lineBuilder = new StringBuilder(200);
+									String bestID =u.getNodeName(bestEntity);
+									if (bestID == null)
+										bestID = u.getNodeUID(bestEntity);
+									if (bestID == null)
+										bestID = Integer.toString(bestEntity);
+									lineBuilder.append(u.getNodeName(currentTaxon));
+									lineBuilder.append("\t");
+									lineBuilder.append(u.getNodeName(currentGene));
+									lineBuilder.append("\t");
+									lineBuilder.append(u.getNodeName(tEntity));
+									lineBuilder.append("\t");
+									lineBuilder.append(u.getNodeName(gEntity));
+									lineBuilder.append("\t");
+									lineBuilder.append(u.getNodeName(att));
+									lineBuilder.append("\t");
+									lineBuilder.append(bestID);
+									lineBuilder.append("\t");
+									lineBuilder.append(phenotypeScores.getScore(tEntity, gEntity,att));
+									u.writeOrDump(lineBuilder.toString(),bw3);								
+								}
 							}
 						}
 					}

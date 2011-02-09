@@ -191,10 +191,6 @@ public class Utils {
 				putNodeUIDName(attribute_id,attributeResults.getString(3),attributeResults.getString(4));
 		}		
 		
-		System.out.println("Node 2366 now maps to " + attMap.get(2366).toString());
-		
-
-		
 		return attMap;
 	}
 
@@ -217,11 +213,20 @@ public class Utils {
 
 	public void uidCacheEntities() throws SQLException{
 		final Statement s1 = getStatement();
-		ResultSet entResults = s1.executeQuery("SELECT DISTINCT entity_node_id,entity_uid,simple_label(entity_node_id) FROM phenotype");
+		final PreparedStatement p1 = getPreparedStatement("SELECT node.uid,simple_label(node.node_id) FROM node WHERE node.node_id = ?");
+		ResultSet entResults = s1.executeQuery("SELECT DISTINCT node_id FROM link where link.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:is_a') AND link.object_id = (SELECT node.node_id FROM node WHERE node.label = 'teleost anatomical entity')");
 		while(entResults.next()){
-			Integer ent = new Integer(entResults.getInt(1));
-			String uid = entResults.getString(2);
-			putNodeUIDName(ent,uid,entResults.getString(3));
+			int entityID = entResults.getInt(1);
+			p1.setInt(1, entityID);
+			ResultSet uidResults = p1.executeQuery();
+			if (uidResults.next()){
+				String uid = uidResults.getString(1);
+				String label = uidResults.getString(2);
+				putNodeUIDName(entityID,uid,label);
+			}
+			else {
+				throw new RuntimeException("Entity query failed; id = " + entityID);
+			}
 		}
 	}
 
