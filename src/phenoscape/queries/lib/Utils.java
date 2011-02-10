@@ -1,15 +1,7 @@
 package phenoscape.queries.lib;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -21,13 +13,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 public class Utils {
 	
@@ -76,9 +62,6 @@ public class Utils {
 	
 	final private Map<Integer,Integer> linkPhenotypeMap = new HashMap<Integer,Integer>();   //link_node_id -> phenotype_node_id
 
-	
-	private boolean parentsBuilt = false;
-	
 	private Connection connection;
 	
 	
@@ -172,10 +155,15 @@ public class Utils {
 		if (compositionResults.next()){
 			compositionNodeID = compositionResults.getInt(1);
 		}
+		else 
+			throw new RuntimeException("Query for node id of 'composition' failed");
+
 		ResultSet structureResults = s1.executeQuery(STRUCTUREQUERY);
 		if (structureResults.next()){
 			structureNodeID = structureResults.getInt(1);
 		}
+		else 
+			throw new RuntimeException("Query for node id of 'structure' failed");
 		
 		ResultSet attributeResults = s1.executeQuery(ATTRIBUTEQUERY);
 		while(attributeResults.next()){
@@ -196,11 +184,11 @@ public class Utils {
 
 	
 	
-
+	private final static String QUALITYNODEQUERY = "SELECT node.node_id,node.uid,simple_label(node.node_id) FROM node WHERE node.label = 'quality'";
 	public int getQualityNodeID() throws SQLException{
 		int result = -1;
 		Statement s1 = getStatement();
-		ResultSet attResults = s1.executeQuery("SELECT node.node_id,node.uid,simple_label(node.node_id) FROM node WHERE node.label = 'quality'");
+		ResultSet attResults = s1.executeQuery(QUALITYNODEQUERY);
 		if(attResults.next()){
 			result = attResults.getInt(1);
 			putNodeUIDName(result,attResults.getString(2),attResults.getString(3));
@@ -211,12 +199,23 @@ public class Utils {
 		return result;
 	}
 
-	public void uidCacheEntities() throws SQLException{
-		final Statement s1 = getStatement();
-		final PreparedStatement p1 = getPreparedStatement("SELECT node.uid,simple_label(node.node_id) FROM node WHERE node.node_id = ?");
+	
+	/**
+	 * 
+	 * @throws SQLException
+	 */
+	public void cacheEntities() throws SQLException{
+		final Statement s1 = getStatement();  //Not sure where the cut off between Statement and PreparedStatement lies...
 		ResultSet entResults = s1.executeQuery("SELECT DISTINCT node_id FROM link where link.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:is_a') AND link.object_id = (SELECT node.node_id FROM node WHERE node.label = 'teleost anatomical entity')");
-		while(entResults.next()){
-			int entityID = entResults.getInt(1);
+		cacheEntitiesFromResults(entResults);
+		entResults = s1.executeQuery("SELECT DISTINCT node_id FROM link where link.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:is_a') AND link.object_id = (SELECT node.node_id FROM node WHERE node.label = 'biological_process')");
+		cacheEntitiesFromResults(entResults);
+	}
+	
+	private void cacheEntitiesFromResults(ResultSet entityResults) throws SQLException{
+		final PreparedStatement p1 = getPreparedStatement("SELECT node.uid,simple_label(node.node_id) FROM node WHERE node.node_id = ?");
+		while(entityResults.next()){
+			int entityID = entityResults.getInt(1);
 			p1.setInt(1, entityID);
 			ResultSet uidResults = p1.executeQuery();
 			if (uidResults.next()){
@@ -232,15 +231,48 @@ public class Utils {
 
 
 	
+	private static final String ASSERTEDTAXONPHENOTYPECOUNTQUERY = "SELECT COUNT(*) FROM asserted_taxon_annotation";
+	public int countAssertedTaxonPhenotypeAnnotations() throws SQLException{
+		return getCount(ASSERTEDTAXONPHENOTYPECOUNTQUERY);
+	}
+
+	private static final String ASSERTEDGENEPHENOTYPECOUNTQUERY =  "SELECT COUNT(*) FROM distinct_gene_annotation";
+	public int countDistinctGenePhenotypeAnnotations() throws SQLException{
+		return getCount(ASSERTEDGENEPHENOTYPECOUNTQUERY);	
+	}
+
 	
+	/**
+	 * This returns a count from a query
+	 * @param query
+	 * @return
+	 * @throws SQLException 
+	 */
+	private int getCount(String query) throws SQLException{
+		final Statement s = getStatement();
+		ResultSet countResult = s.executeQuery(query);
+		if (countResult.next()){
+			return countResult.getInt(1);
+		}
+		else {
+			throw new RuntimeException("Count query failed");
+		}
+
+	}
+	
+
 	
 	/** PSQL support stuff   */
 	
-	public Connection openKB(){
+	public String openKB() throws SQLException{
+		return openKBFromConnections(CONNECTION_PROPERTIES_FILENAME);
+	}
+	
+	private String openKBFromConnections(String connectionsSpec) throws SQLException {
 		final Properties properties = new Properties();
 		try {
 			//System.out.println("Connect path = " + this.getClass().getResource(CONNECTION_PROPERTIES_FILENAME));
-			properties.load(this.getClass().getResourceAsStream(CONNECTION_PROPERTIES_FILENAME));
+			properties.load(this.getClass().getResourceAsStream(connectionsSpec));
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -255,14 +287,9 @@ public class Utils {
 		final String db = properties.getProperty("db");
 		final String user = properties.getProperty("user");
 		final String password = properties.getProperty("pw");
-		try{
-			connection = DriverManager.getConnection(String.format("jdbc:postgresql://%s/%s",host,db),user,password);
-			return connection;
-		} catch (SQLException e){
-			System.err.println("Couldn't connect to server");
-			e.printStackTrace();
-			return null;
-		}
+		connection = DriverManager.getConnection(String.format("jdbc:postgresql://%s/%s",host,db),user,password);
+		return host+db;
+		
 	}
 	
 	public void closeKB(){

@@ -35,13 +35,14 @@ public class PhenotypeProfileAnalysis {
 	private static final String TAOROOT = "TAO:0100000";
 	private static final String PATOROOT = "PATO:0000001";
 	private static final String TTOROOT = "TTO:0";
+	private static final String OSTARIOCLUPEOMORPHAROOT = "TTO;253";
 	private static final String OSTARIOPHYSIROOT = "TTO:302";
 	private static final String ASPIDORASROOT = "TTO:105426";
 	private static final String AMIIDAEROOT = "TTO:10360";
 	private static final String CALLICHTHYIDAEROOT = "TTO:11200";
 	private static final String SILURIFORMESROOT = "TTO:1380";
 	
-	private String ANALYSISROOT = CALLICHTHYIDAEROOT;
+	private String ANALYSISROOT = OSTARIOCLUPEOMORPHAROOT;
 
 
 	private static final String TAXONREPORTFILENAME = "../TaxonVariationReport.txt";
@@ -62,18 +63,12 @@ public class PhenotypeProfileAnalysis {
 		"SELECT gene_node_id, gene_uid, gene_label, dga.phenotype_node_id, p1.entity_node_id, p1.entity_uid, p1.quality_node_id, p1.quality_uid,p1.uid,simple_label(dga.phenotype_node_id), simple_label(p1.entity_node_id),simple_label(p1.quality_node_id) FROM distinct_gene_annotation AS dga " +
 		"JOIN phenotype AS p1 ON (p1.node_id = dga.phenotype_node_id)";
 
-	//Note: these queries are currently identical, but they are constructed separately to allow divergence
-	private static final String TAXONPHENOTYPENEIGHBORQUERY = 
+	private static final String PHENOTYPENEIGHBORQUERY = 
 		"SELECT target.node_id FROM node AS entity " +
 		"JOIN link ON (entity.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:inheres_in_part_of')) " + 
 		"JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? " +
 		"GROUP BY entity.uid, target.uid,target.node_id";
 	
-	private static final String GENEPHENOTYPENEIGHBORQUERY =
-		"SELECT target.node_id FROM node AS entity " +
-		"JOIN link ON (entity.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:inheres_in_part_of')) " + 
-		"JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? " +
-		"GROUP BY entity.uid, target.uid, target.node_id";
 
 	private static final String TAXONPHENOTYPECOUNTQUERY = 
 		"SELECT count(*) FROM asserted_taxon_annotation  WHERE asserted_taxon_annotation.phenotype_node_id IN " +
@@ -92,9 +87,6 @@ public class PhenotypeProfileAnalysis {
 		"JOIN link phenotype_inheres_in_part_of ON (phenotype_inheres_in_part_of.node_id = phenotype.node_id AND phenotype_inheres_in_part_of.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:inheres_in_part_of')) " +
 		"JOIN link quality_is_a ON (quality_is_a.node_id = phenotype.node_id AND quality_is_a.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:is_a')) " +
 		"WHERE (phenotype_inheres_in_part_of.object_id = ?  AND quality_is_a.object_id = ?))";
-
-	private static final String ASSERTEDGENEPHENOTYPECOUNTQUERY =
-		"SELECT COUNT(*) FROM distinct_gene_annotation";
 
 	
 	Map<Integer,Profile> taxonProfiles = new HashMap<Integer,Profile>();  //taxon_node_id -> Phenotype profile for taxon
@@ -139,7 +131,13 @@ public class PhenotypeProfileAnalysis {
 		BasicConfigurator.configure();
 		PhenotypeProfileAnalysis listQuery = new PhenotypeProfileAnalysis();
 		Utils u = new Utils();
-		u.openKB();
+		String kbName;
+		try {
+			kbName = u.openKB();
+		} catch (SQLException e1) {
+			logger.fatal("Failed to open KB; will exit.  Reason was " + e1.toString());
+			return;
+		}
 		File outFile1 = new File(TAXONREPORTFILENAME);
 		File outFile2 = new File(GENEREPORTFILENAME);
 		File outFile3 = new File(PHENOTYPEMATCHREPORTFILENAME);
@@ -154,7 +152,7 @@ public class PhenotypeProfileAnalysis {
 		dateFormatter = DateFormat.getDateInstance(DateFormat.DEFAULT);
 		today = new Date();
 		DateFormat timeFormatter = DateFormat.getTimeInstance(DateFormat.DEFAULT);
-		String timeStamp = dateFormatter.format(today) + " " + timeFormatter.format(today);		
+		String timeStamp = dateFormatter.format(today) + " " + timeFormatter.format(today) + " on " + kbName;		
 		try {
 			bw1 = new BufferedWriter(new FileWriter(outFile1));
 			bw2 = new BufferedWriter(new FileWriter(outFile2));
@@ -189,7 +187,7 @@ public class PhenotypeProfileAnalysis {
 
 	void process(Utils u,BufferedWriter bw1, BufferedWriter bw2, BufferedWriter bw3, BufferedWriter bw4) throws IOException,SQLException{
 		logger.info("Caching entity UIDs and labels");
-		u.uidCacheEntities();    // this will retrieve entities that appear in EQ's
+		u.cacheEntities();    // this will retrieve entities that appear in EQ's
 		
 		logger.info("Setting up Attribute table");
 		attributeMap = u.setupAttributes();
@@ -206,6 +204,9 @@ public class PhenotypeProfileAnalysis {
 		TaxonomyTree t = new TaxonomyTree(ANALYSISROOT,u);
 		t.traverseOntologyTree(u);
 		processTaxonVariation(t,u, bw1);
+		if (taxonProfiles.isEmpty()){
+			throw new RuntimeException("No taxa in Profile Set");
+		}
 		t.report(u, bw1);
 		taxonVariation.variationReport(u,bw1);	
 
@@ -220,13 +221,14 @@ public class PhenotypeProfileAnalysis {
 
 		Map <Integer,Set<Integer>> phenotypeNeighborCache = new HashMap<Integer,Set<Integer>>();
 		logger.info("Building entity parents of taxon phenotypes");
-		buildTaxonEntityParents(phenotypeNeighborCache,u);
+		PreparedStatement phenotypeNeighborStatement = u.getPreparedStatement(PHENOTYPENEIGHBORQUERY); 
+		buildEntityParents(phenotypeNeighborCache,phenotypeNeighborStatement, taxonProfiles);
 
 		logger.info("Building entity parents of gene phenotypes");
-		buildGeneEntityParents(phenotypeNeighborCache,u);
+		buildEntityParents(phenotypeNeighborCache,phenotypeNeighborStatement,geneProfiles);
 
-		fillCountTable(taxonProfiles, phenotypeCountsForTaxa,phenotypeNeighborCache, u, TAXONPHENOTYPECOUNTQUERY, ASSERTEDTAXONPHENOTYPECOUNTQUERY);
-		fillCountTable(geneProfiles, phenotypeCountsForGenes,phenotypeNeighborCache, u, GENEPHENOTYPECOUNTQUERY, ASSERTEDGENEPHENOTYPECOUNTQUERY);
+		fillCountTable(taxonProfiles, phenotypeCountsForTaxa,phenotypeNeighborCache, u, TAXONPHENOTYPECOUNTQUERY, u.countAssertedTaxonPhenotypeAnnotations());
+		fillCountTable(geneProfiles, phenotypeCountsForGenes,phenotypeNeighborCache, u, GENEPHENOTYPECOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		sumCountTables(phenotypeCountsCombined,phenotypeCountsForTaxa,phenotypeCountsForGenes);
 
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
@@ -574,21 +576,20 @@ public class PhenotypeProfileAnalysis {
 	 * @param u
 	 * @throws SQLException
 	 */
-	void buildTaxonEntityParents(Map <Integer,Set<Integer>> phenotypeNeighborCache, Utils u) throws SQLException{
-		final PreparedStatement p3 = u.getPreparedStatement(TAXONPHENOTYPENEIGHBORQUERY);
-		for(Integer currentTaxon : taxonProfiles.keySet()){
-			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
-			Set<Integer> taxonAttributes = currentTaxonProfile.getUsedAttributes();
-			Set<Integer> taxonEntities = currentTaxonProfile.getUsedEntities();
-			for (Integer att : taxonAttributes){
-				for (Integer ent : taxonEntities){
-					if (currentTaxonProfile.hasPhenotypeSet(ent, att)){
-						for (Integer pheno : currentTaxonProfile.getPhenotypeSet(ent, att)){
+	void buildEntityParents(Map <Integer,Set<Integer>> phenotypeNeighborCache, PreparedStatement neighborsStatement, Map<Integer,Profile> profiles) throws SQLException{
+		for(Integer currentBearer : profiles.keySet()){
+			Profile currentProfile = profiles.get(currentBearer);
+			Set<Integer> currentAttributes = currentProfile.getUsedAttributes();
+			Set<Integer> currentEntities = currentProfile.getUsedEntities();
+			for (Integer att : currentAttributes){
+				for (Integer ent : currentEntities){
+					if (currentProfile.hasPhenotypeSet(ent, att)){
+						for (Integer pheno : currentProfile.getPhenotypeSet(ent, att)){
 							if (!phenotypeNeighborCache.containsKey(ent)){
 								Set<Integer> parentset = new HashSet<Integer>();
 								phenotypeNeighborCache.put(ent, parentset);
-								p3.setInt(1, pheno);
-								ResultSet entityparents = p3.executeQuery();
+								neighborsStatement.setInt(1, pheno);
+								ResultSet entityparents = neighborsStatement.executeQuery();
 								while(entityparents.next()){
 									int target_id = entityparents.getInt(1);
 									parentset.add(target_id);
@@ -601,40 +602,7 @@ public class PhenotypeProfileAnalysis {
 		}
 	}
 
-	/**
-	 * Similar to buildTaxonEntityparents, perhaps these should be merged
-	 * @param phenotypeNeighborCache
-	 * @param u
-	 * @throws SQLException
-	 */
-	void buildGeneEntityParents(Map <Integer,Set<Integer>> phenotypeNeighborCache, Utils u) throws SQLException{
-		final PreparedStatement genePhenotypeQuery = u.getPreparedStatement(GENEPHENOTYPENEIGHBORQUERY);
-		for(Integer currentGene : geneProfiles.keySet()){
-			Profile currentGeneProfile = geneProfiles.get(currentGene);
-			Set<Integer> geneAttributes = currentGeneProfile.getUsedAttributes();
-			Set<Integer> geneEntities = currentGeneProfile.getUsedEntities();
-			for (Integer att : geneAttributes){
-				for (Integer ent : geneEntities){
-					if (currentGeneProfile.hasPhenotypeSet(ent, att)){
-						for (Integer pheno : currentGeneProfile.getPhenotypeSet(ent, att)){
-							if (!phenotypeNeighborCache.containsKey(ent)){
-								Set<Integer> parentset = new HashSet<Integer>();
-								phenotypeNeighborCache.put(ent, parentset);
-								genePhenotypeQuery.setInt(1, pheno);
-								ResultSet entityparents = genePhenotypeQuery.executeQuery();
-								while(entityparents.next()){
-									int target_id = entityparents.getInt(1);
-									parentset.add(target_id);
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-
+	
 	/**
 	 * 
 	 * @param profiles
@@ -642,16 +610,8 @@ public class PhenotypeProfileAnalysis {
 	 * @param parents
 	 * @throws SQLException 
 	 */
-	void fillCountTable(Map<Integer,Profile> profiles, CountTable counts,Map <Integer,Set<Integer>> parents, Utils u, String query,String countQuery) throws SQLException{
-		final Statement s = u.getStatement();
-		ResultSet countResult = s.executeQuery(countQuery);
-		if (countResult.next()){
-			int count = countResult.getInt(1);
-			counts.setSum(count);
-		}
-		else {
-			throw new RuntimeException("Count query failed");
-		}
+	void fillCountTable(Map<Integer,Profile> profiles, CountTable counts,Map <Integer,Set<Integer>> parents, Utils u, String query,int annotationCount) throws SQLException{
+		counts.setSum(annotationCount);
 		final PreparedStatement p = u.getPreparedStatement(query);
 		for(Profile currentProfile : profiles.values()){
 			Set <Integer> usedEntities = currentProfile.getUsedEntities();
