@@ -1,6 +1,6 @@
 package phenoscape.queries.lib;
 
-import java.io.BufferedWriter;
+import java.io.Writer;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -302,13 +302,14 @@ public class Utils {
 		}
 	}
 
-	public void writeOrDump(String contents, BufferedWriter b){
+	final static String lineSeparator = System.getProperty("line.separator");
+	public void writeOrDump(String contents, Writer b){
 		if (b == null)
 			System.out.println(contents);
 		else {
 			try {
 				b.write(contents);
-				b.newLine();
+				b.write(lineSeparator);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -316,7 +317,7 @@ public class Utils {
 		}
 	}
 	
-	public void listIntegerMembers(Set<Integer> s, BufferedWriter b){
+	public void listIntegerMembers(Set<Integer> s, Writer b){
 		for(Integer v : s){
 			if (b == null){
 				System.out.print(v.intValue() + " ");
@@ -334,7 +335,7 @@ public class Utils {
 			System.out.println();
 		else
 			try {
-				b.newLine();
+				b.write(lineSeparator);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

@@ -2,19 +2,32 @@ package phenoscape.queries;
 
 import static org.junit.Assert.*;
 
+import java.io.StringWriter;
+import java.sql.SQLException;
+
+import org.apache.log4j.BasicConfigurator;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import phenoscape.queries.lib.Utils;
+
 public class TestPhenotypeProfileAnalysis {
 
+	PhenotypeProfileAnalysis testAnalysis;
+	Utils u = new Utils();
+	StringWriter testWriter1;
+	StringWriter testWriter2;
+	StringWriter testWriter3;
+	StringWriter testWriter4;
+	
 	@Before
 	public void setUp() throws Exception {
+		BasicConfigurator.configure();   //prevent complaints by log4j
+		u.openKB();
+		testAnalysis = new PhenotypeProfileAnalysis(u);
 	}
 
-	@Test
-	public void testProcess() {
-		fail("Not yet implemented");
-	}
 
 	@Test
 	public void testCalcMaxIC() {
@@ -27,8 +40,11 @@ public class TestPhenotypeProfileAnalysis {
 	}
 
 	@Test
-	public void testProcessTaxonVariation() {
-		fail("Not yet implemented");
+	public void testProcessTaxonVariation() throws SQLException {
+		String taxonomyRoot = "TTO:105426"; 
+		TaxonomyTree t = new TaxonomyTree(taxonomyRoot,u);
+		t.traverseOntologyTree(u);
+		testAnalysis.processTaxonVariation(t,u, testWriter1);
 	}
 
 	@Test
@@ -68,7 +84,14 @@ public class TestPhenotypeProfileAnalysis {
 
 	@Test
 	public void testWritePhenotypeMatchSummary() {
+		
 		fail("Not yet implemented");
+	}
+
+	
+	@After
+	public void tearDown() throws Exception {
+		u.closeKB();
 	}
 
 }

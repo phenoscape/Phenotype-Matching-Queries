@@ -1,13 +1,11 @@
 package phenoscape.queries;
 
-import java.io.BufferedWriter;
+import java.io.Writer;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -125,15 +123,15 @@ public class TaxonomyTree {
 		}
 	}
 	
-	public void report(Utils u, BufferedWriter bw){
-		u.writeOrDump("Taxon Count = " + taxonCounter,bw);
-		u.writeOrDump("Extinct Taxa = " + extinctCounter,bw);
-		u.writeOrDump("Taxa at phylum rank = " + rankCounts.get("phylum"),bw);
-		u.writeOrDump("Taxa at class rank = " + rankCounts.get("class"),bw);
-		u.writeOrDump("Taxa at order rank = " + rankCounts.get("order"),bw);
-		u.writeOrDump("Taxa at family rank = " + rankCounts.get("family"),bw);
-		u.writeOrDump("Taxa at genus rank = " + rankCounts.get("genus"),bw);
-		u.writeOrDump("Taxa at species rank = " + rankCounts.get("species"),bw);
+	public void report(Utils u, Writer w){
+		u.writeOrDump("Taxon Count = " + taxonCounter,w);
+		u.writeOrDump("Extinct Taxa = " + extinctCounter,w);
+		u.writeOrDump("Taxa at phylum rank = " + rankCounts.get("phylum"),w);
+		u.writeOrDump("Taxa at class rank = " + rankCounts.get("class"),w);
+		u.writeOrDump("Taxa at order rank = " + rankCounts.get("order"),w);
+		u.writeOrDump("Taxa at family rank = " + rankCounts.get("family"),w);
+		u.writeOrDump("Taxa at genus rank = " + rankCounts.get("genus"),w);
+		u.writeOrDump("Taxa at species rank = " + rankCounts.get("species"),w);
 	}
 
 }

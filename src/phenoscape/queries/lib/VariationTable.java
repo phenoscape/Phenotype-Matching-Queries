@@ -1,6 +1,7 @@
 package phenoscape.queries.lib;
 
 import java.io.BufferedWriter;
+import java.io.Writer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -62,7 +63,7 @@ public class VariationTable {
 		return result;
 	}
 	
-	public void variationReport(Utils u, BufferedWriter bw){
+	public void variationReport(Utils u, Writer bw){
 		
 		int sum = 0;
 		Map<Integer,Integer> attributeSums = new HashMap<Integer,Integer>();

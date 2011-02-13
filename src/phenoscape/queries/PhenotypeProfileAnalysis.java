@@ -1,6 +1,7 @@
 package phenoscape.queries;
 
 import java.io.BufferedWriter;
+import java.io.Writer;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -35,7 +36,7 @@ public class PhenotypeProfileAnalysis {
 	private static final String TAOROOT = "TAO:0100000";
 	private static final String PATOROOT = "PATO:0000001";
 	private static final String TTOROOT = "TTO:0";
-	private static final String OSTARIOCLUPEOMORPHAROOT = "TTO;253";
+	private static final String OSTARIOCLUPEOMORPHAROOT = "TTO:253";
 	private static final String OSTARIOPHYSIROOT = "TTO:302";
 	private static final String ASPIDORASROOT = "TTO:105426";
 	private static final String AMIIDAEROOT = "TTO:10360";
@@ -67,11 +68,16 @@ public class PhenotypeProfileAnalysis {
 		"SELECT target.node_id FROM node AS entity " +
 		"JOIN link ON (entity.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:inheres_in_part_of')) " + 
 		"JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? " +
-		"GROUP BY entity.uid, target.uid,target.node_id";
+		"GROUP BY entity.uid, target.uid,target.node_id";  //TODO: is this GROUP BY needed?
 	
-
+	private static final String QUALITYPARENTQUERY = 
+		"SELECT target.node_id FROM node AS quality " +
+		"JOIN link ON (quality.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:is_a')) " +
+		"JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? " +
+		"GROUP BY quality.uid,target.uid,target.node_id";   //TODO: is this GROUP BY needed?
+	
 	private static final String TAXONPHENOTYPECOUNTQUERY = 
-		"SELECT count(*) FROM asserted_taxon_annotation  WHERE asserted_taxon_annotation.phenotype_node_id IN " +
+		"SELECT count(*) FROM asserted_taxon_annotation WHERE asserted_taxon_annotation.phenotype_node_id IN " +
 		"(SELECT phenotype.node_id from phenotype " + 
 		"JOIN link phenotype_inheres_in_part_of ON (phenotype_inheres_in_part_of.node_id = phenotype.node_id AND phenotype_inheres_in_part_of.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:inheres_in_part_of')) " +
 		"JOIN link quality_is_a ON (quality_is_a.node_id = phenotype.node_id AND quality_is_a.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:is_a')) " + 
@@ -80,6 +86,10 @@ public class PhenotypeProfileAnalysis {
 	private static final String ASSERTEDTAXONPHENOTYPECOUNTQUERY =
 		"SELECT COUNT(*) FROM asserted_taxon_annotation";
 	
+	private static final String PHENOSCAPECOUNTSQUERY = 
+		"SELECT target.uid FROM node AS quality " +
+		"JOIN link ON (quality.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'PHENOSCAPE:has_count')) " +
+		"JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? "; 
 
 	private static final String GENEPHENOTYPECOUNTQUERY =
 		"SELECT count(*) FROM distinct_gene_annotation  WHERE distinct_gene_annotation.phenotype_node_id IN " +
@@ -104,7 +114,7 @@ public class PhenotypeProfileAnalysis {
 	/**
 	 * This maps qualities to attributes
 	 */
-	Map<Integer,Integer> attributeMap;
+	final Map<Integer,Integer> attributeMap;
 
 	/**
 	 * This holds the node ids for each attribute in the character slim + quality
@@ -120,32 +130,51 @@ public class PhenotypeProfileAnalysis {
 	/**
 	 * This holds the node id for the term 'quality.'
 	 */
-	int qualityNodeID;
+	final int qualityNodeID;
 
 	static Logger logger = Logger.getLogger(PhenotypeProfileAnalysis.class.getName());
+
+	public PhenotypeProfileAnalysis(Utils u) throws SQLException{
+		logger.info("Caching entity UIDs and labels");
+		u.cacheEntities();    // this will retrieve entities that appear in EQ's
+		
+		logger.info("Setting up Attribute table");
+		qualityNodeID = u.getQualityNodeID();   //set to the root of PATO
+		attributeMap = u.setupAttributes();
+
+		attributeSet.addAll(attributeMap.values());		
+		attributeSet.add(qualityNodeID);
+	}
+
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		BasicConfigurator.configure();
-		PhenotypeProfileAnalysis listQuery = new PhenotypeProfileAnalysis();
 		Utils u = new Utils();
 		String kbName;
 		try {
 			kbName = u.openKB();
-		} catch (SQLException e1) {
-			logger.fatal("Failed to open KB; will exit.  Reason was " + e1.toString());
+		} catch (SQLException e) {
+			logger.fatal("Failed to open KB; will exit.  Reason was " + e.toString());
 			return;
+		}
+		PhenotypeProfileAnalysis listQuery;
+		try{
+			listQuery = new PhenotypeProfileAnalysis(u);
+		} catch (SQLException e) {
+			logger.fatal("Failed during initialization; will exit.  Reason was " + e.toString());
+			return;			
 		}
 		File outFile1 = new File(TAXONREPORTFILENAME);
 		File outFile2 = new File(GENEREPORTFILENAME);
 		File outFile3 = new File(PHENOTYPEMATCHREPORTFILENAME);
 		File outFile4 = new File(PROFILEMATCHREPORTFILENAME);
-		BufferedWriter bw1 = null;
-		BufferedWriter bw2 = null;
-		BufferedWriter bw3 = null;
-		BufferedWriter bw4 = null;
+		Writer w1 = null;
+		Writer w2 = null;
+		Writer w3 = null;
+		Writer w4 = null;
 		Date today;
 		DateFormat dateFormatter;
 
@@ -154,15 +183,15 @@ public class PhenotypeProfileAnalysis {
 		DateFormat timeFormatter = DateFormat.getTimeInstance(DateFormat.DEFAULT);
 		String timeStamp = dateFormatter.format(today) + " " + timeFormatter.format(today) + " on " + kbName;		
 		try {
-			bw1 = new BufferedWriter(new FileWriter(outFile1));
-			bw2 = new BufferedWriter(new FileWriter(outFile2));
-			bw3 = new BufferedWriter(new FileWriter(outFile3));
-			bw4 = new BufferedWriter(new FileWriter(outFile4));
-			u.writeOrDump(timeStamp, bw1);
-			u.writeOrDump(timeStamp, bw2);
-			u.writeOrDump(timeStamp, bw3);
-			u.writeOrDump(timeStamp, bw4);
-			listQuery.process(u, bw1, bw2, bw3, bw4);
+			w1 = new BufferedWriter(new FileWriter(outFile1));
+			w2 = new BufferedWriter(new FileWriter(outFile2));
+			w3 = new BufferedWriter(new FileWriter(outFile3));
+			w4 = new BufferedWriter(new FileWriter(outFile4));
+			u.writeOrDump(timeStamp, w1);
+			u.writeOrDump(timeStamp, w2);
+			u.writeOrDump(timeStamp, w3);
+			u.writeOrDump(timeStamp, w4);
+			listQuery.process(u, w1, w2, w3, w4);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -173,10 +202,10 @@ public class PhenotypeProfileAnalysis {
 		finally{
 			try {
 				u.closeKB();
-				bw1.close();
-				bw2.close();
-				bw3.close();
-				bw4.close();
+				w1.close();
+				w2.close();
+				w3.close();
+				w4.close();
 			} catch (Exception e) {
 				System.err.print("An exception occurred while closing a report file or database connection");
 				e.printStackTrace();
@@ -185,34 +214,21 @@ public class PhenotypeProfileAnalysis {
 	}
 
 
-	void process(Utils u,BufferedWriter bw1, BufferedWriter bw2, BufferedWriter bw3, BufferedWriter bw4) throws IOException,SQLException{
-		logger.info("Caching entity UIDs and labels");
-		u.cacheEntities();    // this will retrieve entities that appear in EQ's
-		
-		logger.info("Setting up Attribute table");
-		attributeMap = u.setupAttributes();
-
-		attributeSet.addAll(attributeMap.values());
-		attributeSet.add(qualityNodeID);
-
-		
-		qualityNodeID = u.getQualityNodeID();   //set to the root of PATO
-
-
+	void process(Utils u,Writer w1, Writer w2, Writer w3, Writer w4) throws IOException,SQLException{
 		// process taxa annotations
 		logger.info("Building Taxonomy Tree");
 		TaxonomyTree t = new TaxonomyTree(ANALYSISROOT,u);
 		t.traverseOntologyTree(u);
-		processTaxonVariation(t,u, bw1);
+		processTaxonVariation(t,u, w1);
 		if (taxonProfiles.isEmpty()){
 			throw new RuntimeException("No taxa in Profile Set");
 		}
-		t.report(u, bw1);
-		taxonVariation.variationReport(u,bw1);	
+		t.report(u, w1);
+		taxonVariation.variationReport(u,w1);	
 
-		processGeneExpression(u, bw2);
-		geneVariation.variationReport(u, bw2);
-		bw2.close();
+		processGeneExpression(u, w2);
+		geneVariation.variationReport(u, w2);
+		w2.close();
 
 		/* These need to happen after the profiles have been constructed, since we don't want to count taxon annotations that don't reflect change */
 		CountTable phenotypeCountsForTaxa = new CountTable();  
@@ -236,17 +252,17 @@ public class PhenotypeProfileAnalysis {
 
 		logger.info("Done building entity parents; building phenotype match cache");
 		int attOverlaps = buildPhenotypeMatchCache(phenotypeNeighborCache, phenotypeScores, phenotypeCountsCombined, u);
-		u.writeOrDump("gene and taxon profiles overlapping on an attribute:  " + attOverlaps,bw1);
-		bw1.close();
+		u.writeOrDump("gene and taxon profiles overlapping on an attribute:  " + attOverlaps,w1);
+		w1.close();
 		logger.info("Finished building phenotype match cache; Writing Phenotype match summary");
-		writePhenotypeMatchSummary(phenotypeScores,u,bw3);		
-		bw3.close();
+		writePhenotypeMatchSummary(phenotypeScores,u,w3);		
+		w3.close();
 
 		logger.info("Finished Writing Phenotype match summary");
 		logger.info("Calculating Profile Scores");
 
 		//List<ProfileScoreSet> results = new ArrayList<ProfileScoreSet>(1000);
-		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t maxIC \t iccs \t simIC \t simJ",bw4);
+		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t maxIC \t iccs \t simIC \t simJ",w4);
 
 		long zeroCount = 0;
 		//u.writeOrDump("Sizes: Taxon profiles: " + taxonProfiles.keySet().size() + "; Gene profiles: " + geneProfiles.keySet().size(), null);
@@ -272,13 +288,13 @@ public class PhenotypeProfileAnalysis {
 				result.setSimJScore(-1.0);
 
 				if (result.isNonZero())
-					result.writeScores(u, bw4);
+					result.writeScores(u, w4);
 				else
 					zeroCount++;
 			}
 		}
-		u.writeOrDump("Pairs with zero score = " + zeroCount, bw4);
-		bw4.close();
+		u.writeOrDump("Pairs with zero score = " + zeroCount, w4);
+		w4.close();
 		logger.info("Done");
 	}
 
@@ -378,7 +394,7 @@ public class PhenotypeProfileAnalysis {
 	 * @param reportWriter
 	 * @throws SQLException
 	 */
-	void processTaxonVariation(TaxonomyTree t, Utils u, BufferedWriter reportWriter) throws SQLException{		
+	void processTaxonVariation(TaxonomyTree t, Utils u, Writer reportWriter) throws SQLException{		
 		int emptyCount = 0;
 		int childCount = 0;
 		Set<Integer> taxonSet = t.getAllTaxa();
@@ -424,7 +440,7 @@ public class PhenotypeProfileAnalysis {
 	}
 
 
-	void traverseTaxonomy(TaxonomyTree t, Integer taxon, Map<Integer, Profile> profiles, Utils u, BufferedWriter reportWriter){
+	void traverseTaxonomy(TaxonomyTree t, Integer taxon, Map<Integer, Profile> profiles, Utils u, Writer reportWriter){
 		if (t.nodeIsInternal(taxon, u)){
 			//build set of children
 			final Set<Integer> children = t.getTable().get(taxon);
@@ -499,7 +515,7 @@ public class PhenotypeProfileAnalysis {
 	/**
 	 * Name is a little dicy, but better than GeneVariation
 	 */
-	void processGeneExpression(Utils u, BufferedWriter reportWriter) throws SQLException{
+	void processGeneExpression(Utils u, Writer reportWriter) throws SQLException{
 		int annotationCount = 0;
 		int usableAnnotationCount = 0;
 		Set<Integer>uniqueGenes = new HashSet<Integer>();
@@ -734,8 +750,8 @@ public class PhenotypeProfileAnalysis {
 	}
 
 
-	void writePhenotypeMatchSummary(PhenotypeScoreTable phenotypeScores,Utils u, BufferedWriter bw3){
-		u.writeOrDump("Taxon\tGene\tTaxon Entity\tGeneEntity\tAttribute\tBest Entity Match\tScore", bw3);
+	void writePhenotypeMatchSummary(PhenotypeScoreTable phenotypeScores,Utils u, Writer w){
+		u.writeOrDump("Taxon\tGene\tTaxon Entity\tGeneEntity\tAttribute\tBest Entity Match\tScore", w);
 		for(Integer currentTaxon : taxonProfiles.keySet()){
 			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
 			for(Integer currentGene : geneProfiles.keySet()){
@@ -745,27 +761,29 @@ public class PhenotypeProfileAnalysis {
 						for (Integer att : attributeSet){
 							if (currentTaxonProfile.hasPhenotypeSet(tEntity, att) && currentGeneProfile.hasPhenotypeSet(gEntity, att)){
 								if (phenotypeScores.hasScore(tEntity, gEntity, att)){
-									Integer bestEntity = new Integer(phenotypeScores.getBestEntity(tEntity, gEntity,att));
-									StringBuilder lineBuilder = new StringBuilder(200);
-									String bestID =u.getNodeName(bestEntity);
-									if (bestID == null)
-										bestID = u.getNodeUID(bestEntity);
-									if (bestID == null)
-										bestID = Integer.toString(bestEntity);
-									lineBuilder.append(u.getNodeName(currentTaxon));
-									lineBuilder.append("\t");
-									lineBuilder.append(u.getNodeName(currentGene));
-									lineBuilder.append("\t");
-									lineBuilder.append(u.getNodeName(tEntity));
-									lineBuilder.append("\t");
-									lineBuilder.append(u.getNodeName(gEntity));
-									lineBuilder.append("\t");
-									lineBuilder.append(u.getNodeName(att));
-									lineBuilder.append("\t");
-									lineBuilder.append(bestID);
-									lineBuilder.append("\t");
-									lineBuilder.append(phenotypeScores.getScore(tEntity, gEntity,att));
-									u.writeOrDump(lineBuilder.toString(),bw3);								
+									if (phenotypeScores.getScore(tEntity, gEntity,att)>12.0){
+										Integer bestEntity = new Integer(phenotypeScores.getBestEntity(tEntity, gEntity,att));
+										StringBuilder lineBuilder = new StringBuilder(200);
+										String bestID =u.getNodeName(bestEntity);
+										if (bestID == null)
+											bestID = u.getNodeUID(bestEntity);
+										if (bestID == null)
+											bestID = Integer.toString(bestEntity);
+										lineBuilder.append(u.getNodeName(currentTaxon));
+										lineBuilder.append("\t");
+										lineBuilder.append(u.getNodeName(currentGene));
+										lineBuilder.append("\t");
+										lineBuilder.append(u.getNodeName(tEntity));
+										lineBuilder.append("\t");
+										lineBuilder.append(u.getNodeName(gEntity));
+										lineBuilder.append("\t");
+										lineBuilder.append(u.getNodeName(att));
+										lineBuilder.append("\t");
+										lineBuilder.append(bestID);
+										lineBuilder.append("\t");
+										lineBuilder.append(phenotypeScores.getScore(tEntity, gEntity,att));
+										u.writeOrDump(lineBuilder.toString(),w);	
+									}
 								}
 							}
 						}

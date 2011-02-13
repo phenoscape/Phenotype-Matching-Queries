@@ -1,6 +1,7 @@
 package phenoscape.queries.lib;
 
 import java.io.BufferedWriter;
+import java.io.Writer;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -38,23 +39,23 @@ public class ProfileScoreSet implements Comparable {
 		simJScore = score;
 	}
 	
-	public void writeScores(Utils u, BufferedWriter b){
-		u.writeOrDump(u.getNodeName(taxon) + "\t" + u.getNodeName(gene) + "\t" + taxonPhenotypes.size() + "\t" + genePhenotypes.size() + "\t" + maxICScore + "\t" + iccsScore + "\t" + simICScore + "\t" + simJScore,b);		
+	public void writeScores(Utils u, Writer w){
+		u.writeOrDump(u.getNodeName(taxon) + "\t" + u.getNodeName(gene) + "\t" + taxonPhenotypes.size() + "\t" + genePhenotypes.size() + "\t" + maxICScore + "\t" + iccsScore + "\t" + simICScore + "\t" + simJScore,w);		
 	}
 	
-	public void writeComplete(Utils u, BufferedWriter b){
+	public void writeComplete(Utils u, Writer w){
 		Set<Integer>used = new HashSet<Integer>();
-		u.writeOrDump(u.getNodeName(taxon) + "\t" + u.getNodeName(gene) + "\t\t\t" + maxICScore + "\t" + iccsScore + "\t" + simICScore + "\t" + simJScore,b);		
+		u.writeOrDump(u.getNodeName(taxon) + "\t" + u.getNodeName(gene) + "\t\t\t" + maxICScore + "\t" + iccsScore + "\t" + simICScore + "\t" + simJScore,w);		
 		for (Integer tph : taxonPhenotypes){
 			if (genePhenotypes.contains(tph))
-				u.writeOrDump("\t\t" + u.getNodeName(tph) + "\t" + u.getNodeName(tph), b);
+				u.writeOrDump("\t\t" + u.getNodeName(tph) + "\t" + u.getNodeName(tph), w);
 			else
-				u.writeOrDump("\t\t" + u.getNodeName(tph),b);
+				u.writeOrDump("\t\t" + u.getNodeName(tph),w);
 			used.add(tph);
 		}
 		for (Integer gph : genePhenotypes){
 			if (!used.contains(gph)){
-				u.writeOrDump("\t\t\t" + u.getNodeName(gph), b);
+				u.writeOrDump("\t\t\t" + u.getNodeName(gph), w);
 			}
 		}
 	}
