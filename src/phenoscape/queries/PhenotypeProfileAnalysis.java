@@ -44,6 +44,8 @@ public class PhenotypeProfileAnalysis {
 	private static final String SILURIFORMESROOT = "TTO:1380";
 	
 	private String ANALYSISROOT = OSTARIOCLUPEOMORPHAROOT;
+	
+	private static final double IC_CUTOFF =  10.0;
 
 
 	private static final String TAXONREPORTFILENAME = "../TaxonVariationReport.txt";
@@ -64,7 +66,7 @@ public class PhenotypeProfileAnalysis {
 		"SELECT gene_node_id, gene_uid, gene_label, dga.phenotype_node_id, p1.entity_node_id, p1.entity_uid, p1.quality_node_id, p1.quality_uid,p1.uid,simple_label(dga.phenotype_node_id), simple_label(p1.entity_node_id),simple_label(p1.quality_node_id) FROM distinct_gene_annotation AS dga " +
 		"JOIN phenotype AS p1 ON (p1.node_id = dga.phenotype_node_id)";
 
-	private static final String PHENOTYPENEIGHBORQUERY = 
+	private static final String PHENOTYPEPARENTQUERY = 
 		"SELECT target.node_id FROM node AS entity " +
 		"JOIN link ON (entity.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:inheres_in_part_of')) " + 
 		"JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? " +
@@ -235,23 +237,23 @@ public class PhenotypeProfileAnalysis {
 		CountTable phenotypeCountsForGenes = new CountTable();
 		CountTable phenotypeCountsCombined = new CountTable();
 
-		Map <Integer,Set<Integer>> phenotypeNeighborCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> phenotypeParentCache = new HashMap<Integer,Set<Integer>>();
 		logger.info("Building entity parents of taxon phenotypes");
-		PreparedStatement phenotypeNeighborStatement = u.getPreparedStatement(PHENOTYPENEIGHBORQUERY); 
-		buildEntityParents(phenotypeNeighborCache,phenotypeNeighborStatement, taxonProfiles);
+		PreparedStatement phenotypeparentStatement = u.getPreparedStatement(PHENOTYPEPARENTQUERY); 
+		buildEntityParents(phenotypeParentCache,phenotypeparentStatement, taxonProfiles);
 
 		logger.info("Building entity parents of gene phenotypes");
-		buildEntityParents(phenotypeNeighborCache,phenotypeNeighborStatement,geneProfiles);
+		buildEntityParents(phenotypeParentCache,phenotypeparentStatement,geneProfiles);
 
-		fillCountTable(taxonProfiles, phenotypeCountsForTaxa,phenotypeNeighborCache, u, TAXONPHENOTYPECOUNTQUERY, u.countAssertedTaxonPhenotypeAnnotations());
-		fillCountTable(geneProfiles, phenotypeCountsForGenes,phenotypeNeighborCache, u, GENEPHENOTYPECOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		fillCountTable(taxonProfiles, phenotypeCountsForTaxa,phenotypeParentCache, u, TAXONPHENOTYPECOUNTQUERY, u.countAssertedTaxonPhenotypeAnnotations());
+		fillCountTable(geneProfiles, phenotypeCountsForGenes,phenotypeParentCache, u, GENEPHENOTYPECOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		sumCountTables(phenotypeCountsCombined,phenotypeCountsForTaxa,phenotypeCountsForGenes);
 
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 
 
 		logger.info("Done building entity parents; building phenotype match cache");
-		int attOverlaps = buildPhenotypeMatchCache(phenotypeNeighborCache, phenotypeScores, phenotypeCountsCombined, u);
+		int attOverlaps = buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, phenotypeCountsCombined, u);
 		u.writeOrDump("gene and taxon profiles overlapping on an attribute:  " + attOverlaps,w1);
 		w1.close();
 		logger.info("Finished building phenotype match cache; Writing Phenotype match summary");
@@ -588,11 +590,11 @@ public class PhenotypeProfileAnalysis {
 	 * For each phenotype in the taxonProfile, this builds the set of entity parents.
 	 * Changed to save the parents (iipo parents) indexed by the entity, which is more efficient and useful later on.
 	 * 
-	 * @param phenotypeNeighborCache
+	 * @param phenotypeparentCache
 	 * @param u
 	 * @throws SQLException
 	 */
-	void buildEntityParents(Map <Integer,Set<Integer>> phenotypeNeighborCache, PreparedStatement neighborsStatement, Map<Integer,Profile> profiles) throws SQLException{
+	void buildEntityParents(Map <Integer,Set<Integer>> phenotypeParentCache, PreparedStatement entityParentsStatement, Map<Integer,Profile> profiles) throws SQLException{
 		for(Integer currentBearer : profiles.keySet()){
 			Profile currentProfile = profiles.get(currentBearer);
 			Set<Integer> currentAttributes = currentProfile.getUsedAttributes();
@@ -601,14 +603,14 @@ public class PhenotypeProfileAnalysis {
 				for (Integer ent : currentEntities){
 					if (currentProfile.hasPhenotypeSet(ent, att)){
 						for (Integer pheno : currentProfile.getPhenotypeSet(ent, att)){
-							if (!phenotypeNeighborCache.containsKey(ent)){
-								Set<Integer> parentset = new HashSet<Integer>();
-								phenotypeNeighborCache.put(ent, parentset);
-								neighborsStatement.setInt(1, pheno);
-								ResultSet entityparents = neighborsStatement.executeQuery();
-								while(entityparents.next()){
-									int target_id = entityparents.getInt(1);
-									parentset.add(target_id);
+							if (!phenotypeParentCache.containsKey(ent)){
+								Set<Integer> parentSet = new HashSet<Integer>();
+								phenotypeParentCache.put(ent, parentSet);
+								entityParentsStatement.setInt(1, pheno);
+								ResultSet entityParents = entityParentsStatement.executeQuery();
+								while(entityParents.next()){
+									int target_id = entityParents.getInt(1);
+									parentSet.add(target_id);
 								}
 							}
 						}
@@ -616,6 +618,10 @@ public class PhenotypeProfileAnalysis {
 				}
 			}
 		}
+	}
+	
+	void buildEQParents(Map<Integer,Set<Integer>> phenotypeParentCache, PreparedStatement entityParentsStatment, PreparedStatement qualityParentsStatement, Map<Integer,Profile> profiles) throws SQLException{
+		
 	}
 
 	
@@ -761,7 +767,7 @@ public class PhenotypeProfileAnalysis {
 						for (Integer att : attributeSet){
 							if (currentTaxonProfile.hasPhenotypeSet(tEntity, att) && currentGeneProfile.hasPhenotypeSet(gEntity, att)){
 								if (phenotypeScores.hasScore(tEntity, gEntity, att)){
-									if (phenotypeScores.getScore(tEntity, gEntity,att)>12.0){
+									if (phenotypeScores.getScore(tEntity, gEntity,att)>IC_CUTOFF){
 										Integer bestEntity = new Integer(phenotypeScores.getBestEntity(tEntity, gEntity,att));
 										StringBuilder lineBuilder = new StringBuilder(200);
 										String bestID =u.getNodeName(bestEntity);
