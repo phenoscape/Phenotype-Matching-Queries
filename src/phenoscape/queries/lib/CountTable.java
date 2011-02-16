@@ -11,17 +11,17 @@ public class CountTable {
 	
 	private long sum;
 	
-	private Map<Integer,Map<Integer,Integer>> table = new HashMap<Integer,Map<Integer,Integer>>();  // entity -> (attribute -> count)
+	private Map<Integer,Map<Integer,Integer>> table = new HashMap<Integer,Map<Integer,Integer>>();  // entity -> (quality -> count)
 	
 	
-	public void addCount(Integer entity_id, Integer attribute_id, int score){
+	public void addCount(Integer entity_id, Integer quality_id, int score){
 		if (table.containsKey(entity_id)){
 			Map<Integer,Integer> entity_entry = table.get(entity_id);
-			entity_entry.put(attribute_id, score);
+			entity_entry.put(quality_id, score);
 		}
 		else {
 			Map<Integer,Integer> entity_entry = new HashMap<Integer,Integer>();
-			entity_entry.put(attribute_id, score);
+			entity_entry.put(quality_id, score);
 			table.put(entity_id, entity_entry);
 		}
 	}
@@ -41,7 +41,7 @@ public class CountTable {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public Set<Integer> getAttributesForEntity(Integer entity_id){
+	public Set<Integer> getQualitiesForEntity(Integer entity_id){
 		Map<Integer,Integer> entity_entry = table.get(entity_id);
 		if (entity_entry == null){
 			return (Set<Integer>)Collections.EMPTY_SET;
@@ -50,23 +50,23 @@ public class CountTable {
 			return entity_entry.keySet();
 	}
 
-	public boolean hasCount(Integer entity, Integer attribute){
+	public boolean hasCount(Integer entity, Integer quality){
 		if (table.containsKey(entity))
-			return (table.get(entity).containsKey(attribute));
+			return (table.get(entity).containsKey(quality));
 		else
 			return false;
 	}
 	
-	public int getRawCount(Integer entity, Integer attribute){
-		return table.get(entity).get(attribute).intValue();
+	public int getRawCount(Integer entity, Integer quality){
+		return table.get(entity).get(quality).intValue();
 	}
 	
-	public double getFraction(Integer entity, Integer attribute){
-		return ((double)getRawCount(entity, attribute))/(double)sum;
+	public double getFraction(Integer entity, Integer quality){
+		return ((double)getRawCount(entity, quality))/(double)sum;
 	}
 	
-	public double getIC(Integer entity, Integer attribute){
-		return -1*Math.log(getFraction(entity,attribute))/LOG2;
+	public double getIC(Integer entity, Integer quality){
+		return -1*Math.log(getFraction(entity,quality))/LOG2;
 	}
 
 	public void setSum(long count){

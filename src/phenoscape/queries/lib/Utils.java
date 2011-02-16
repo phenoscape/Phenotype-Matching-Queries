@@ -241,6 +241,43 @@ public class Utils {
 		return getCount(ASSERTEDGENEPHENOTYPECOUNTQUERY);	
 	}
 
+	private static final String ENTITYPARENTQUERY = 
+		"SELECT target.node_id FROM node AS pheno " +
+		"JOIN link ON (pheno.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:inheres_in_part_of')) " + 
+		"JOIN node AS target ON (target.node_id = link.object_id) WHERE pheno.node_id = ? ";
+
+	public Set<Integer> collectEntityParents(int pheno) throws SQLException{
+		PreparedStatement entityParentsStatement = getPreparedStatement(ENTITYPARENTQUERY); 
+		final Set<Integer> results = new HashSet<Integer>();
+		entityParentsStatement.setInt(1, pheno);
+		ResultSet entityParents = entityParentsStatement.executeQuery();
+		while(entityParents.next()){
+			int target_id = entityParents.getInt(1);
+			results.add(target_id);
+		}
+		return results;
+	}
+
+	private static final String QUALITYPARENTQUERY = 
+		"SELECT target.node_id FROM node AS quality " +
+		"JOIN link ON (quality.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:is_a')) " +
+		"JOIN node AS target ON (target.node_id = link.object_id) WHERE quality.node_id = ? ";
+
+	public Set<Integer> collectQualityParents(int quality) throws SQLException{
+		PreparedStatement qualityParentsStatement = getPreparedStatement(ENTITYPARENTQUERY); 
+		final Set<Integer> results = new HashSet<Integer>();
+		qualityParentsStatement.setInt(1, quality);
+		ResultSet entityParents = qualityParentsStatement.executeQuery();
+		while(entityParents.next()){
+			int target_id = entityParents.getInt(1);
+			results.add(target_id);
+		}
+		return results;
+
+	}
+	
+	
+	
 	
 	/**
 	 * This returns a count from a query

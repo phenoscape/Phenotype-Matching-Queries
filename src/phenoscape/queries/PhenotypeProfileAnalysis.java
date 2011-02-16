@@ -22,9 +22,11 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 
 import phenoscape.queries.lib.CountTable;
+import phenoscape.queries.lib.EQPair;
 import phenoscape.queries.lib.PhenotypeScoreTable;
 import phenoscape.queries.lib.Profile;
 import phenoscape.queries.lib.ProfileScoreSet;
+import phenoscape.queries.lib.QueryReturningCount;
 import phenoscape.queries.lib.Utils;
 import phenoscape.queries.lib.VariationTable;
 
@@ -43,7 +45,7 @@ public class PhenotypeProfileAnalysis {
 	private static final String CALLICHTHYIDAEROOT = "TTO:11200";
 	private static final String SILURIFORMESROOT = "TTO:1380";
 	
-	private String ANALYSISROOT = OSTARIOCLUPEOMORPHAROOT;
+	private String ANALYSISROOT = ASPIDORASROOT;
 	
 	private static final double IC_CUTOFF =  10.0;
 
@@ -66,7 +68,7 @@ public class PhenotypeProfileAnalysis {
 		"SELECT gene_node_id, gene_uid, gene_label, dga.phenotype_node_id, p1.entity_node_id, p1.entity_uid, p1.quality_node_id, p1.quality_uid,p1.uid,simple_label(dga.phenotype_node_id), simple_label(p1.entity_node_id),simple_label(p1.quality_node_id) FROM distinct_gene_annotation AS dga " +
 		"JOIN phenotype AS p1 ON (p1.node_id = dga.phenotype_node_id)";
 
-	private static final String PHENOTYPEPARENTQUERY = 
+	private static final String ENTITYPARENTQUERY = 
 		"SELECT target.node_id FROM node AS entity " +
 		"JOIN link ON (entity.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:inheres_in_part_of')) " + 
 		"JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? " +
@@ -85,13 +87,6 @@ public class PhenotypeProfileAnalysis {
 		"JOIN link quality_is_a ON (quality_is_a.node_id = phenotype.node_id AND quality_is_a.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:is_a')) " + 
 		"WHERE (phenotype_inheres_in_part_of.object_id = ?  AND quality_is_a.object_id = ?))";
 	
-	private static final String ASSERTEDTAXONPHENOTYPECOUNTQUERY =
-		"SELECT COUNT(*) FROM asserted_taxon_annotation";
-	
-	private static final String PHENOSCAPECOUNTSQUERY = 
-		"SELECT target.uid FROM node AS quality " +
-		"JOIN link ON (quality.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'PHENOSCAPE:has_count')) " +
-		"JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? "; 
 
 	private static final String GENEPHENOTYPECOUNTQUERY =
 		"SELECT count(*) FROM distinct_gene_annotation  WHERE distinct_gene_annotation.phenotype_node_id IN " +
@@ -195,10 +190,8 @@ public class PhenotypeProfileAnalysis {
 			u.writeOrDump(timeStamp, w4);
 			listQuery.process(u, w1, w2, w3, w4);
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		finally{
@@ -237,23 +230,28 @@ public class PhenotypeProfileAnalysis {
 		CountTable phenotypeCountsForGenes = new CountTable();
 		CountTable phenotypeCountsCombined = new CountTable();
 
-		Map <Integer,Set<Integer>> phenotypeParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
 		logger.info("Building entity parents of taxon phenotypes");
-		PreparedStatement phenotypeparentStatement = u.getPreparedStatement(PHENOTYPEPARENTQUERY); 
-		buildEntityParents(phenotypeParentCache,phenotypeparentStatement, taxonProfiles);
+		buildEntityParents(entityParentCache,taxonProfiles,u);
+		
 
 		logger.info("Building entity parents of gene phenotypes");
-		buildEntityParents(phenotypeParentCache,phenotypeparentStatement,geneProfiles);
+		buildEntityParents(entityParentCache,geneProfiles,u);
 
-		fillCountTable(taxonProfiles, phenotypeCountsForTaxa,phenotypeParentCache, u, TAXONPHENOTYPECOUNTQUERY, u.countAssertedTaxonPhenotypeAnnotations());
-		fillCountTable(geneProfiles, phenotypeCountsForGenes,phenotypeParentCache, u, GENEPHENOTYPECOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		/* Test introduction of phenotypeParentCache, which should map an attribute level EQ to all its parents via inheres_in_part_of entity parents and is_a quality parents (cross product) */
+		Map <EQPair,Set<EQPair>> phenotypeParentCache = new HashMap<EQPair,Set<EQPair>>();
+		buildEQParents(phenotypeParentCache,taxonProfiles,u);
+		buildEQParents(phenotypeParentCache,geneProfiles,u);
+		
+		fillCountTable(taxonProfiles, phenotypeCountsForTaxa,entityParentCache, u, TAXONPHENOTYPECOUNTQUERY, u.countAssertedTaxonPhenotypeAnnotations());
+		fillCountTable(geneProfiles, phenotypeCountsForGenes,entityParentCache, u, GENEPHENOTYPECOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		sumCountTables(phenotypeCountsCombined,phenotypeCountsForTaxa,phenotypeCountsForGenes);
 
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 
 
 		logger.info("Done building entity parents; building phenotype match cache");
-		int attOverlaps = buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, phenotypeCountsCombined, u);
+		int attOverlaps = buildPhenotypeMatchCache(entityParentCache, phenotypeScores, phenotypeCountsCombined, u);
 		u.writeOrDump("gene and taxon profiles overlapping on an attribute:  " + attOverlaps,w1);
 		w1.close();
 		logger.info("Finished building phenotype match cache; Writing Phenotype match summary");
@@ -590,28 +588,22 @@ public class PhenotypeProfileAnalysis {
 	 * For each phenotype in the taxonProfile, this builds the set of entity parents.
 	 * Changed to save the parents (iipo parents) indexed by the entity, which is more efficient and useful later on.
 	 * 
-	 * @param phenotypeparentCache
+	 * @param entityParentCache
 	 * @param u
 	 * @throws SQLException
 	 */
-	void buildEntityParents(Map <Integer,Set<Integer>> phenotypeParentCache, PreparedStatement entityParentsStatement, Map<Integer,Profile> profiles) throws SQLException{
-		for(Integer currentBearer : profiles.keySet()){
-			Profile currentProfile = profiles.get(currentBearer);
+	void buildEntityParents(Map <Integer,Set<Integer>> entityParentCache, Map<Integer,Profile> profiles, Utils u) throws SQLException{
+		for(Integer currentExhibitor : profiles.keySet()){
+			Profile currentProfile = profiles.get(currentExhibitor);
 			Set<Integer> currentAttributes = currentProfile.getUsedAttributes();
 			Set<Integer> currentEntities = currentProfile.getUsedEntities();
 			for (Integer att : currentAttributes){
 				for (Integer ent : currentEntities){
 					if (currentProfile.hasPhenotypeSet(ent, att)){
 						for (Integer pheno : currentProfile.getPhenotypeSet(ent, att)){
-							if (!phenotypeParentCache.containsKey(ent)){
-								Set<Integer> parentSet = new HashSet<Integer>();
-								phenotypeParentCache.put(ent, parentSet);
-								entityParentsStatement.setInt(1, pheno);
-								ResultSet entityParents = entityParentsStatement.executeQuery();
-								while(entityParents.next()){
-									int target_id = entityParents.getInt(1);
-									parentSet.add(target_id);
-								}
+							if (!entityParentCache.containsKey(ent)){
+								Set<Integer>parentSet = u.collectEntityParents(pheno);  //pass phenotype id, list of entities returned
+								entityParentCache.put(ent, parentSet);
 							}
 						}
 					}
@@ -620,10 +612,42 @@ public class PhenotypeProfileAnalysis {
 		}
 	}
 	
-	void buildEQParents(Map<Integer,Set<Integer>> phenotypeParentCache, PreparedStatement entityParentsStatment, PreparedStatement qualityParentsStatement, Map<Integer,Profile> profiles) throws SQLException{
-		
+	/**
+	 * For each phenotype in the taxonProfile, this builds the set of EQ class expression parents.
+	 * Changed to save the parents (iipo parents) indexed by the entity, which is more efficient and useful later on.
+	 * 
+	 * @param entityParentCache
+	 * @param u
+	 * @throws SQLException
+	 */
+	void buildEQParents(Map<EQPair,Set<EQPair>> phenotypeParentCache, Map<Integer,Profile> profiles, Utils u) throws SQLException{
+		for(Integer currentExhibitor : profiles.keySet()){   //difficult choice of names - exhibitor works for taxon, there isn't a particular relation between individual genes and phenotypes (genotypes have a relation)
+			Profile currentProfile = profiles.get(currentExhibitor);
+			Set<Integer> currentAttributes = currentProfile.getUsedAttributes();  //use of attribute is correct here - profiles are still entity/attribute tables
+			Set<Integer> currentEntities = currentProfile.getUsedEntities();
+			for (Integer quality : currentAttributes){
+				for (Integer ent : currentEntities){
+					if (currentProfile.hasPhenotypeSet(ent, quality)){
+						for(Integer pheno : currentProfile.getPhenotypeSet(ent, quality)){
+							EQPair curEQ = new EQPair(ent,quality);
+							if (!phenotypeParentCache.containsKey(curEQ)){
+								Set<EQPair> eqParentSet = new HashSet<EQPair>();  //pass phenotype id, list of entities returned
+								phenotypeParentCache.put(curEQ,eqParentSet);
+								Set<Integer> entityParentSet = u.collectEntityParents(pheno);
+								Set<Integer> qualityParentSet = u.collectQualityParents(quality);
+								for(Integer entParent : entityParentSet){
+									for(Integer qualParent : qualityParentSet){
+										EQPair newParentEQ = new EQPair(entParent,qualParent);
+										eqParentSet.add(newParentEQ);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
-
 	
 	/**
 	 * 
@@ -667,28 +691,27 @@ public class PhenotypeProfileAnalysis {
 	 */
 	void sumCountTables(CountTable sum, CountTable table1, CountTable table2){
 		for(Integer entity : table1.getEntities()){
-			Set<Integer>attSet = table1.getAttributesForEntity(entity);
-			for (Integer att : attSet){
-				int count1 = table1.getRawCount(entity, att);
-				if (table2.hasCount(entity, att)){
-					int count2 = table2.getRawCount(entity, att);
-					sum.addCount(entity, att, count1+count2);
+			Set<Integer>qualSet = table1.getQualitiesForEntity(entity);
+			for (Integer quality : qualSet){
+				int count1 = table1.getRawCount(entity, quality);
+				if (table2.hasCount(entity, quality)){
+					int count2 = table2.getRawCount(entity, quality);
+					sum.addCount(entity, quality, count1+count2);
 				}
 				else{
-					sum.addCount(entity, att, count1);
+					sum.addCount(entity, quality, count1);
 				}
 			}
 		}
 		for(Integer entity : table2.getEntities()){
-			Set<Integer>attSet = table2.getAttributesForEntity(entity);
-			for (Integer att : attSet){
-				if (!sum.hasCount(entity, att)){
-					sum.addCount(entity, att, table2.getRawCount(entity, att));
+			Set<Integer>qualSet = table2.getQualitiesForEntity(entity);
+			for (Integer quality : qualSet){
+				if (!sum.hasCount(entity, quality)){
+					sum.addCount(entity, quality, table2.getRawCount(entity, quality));
 				}
 			}
 		}
 		sum.setSum(table1.getSum() + table2.getSum());
-
 	}
 
 
@@ -704,15 +727,12 @@ public class PhenotypeProfileAnalysis {
 	 */
 	int buildPhenotypeMatchCache(Map <Integer,Set<Integer>> phenotypeParentCache, PhenotypeScoreTable phenotypeScores, CountTable eaCounts, Utils u){
 		int attOverlaps = 0;
-
 		for (Integer curAtt : attributeSet){
-
 			for(Integer currentTaxon : taxonProfiles.keySet()){
 				Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
 				if (!currentTaxonProfile.isEmpty()){
 					for (Integer taxonEntity : currentTaxonProfile.getUsedEntities()){
 						Set<Integer> teParents = phenotypeParentCache.get(taxonEntity);
-
 						for(Integer currentGene : geneProfiles.keySet()){
 							Profile currentGeneProfile = geneProfiles.get(currentGene);
 							//u.writeOrDump("Checking taxon = " + u.getNodeName(currentTaxon) + " with " + u.getNodeName(curAtt) + " " + currentTaxonProfile.usesAttribute(curAtt) + " " + currentGeneProfile.usesAttribute(curAtt), null);
@@ -722,12 +742,8 @@ public class PhenotypeProfileAnalysis {
 									if (!phenotypeScores.hasScore(taxonEntity, geneEntity, curAtt)){
 										Set<Integer> geParents = phenotypeParentCache.get(geneEntity);
 										Set<Integer>matches = new HashSet<Integer>();
-										for(Integer tParent : teParents){
-											for (Integer gParent : geParents){
-												if (tParent.equals(gParent))
-													matches.add(tParent);
-											}
-										}
+										matches.addAll(teParents);	// add the EQ parents of the EA level taxon phenotype
+										matches.retainAll(geParents);   // intersect the EQ parents of the gene phenotype, leaving intersection in matches
 										double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
 										Integer bestEntity = null;
 										for(Integer ent : matches){
@@ -800,4 +816,7 @@ public class PhenotypeProfileAnalysis {
 		}
 
 	}
+
+	
+	
 }
