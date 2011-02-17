@@ -213,20 +213,25 @@ public class Utils {
 	}
 	
 	private void cacheEntitiesFromResults(ResultSet entityResults) throws SQLException{
-		final PreparedStatement p1 = getPreparedStatement("SELECT node.uid,simple_label(node.node_id) FROM node WHERE node.node_id = ?");
 		while(entityResults.next()){
 			int entityID = entityResults.getInt(1);
-			p1.setInt(1, entityID);
-			ResultSet uidResults = p1.executeQuery();
-			if (uidResults.next()){
-				String uid = uidResults.getString(1);
-				String label = uidResults.getString(2);
-				putNodeUIDName(entityID,uid,label);
-			}
-			else {
-				throw new RuntimeException("Entity query failed; id = " + entityID);
-			}
+			cacheOneNode(entityID);
 		}
+	}
+	
+	public void cacheOneNode(int nodeID) throws SQLException{
+		final PreparedStatement p1 = getPreparedStatement("SELECT node.uid,simple_label(node.node_id) FROM node WHERE node.node_id = ?");
+		p1.setInt(1, nodeID);
+		ResultSet uidResults = p1.executeQuery();
+		if (uidResults.next()){
+			String uid = uidResults.getString(1);
+			String label = uidResults.getString(2);
+			putNodeUIDName(nodeID,uid,label);
+		}
+		else {
+			throw new RuntimeException("Node lookup query failed; id = " + nodeID);
+		}
+		
 	}
 
 
@@ -264,7 +269,7 @@ public class Utils {
 		"JOIN node AS target ON (target.node_id = link.object_id) WHERE quality.node_id = ? ";
 
 	public Set<Integer> collectQualityParents(int quality) throws SQLException{
-		PreparedStatement qualityParentsStatement = getPreparedStatement(ENTITYPARENTQUERY); 
+		PreparedStatement qualityParentsStatement = getPreparedStatement(QUALITYPARENTQUERY); 
 		final Set<Integer> results = new HashSet<Integer>();
 		qualityParentsStatement.setInt(1, quality);
 		ResultSet entityParents = qualityParentsStatement.executeQuery();
@@ -272,6 +277,8 @@ public class Utils {
 			int target_id = entityParents.getInt(1);
 			results.add(target_id);
 		}
+		if (results.isEmpty())
+			throw new RuntimeException("");
 		return results;
 
 	}
@@ -325,7 +332,7 @@ public class Utils {
 		final String user = properties.getProperty("user");
 		final String password = properties.getProperty("pw");
 		connection = DriverManager.getConnection(String.format("jdbc:postgresql://%s/%s",host,db),user,password);
-		return host+db;
+		return "Host: " + host + " db: " + db;
 		
 	}
 	

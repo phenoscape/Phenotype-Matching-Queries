@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,7 +46,7 @@ public class PhenotypeProfileAnalysis {
 	private static final String CALLICHTHYIDAEROOT = "TTO:11200";
 	private static final String SILURIFORMESROOT = "TTO:1380";
 	
-	private String ANALYSISROOT = ASPIDORASROOT;
+	private String ANALYSISROOT = OSTARIOPHYSIROOT;
 	
 	private static final double IC_CUTOFF =  10.0;
 
@@ -243,15 +244,15 @@ public class PhenotypeProfileAnalysis {
 		buildEQParents(phenotypeParentCache,taxonProfiles,u);
 		buildEQParents(phenotypeParentCache,geneProfiles,u);
 		
-		fillCountTable(taxonProfiles, phenotypeCountsForTaxa,entityParentCache, u, TAXONPHENOTYPECOUNTQUERY, u.countAssertedTaxonPhenotypeAnnotations());
-		fillCountTable(geneProfiles, phenotypeCountsForGenes,entityParentCache, u, GENEPHENOTYPECOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		fillCountTable(taxonProfiles, phenotypeCountsForTaxa,phenotypeParentCache, u, TAXONPHENOTYPECOUNTQUERY, u.countAssertedTaxonPhenotypeAnnotations());
+		fillCountTable(geneProfiles, phenotypeCountsForGenes,phenotypeParentCache, u, GENEPHENOTYPECOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		sumCountTables(phenotypeCountsCombined,phenotypeCountsForTaxa,phenotypeCountsForGenes);
 
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 
 
 		logger.info("Done building entity parents; building phenotype match cache");
-		int attOverlaps = buildPhenotypeMatchCache(entityParentCache, phenotypeScores, phenotypeCountsCombined, u);
+		int attOverlaps = buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, phenotypeCountsCombined, u);
 		u.writeOrDump("gene and taxon profiles overlapping on an attribute:  " + attOverlaps,w1);
 		w1.close();
 		logger.info("Finished building phenotype match cache; Writing Phenotype match summary");
@@ -440,6 +441,20 @@ public class PhenotypeProfileAnalysis {
 	}
 
 
+	/**
+	 * This method marks taxon phenotypes that display variation. It does this in two passes: the first builds sets of phenotypes for each taxon.
+	 * These sets represent the union of all phenotypes of child taxa and any phenotypes asserted for the particular taxon.  More precisely, 
+	 * these sets represented as profiles that break down the sets of phenotypes by entity and attribute.  The second pass compares the set of 
+	 * phenotypes with the set from each child.  If the child differs from the union, there is variation within the entity attribute set and this
+	 * is recorded in the taxonVariation table.  There are two additional twists: the absence of an annotation for a particular entity-attribute
+	 * combination in a child taxon is treated as variation if there are sister taxa with annotation for the same combination, but if the taxon
+	 * has no annotations whatsoever, it is ignored.
+	 * @param t
+	 * @param taxon
+	 * @param profiles
+	 * @param u
+	 * @param reportWriter
+	 */
 	void traverseTaxonomy(TaxonomyTree t, Integer taxon, Map<Integer, Profile> profiles, Utils u, Writer reportWriter){
 		if (t.nodeIsInternal(taxon, u)){
 			//build set of children
@@ -486,7 +501,9 @@ public class PhenotypeProfileAnalysis {
 	}
 	
 
-	// remove non-varying entries from the taxon profile
+	/**
+	 * This method removes all phenotypes that don't indicate variation from the profile.
+	 */
 	void flushUnvaryingPhenotypes(){
 		for (Integer taxon : taxonProfiles.keySet()){
 			Profile p = taxonProfiles.get(taxon);
@@ -621,25 +638,38 @@ public class PhenotypeProfileAnalysis {
 	 * @throws SQLException
 	 */
 	void buildEQParents(Map<EQPair,Set<EQPair>> phenotypeParentCache, Map<Integer,Profile> profiles, Utils u) throws SQLException{
-		for(Integer currentExhibitor : profiles.keySet()){   //difficult choice of names - exhibitor works for taxon, there isn't a particular relation between individual genes and phenotypes (genotypes have a relation)
-			Profile currentProfile = profiles.get(currentExhibitor);
-			Set<Integer> currentAttributes = currentProfile.getUsedAttributes();  //use of attribute is correct here - profiles are still entity/attribute tables
-			Set<Integer> currentEntities = currentProfile.getUsedEntities();
-			for (Integer quality : currentAttributes){
-				for (Integer ent : currentEntities){
-					if (currentProfile.hasPhenotypeSet(ent, quality)){
-						for(Integer pheno : currentProfile.getPhenotypeSet(ent, quality)){
-							EQPair curEQ = new EQPair(ent,quality);
-							if (!phenotypeParentCache.containsKey(curEQ)){
-								Set<EQPair> eqParentSet = new HashSet<EQPair>();  //pass phenotype id, list of entities returned
-								phenotypeParentCache.put(curEQ,eqParentSet);
-								Set<Integer> entityParentSet = u.collectEntityParents(pheno);
-								Set<Integer> qualityParentSet = u.collectQualityParents(quality);
-								for(Integer entParent : entityParentSet){
-									for(Integer qualParent : qualityParentSet){
-										EQPair newParentEQ = new EQPair(entParent,qualParent);
-										eqParentSet.add(newParentEQ);
-									}
+		for(Profile currentProfile : profiles.values()){
+			Set <Integer> usedEntities = currentProfile.getUsedEntities();
+			Set <Integer> usedAttributes = currentProfile.getUsedAttributes();
+			for(Integer profileEntity : usedEntities){
+				for (Integer curAttribute : usedAttributes){
+					EQPair curEQ = new EQPair(profileEntity,curAttribute);
+					if (!phenotypeParentCache.containsKey(curEQ)){
+						curEQ.fillNames(u);
+						logger.info("Adding Parents of: " + curEQ);
+						Set<EQPair> eqParentSet = new HashSet<EQPair>();  //pass phenotype id, list of entities returned
+						phenotypeParentCache.put(curEQ,eqParentSet);
+						Set<Integer> phenoSet = currentProfile.getPhenotypeSet(profileEntity, curAttribute);
+						if (phenoSet != null){
+							Integer pheno;
+							Iterator<Integer> phenoI = phenoSet.iterator();
+							pheno = phenoI.next();
+							Set<Integer> entityParentSet = u.collectEntityParents(pheno);
+							Set<Integer> qualityParentSet = u.collectQualityParents(curAttribute);
+							if (entityParentSet.isEmpty() || qualityParentSet.isEmpty()){
+								curEQ.fillNames(u);
+								logger.info("Failed to add Parents of: " + curEQ);
+								if (entityParentSet.isEmpty() && qualityParentSet.isEmpty())
+									logger.info("Because both parent sets are empty");
+								else if (entityParentSet.isEmpty())
+									logger.info("Because the entity parent set is empty");
+								else
+									logger.info("Because the parent set of " + curAttribute + " is empty");
+							}
+							for(Integer entParent : entityParentSet){
+								for(Integer qualParent : qualityParentSet){
+									EQPair newParentEQ = new EQPair(entParent,qualParent);
+									eqParentSet.add(newParentEQ);
 								}
 							}
 						}
@@ -656,7 +686,7 @@ public class PhenotypeProfileAnalysis {
 	 * @param parents
 	 * @throws SQLException 
 	 */
-	void fillCountTable(Map<Integer,Profile> profiles, CountTable counts,Map <Integer,Set<Integer>> parents, Utils u, String query,int annotationCount) throws SQLException{
+	void fillCountTable(Map<Integer,Profile> profiles, CountTable counts,Map <EQPair,Set<EQPair>> phenotypeParentCache, Utils u, String query,int annotationCount) throws SQLException{
 		counts.setSum(annotationCount);
 		final PreparedStatement p = u.getPreparedStatement(query);
 		for(Profile currentProfile : profiles.values()){
@@ -664,19 +694,22 @@ public class PhenotypeProfileAnalysis {
 			Set <Integer> usedAttributes = currentProfile.getUsedAttributes();
 			for(Integer profileEntity : usedEntities){
 				for (Integer curAttribute : usedAttributes){
-					Set<Integer> allEntities = parents.get(profileEntity);
-					if (allEntities == null){
-						throw new RuntimeException("Entity " + u.getNodeName(profileEntity) + " seems to have no inheres_in_part_of parents");
+					EQPair curEQ = new EQPair(profileEntity,curAttribute);
+					Set<EQPair> allParents = phenotypeParentCache.get(curEQ);
+					if (allParents == null){
+						logger.error("The EQ pair " + curEQ + " seems to have no parents");
 					}
 					else {
-						for(Integer curEntity : allEntities){
-							if (!counts.hasCount(curEntity, curAttribute)){
-								p.setInt(1, curEntity);
-								p.setInt(2, curAttribute);
+						curEQ.fillNames(u);
+						//logger.info("Processing " + curEQ);
+						for(EQPair eqParent : allParents){
+							if (!counts.hasCount(eqParent.getEntity(), eqParent.getQuality())){
+								p.setInt(1, eqParent.getEntity());
+								p.setInt(2, eqParent.getQuality());
 								ResultSet eaResult = p.executeQuery();
 								if(eaResult.next()){
 									int count = eaResult.getInt(1);
-									counts.addCount(curEntity, curAttribute, count);
+									counts.addCount(eqParent.getEntity(), eqParent.getQuality(), count);
 								}
 							}
 						}
@@ -725,14 +758,15 @@ public class PhenotypeProfileAnalysis {
 	 * @param u
 	 * @return
 	 */
-	int buildPhenotypeMatchCache(Map <Integer,Set<Integer>> phenotypeParentCache, PhenotypeScoreTable phenotypeScores, CountTable eaCounts, Utils u){
+	int buildPhenotypeMatchCache(Map <EQPair,Set<EQPair>> phenotypeParentCache, PhenotypeScoreTable phenotypeScores, CountTable eaCounts, Utils u){
 		int attOverlaps = 0;
 		for (Integer curAtt : attributeSet){
 			for(Integer currentTaxon : taxonProfiles.keySet()){
 				Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
 				if (!currentTaxonProfile.isEmpty()){
 					for (Integer taxonEntity : currentTaxonProfile.getUsedEntities()){
-						Set<Integer> teParents = phenotypeParentCache.get(taxonEntity);
+						EQPair taxonEQ = new EQPair(taxonEntity,curAtt);
+						Set<EQPair> teParents = phenotypeParentCache.get(taxonEQ);
 						for(Integer currentGene : geneProfiles.keySet()){
 							Profile currentGeneProfile = geneProfiles.get(currentGene);
 							//u.writeOrDump("Checking taxon = " + u.getNodeName(currentTaxon) + " with " + u.getNodeName(curAtt) + " " + currentTaxonProfile.usesAttribute(curAtt) + " " + currentGeneProfile.usesAttribute(curAtt), null);
@@ -740,25 +774,26 @@ public class PhenotypeProfileAnalysis {
 							for (Integer geneEntity : currentGeneProfile.getUsedEntities()){
 								if (currentTaxonProfile.hasPhenotypeSet(taxonEntity, curAtt) && currentGeneProfile.hasPhenotypeSet(geneEntity, curAtt)){
 									if (!phenotypeScores.hasScore(taxonEntity, geneEntity, curAtt)){
-										Set<Integer> geParents = phenotypeParentCache.get(geneEntity);
-										Set<Integer>matches = new HashSet<Integer>();
+										EQPair geneEQ = new EQPair(geneEntity,curAtt);
+										Set<EQPair> geParents = phenotypeParentCache.get(geneEQ);
+										Set<EQPair>matches = new HashSet<EQPair>();
 										matches.addAll(teParents);	// add the EQ parents of the EA level taxon phenotype
 										matches.retainAll(geParents);   // intersect the EQ parents of the gene phenotype, leaving intersection in matches
 										double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
-										Integer bestEntity = null;
-										for(Integer ent : matches){
-											if (eaCounts.hasCount(ent, curAtt)){
-												double matchScore = eaCounts.getFraction(ent, curAtt);
+										EQPair bestEQ = null;
+										for(EQPair eqM : matches){
+											if (eaCounts.hasCount(eqM.getEntity(), eqM.getQuality())){    //EA counts needs to change soon
+												double matchScore = eaCounts.getFraction(eqM.getEntity(), eqM.getQuality());
 												if (matchScore<bestMatch){
 													bestMatch = matchScore;
-													bestEntity = ent;
+													bestEQ = eqM;
 												}
 												else if (matchScore < 0)
-													throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.getNodeName(ent) + " " + u.getNodeName(curAtt));
+													throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.getNodeName(eqM.getEntity()) + " " + u.getNodeName(eqM.getQuality()));
 											}
 										}
-										if (bestMatch<Double.MAX_VALUE && bestEntity != null){
-											phenotypeScores.addScore(taxonEntity,geneEntity,curAtt,CountTable.calcIC(bestMatch),bestEntity);
+										if (bestMatch<Double.MAX_VALUE && bestEQ != null){
+											phenotypeScores.addScore(taxonEntity,geneEntity,curAtt,CountTable.calcIC(bestMatch),bestEQ);
 										}
 									}
 								}
@@ -772,8 +807,8 @@ public class PhenotypeProfileAnalysis {
 	}
 
 
-	void writePhenotypeMatchSummary(PhenotypeScoreTable phenotypeScores,Utils u, Writer w){
-		u.writeOrDump("Taxon\tGene\tTaxon Entity\tGeneEntity\tAttribute\tBest Entity Match\tScore", w);
+	void writePhenotypeMatchSummary(PhenotypeScoreTable phenotypeScores,Utils u, Writer w) throws SQLException{
+		u.writeOrDump("Taxon\tGene\tTaxon Entity\tGeneEntity\tAttribute\tLowest Common Subsumer\tScore", w);
 		for(Integer currentTaxon : taxonProfiles.keySet()){
 			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
 			for(Integer currentGene : geneProfiles.keySet()){
@@ -784,13 +819,9 @@ public class PhenotypeProfileAnalysis {
 							if (currentTaxonProfile.hasPhenotypeSet(tEntity, att) && currentGeneProfile.hasPhenotypeSet(gEntity, att)){
 								if (phenotypeScores.hasScore(tEntity, gEntity, att)){
 									if (phenotypeScores.getScore(tEntity, gEntity,att)>IC_CUTOFF){
-										Integer bestEntity = new Integer(phenotypeScores.getBestEntity(tEntity, gEntity,att));
+										EQPair bestSubsumer = phenotypeScores.getBestSubsumer(tEntity, gEntity,att);
 										StringBuilder lineBuilder = new StringBuilder(200);
-										String bestID =u.getNodeName(bestEntity);
-										if (bestID == null)
-											bestID = u.getNodeUID(bestEntity);
-										if (bestID == null)
-											bestID = Integer.toString(bestEntity);
+										String bestID = bestSubsumer.getFullName(u);
 										lineBuilder.append(u.getNodeName(currentTaxon));
 										lineBuilder.append("\t");
 										lineBuilder.append(u.getNodeName(currentGene));

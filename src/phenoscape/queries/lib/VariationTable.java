@@ -97,23 +97,31 @@ public class VariationTable {
 			}
 		}
 		u.writeOrDump("Summary of detected variation",bw);
+		int attributeTotal = 0;
 		u.writeOrDump("-- Attribute Summary --",bw);
 		for(Integer att : attributeSums.keySet()){
+			final int attributeCount =  attributeSums.get(att).intValue();
+			attributeTotal += attributeCount;
 			if (u.hasNodeUID(att)){
-				u.writeOrDump(u.getNodeName(att) + "\t" + attributeSums.get(att).intValue(),bw);
+				u.writeOrDump(u.getNodeName(att) + "\t" + attributeCount,bw);
 			}
 			else
-				u.writeOrDump(att.intValue() + "   " + attributeSums.get(att).intValue(),bw);
+				u.writeOrDump(att.intValue() + "\t" + attributeCount,bw);
 		}
-		u.writeOrDump("\n-- Entity Summary --",bw);
+		u.writeOrDump("Total:\t" + attributeTotal, bw);
+		int entityTotal = 0;
+		u.writeOrDump("\n\n-- Entity Summary --",bw);
 		for (Integer ent : entitySums.keySet()){
+			final int entityCount = entitySums.get(ent).intValue();
+			entityTotal += entityCount;
 			if (u.hasNodeUID(ent)){
-				u.writeOrDump(u.getNodeName(ent) + "\t" + entitySums.get(ent).intValue(),bw);
+				u.writeOrDump(u.getNodeName(ent) + "\t" + entityCount,bw);
 			}
 			else
-				u.writeOrDump(ent.intValue() + "   " + entitySums.get(ent).intValue(),bw);
+				u.writeOrDump(ent.intValue() + "\t" + entityCount,bw);
 		}
-		u.writeOrDump("\n-- Exhibitor (Taxon/Gene) Summary --",bw);
+		u.writeOrDump("Total:\t" + attributeTotal, bw);
+		u.writeOrDump("\n\n-- Exhibitor (Taxon/Gene) Summary --",bw);
 		for (Integer taxon : taxonList.keySet()){
 			u.writeOrDump(taxonList.get(taxon),bw);
 		}

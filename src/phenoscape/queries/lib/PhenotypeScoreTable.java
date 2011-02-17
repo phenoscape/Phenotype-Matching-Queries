@@ -8,17 +8,17 @@ public class PhenotypeScoreTable {
 	
 	private Map<Integer,Map<Integer,Map<Integer,Result>>> table = new HashMap<Integer,Map<Integer,Map<Integer,Result>>>();  //Taxon Entity, Gene Entity, Attribute Result
 	
-	public void addScore(Integer tEntity, Integer gEntity, Integer attribute, Double score, Integer bestEntity){
+	public void addScore(Integer tEntity, Integer gEntity, Integer attribute, Double score, EQPair bestSubsumer){
 		if (table.containsKey(tEntity)){
 			Map<Integer,Map<Integer,Result>> taxon_entry = table.get(tEntity);
 			if (taxon_entry.containsKey(gEntity)){
 				Map<Integer,Result> gene_entry = taxon_entry.get(gEntity);
-				Result r = new Result(score,bestEntity);
+				Result r = new Result(score,bestSubsumer);
 				gene_entry.put(attribute, r);
 			}
 			else{
 				Map<Integer,Result> gene_entry = new HashMap<Integer,Result>();
-				Result r = new Result(score,bestEntity);
+				Result r = new Result(score,bestSubsumer);
 				gene_entry.put(attribute, r);
 				taxon_entry.put(gEntity,gene_entry);
 			}
@@ -26,7 +26,7 @@ public class PhenotypeScoreTable {
 		else {
 			Map <Integer,Map<Integer,Result>> taxon_entry = new HashMap<Integer,Map<Integer,Result>>();
 			Map<Integer,Result> gene_entry = new HashMap<Integer,Result>();
-			Result r = new Result(score,bestEntity);
+			Result r = new Result(score,bestSubsumer);
 			gene_entry.put(attribute, r);
 			taxon_entry.put(gEntity, gene_entry);
 			table.put(tEntity, taxon_entry);
@@ -57,26 +57,26 @@ public class PhenotypeScoreTable {
 		return table.get(tEntity).get(gEntity).get(attribute).getScore();
 	}
 	
-	public int getBestEntity(Integer tEntity, Integer gEntity, Integer attribute){
-		return table.get(tEntity).get(gEntity).get(attribute).getBestEntity();
+	public EQPair getBestSubsumer(Integer tEntity, Integer gEntity, Integer attribute){
+		return table.get(tEntity).get(gEntity).get(attribute).getBestSubsumer();
 	}
 
 	
 	
 	static class Result {
 		double score;
-		int best;
+		EQPair best;
 
-		Result(Double sc, Integer bestEntity){
+		Result(Double sc, EQPair bestPair){
 			score = sc.doubleValue();
-			best = bestEntity.intValue();
+			best = bestPair;
 		}
 		
 		double getScore(){
 			return score;
 		}
 		
-		int getBestEntity(){
+		EQPair getBestSubsumer(){
 			return best;
 		}
 	

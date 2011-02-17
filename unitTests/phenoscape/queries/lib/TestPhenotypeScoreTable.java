@@ -11,13 +11,16 @@ public class TestPhenotypeScoreTable {
 
 	PhenotypeScoreTable table1;
 	
+	// ought to set values for these from the KB
 	final static int TAXONENTITY = 1006;
 	final static int GENEENTITY = 1008;
+	final static int ENTITY1 = 1010;
+	final static int ENTITY2 = 1021;
 	final static int ATTRIBUTE = 6;
 	final static double SCORE1 = 0.12;
 	final static double SCORE2 = 0.024;
-	final static int BESTENTITY1 = 1400;
-	final static int BESTENTITY2 = 1506;
+	final static EQPair BESTENTITY1 = new EQPair(ENTITY1,ATTRIBUTE);
+	final static EQPair BESTENTITY2 = new EQPair(ENTITY2,ATTRIBUTE);
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -66,7 +69,7 @@ public class TestPhenotypeScoreTable {
 	@Test
 	public void testGetBestEntity() {
 		table1.addScore(TAXONENTITY, GENEENTITY, ATTRIBUTE, SCORE1,BESTENTITY1);
-		Assert.assertTrue(table1.getBestEntity(TAXONENTITY, GENEENTITY, ATTRIBUTE)  == BESTENTITY1);
+		Assert.assertTrue(table1.getBestSubsumer(TAXONENTITY, GENEENTITY, ATTRIBUTE)  == BESTENTITY1);
 	}
 
 }
