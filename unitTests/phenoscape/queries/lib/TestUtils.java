@@ -9,6 +9,7 @@ import java.sql.Statement;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -23,7 +24,12 @@ public class TestUtils {
 		//u.cacheEntities();
 	}
 
-	
+	@Test
+	public void testOpenKB() throws SQLException{
+		String kbStr = u.openKB();
+		System.out.println(kbStr);
+		u.closeKB();
+	}
 	
 	private final static String NAMELOOKUP = "SELECT node.node_id FROM node WHERE node.uid = ?";
 	@Test
@@ -113,10 +119,35 @@ public class TestUtils {
 			throw new RuntimeException("Query for node id of PATO:0002104 (inflammatory) failed");
 		assertEquals(compositionID,attMap.get(nodeID).intValue());
 
-
-		
-
 	}
+	
+	@Test
+	public void testSetupReciprocals() throws SQLException{
+		PreparedStatement p = u.getPreparedStatement(NAMELOOKUP);
+		Map<Integer,Integer> testMap = u.setupReciprocals();
+		assertNotNull(testMap);
+		assertFalse(testMap.isEmpty());
+		p.setString(1, "PATO:0001555");
+		int preferredID;
+		ResultSet lookupResults = p.executeQuery();
+		if (lookupResults.next()){
+			preferredID = lookupResults.getInt(1);
+		}
+		else 
+			throw new RuntimeException("Query for node id of PATO:0001555 (has number of) failed");
+		p.setString(1, "PATO:0000070");
+		int legacyID;
+		lookupResults = p.executeQuery();
+		if (lookupResults.next()){
+			legacyID = lookupResults.getInt(1);
+		}
+		else 
+			throw new RuntimeException("Query for node id of PATO:0000070 (count) failed");
+		assertTrue(testMap.containsKey(legacyID));
+		assertEquals(preferredID,testMap.get(legacyID).intValue());
+	}
+	
+	
 	@Test
 	public void testGetNodeName() {
 		fail("Not yet implemented");
@@ -223,5 +254,11 @@ public class TestUtils {
 	public void testListIntegerMembers() {
 		fail("Not yet implemented");
 	}
+	
+	@After
+	public void tearDown() throws Exception {
+		u.closeKB();
+	}
+
 
 }

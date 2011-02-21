@@ -72,11 +72,19 @@ public class EQPair {
 		final StringBuilder b =  new StringBuilder(200);
 		String qualityName = u.getNodeName(quality);
 		if (qualityName == null) {
+			if (!u.checkConnection()){
+				u.closeKB();
+				u.retryKB();
+			}
 			u.cacheOneNode(quality);
 			qualityName = u.getNodeName(quality);
 		}
 		String entityName = u.getNodeName(entity);
 		if (entityName == null) {
+			if (!u.checkConnection()){
+				u.closeKB();
+				u.retryKB();
+			}
 			u.cacheOneNode(entity);
 			entityName = u.getNodeName(entity);
 		}

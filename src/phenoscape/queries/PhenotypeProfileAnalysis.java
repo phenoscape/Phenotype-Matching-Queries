@@ -27,7 +27,6 @@ import phenoscape.queries.lib.EQPair;
 import phenoscape.queries.lib.PhenotypeScoreTable;
 import phenoscape.queries.lib.Profile;
 import phenoscape.queries.lib.ProfileScoreSet;
-import phenoscape.queries.lib.QueryReturningCount;
 import phenoscape.queries.lib.Utils;
 import phenoscape.queries.lib.VariationTable;
 
@@ -40,15 +39,14 @@ public class PhenotypeProfileAnalysis {
 	private static final String PATOROOT = "PATO:0000001";
 	private static final String TTOROOT = "TTO:0";
 	private static final String OSTARIOCLUPEOMORPHAROOT = "TTO:253";
-	private static final String OSTARIOPHYSIROOT = "TTO:302";
 	private static final String ASPIDORASROOT = "TTO:105426";
 	private static final String AMIIDAEROOT = "TTO:10360";
 	private static final String CALLICHTHYIDAEROOT = "TTO:11200";
 	private static final String SILURIFORMESROOT = "TTO:1380";
+	private static final String CHEIRODONROOT =  "TTO:102205";
+	private String ANALYSISROOT = OSTARIOCLUPEOMORPHAROOT;
 	
-	private String ANALYSISROOT = OSTARIOPHYSIROOT;
-	
-	private static final double IC_CUTOFF =  10.0;
+	private static final double IC_CUTOFF =  9.0;
 
 
 	private static final String TAXONREPORTFILENAME = "../TaxonVariationReport.txt";
@@ -72,14 +70,12 @@ public class PhenotypeProfileAnalysis {
 	private static final String ENTITYPARENTQUERY = 
 		"SELECT target.node_id FROM node AS entity " +
 		"JOIN link ON (entity.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:inheres_in_part_of')) " + 
-		"JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? " +
-		"GROUP BY entity.uid, target.uid,target.node_id";  //TODO: is this GROUP BY needed?
+		"JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? ";
 	
 	private static final String QUALITYPARENTQUERY = 
 		"SELECT target.node_id FROM node AS quality " +
 		"JOIN link ON (quality.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:is_a')) " +
-		"JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? " +
-		"GROUP BY quality.uid,target.uid,target.node_id";   //TODO: is this GROUP BY needed?
+		"JOIN node AS target ON (target.node_id = link.object_id) WHERE entity.node_id = ? ";
 	
 	private static final String TAXONPHENOTYPECOUNTQUERY = 
 		"SELECT count(*) FROM asserted_taxon_annotation WHERE asserted_taxon_annotation.phenotype_node_id IN " +
@@ -224,6 +220,11 @@ public class PhenotypeProfileAnalysis {
 
 		processGeneExpression(u, w2);
 		geneVariation.variationReport(u, w2);
+		u.writeOrDump("\nList of qualities that were placed under quality as an attribute by default\n", w2);
+		for(Integer bad_id : badGeneQualities.keySet()){
+			u.writeOrDump(u.getNodeName(bad_id) + " " + badGeneQualities.get(bad_id), w2);
+		}
+
 		w2.close();
 
 		/* These need to happen after the profiles have been constructed, since we don't want to count taxon annotations that don't reflect change */
@@ -246,13 +247,16 @@ public class PhenotypeProfileAnalysis {
 		
 		fillCountTable(taxonProfiles, phenotypeCountsForTaxa,phenotypeParentCache, u, TAXONPHENOTYPECOUNTQUERY, u.countAssertedTaxonPhenotypeAnnotations());
 		fillCountTable(geneProfiles, phenotypeCountsForGenes,phenotypeParentCache, u, GENEPHENOTYPECOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		
 		sumCountTables(phenotypeCountsCombined,phenotypeCountsForTaxa,phenotypeCountsForGenes);
 
+		CountTable phenotypeCountsToUse = phenotypeCountsForGenes;
+		
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 
 
 		logger.info("Done building entity parents; building phenotype match cache");
-		int attOverlaps = buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, phenotypeCountsCombined, u);
+		int attOverlaps = buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, phenotypeCountsToUse, u);
 		u.writeOrDump("gene and taxon profiles overlapping on an attribute:  " + attOverlaps,w1);
 		w1.close();
 		logger.info("Finished building phenotype match cache; Writing Phenotype match summary");
@@ -281,11 +285,11 @@ public class PhenotypeProfileAnalysis {
 				result.setICCSScore(iccs);
 
 				//calculate simIC score for this pair of profiles
-				//double simICScore = calcSimIC(currentTaxonProfile, currentGeneProfile, phenotypeScores, phenotypeCountsCombined);
+				//double simICScore = calcSimIC(currentTaxonProfile, currentGeneProfile, phenotypeScores, phenotypeCountsToUse);
 				result.setSimICScore(-1.0);
 
 				//calculate simJ score for this pair of profiles
-				//double simJScore = calcSimJ(currentTaxonProfile, currentGeneProfile, phenotypeScores, phenotypeCountsCombined);
+				//double simJScore = calcSimJ(currentTaxonProfile, currentGeneProfile, phenotypeScores, phenotypeCountsToUse);
 				result.setSimJScore(-1.0);
 
 				if (result.isNonZero())
@@ -490,8 +494,9 @@ public class PhenotypeProfileAnalysis {
 									taxonVariation.addExhibitor(ent, att, taxon);
 								}
 							}
-							else if (parentProfile.hasPhenotypeSet(ent,att)){  //child not represented = change in sibling
-								taxonVariation.addExhibitor(ent,att,taxon);
+							else if (parentProfile.hasPhenotypeSet(ent,att)){  //child not represented
+								if (!childProfile.isEmpty())
+									taxonVariation.addExhibitor(ent,att,taxon);
 							}
 						}
 					}
@@ -556,6 +561,9 @@ public class PhenotypeProfileAnalysis {
 			u.putNodeUIDName(phenotype_id, phenotype_uid, phenotype_label);
 			annotationCount++;
 			uniqueGenes.add(geneID);
+//			if (gene_label.equals("ttna")){
+//				System.out.println("gene: " + gene_label + "; entity_uid: " + entity_uid + "; phenotype_uid " + phenotype_uid);
+//			}
 			if (attributeMap.containsKey(quality_id)){
 				final int attribute_id = attributeMap.get(quality_id);
 				if (geneProfiles.containsKey(geneID)){
@@ -589,12 +597,8 @@ public class PhenotypeProfileAnalysis {
 			u.putNodeUIDName(geneID, gene_uid,gene_label);
 		}
 
-		u.writeOrDump("Raw Genes " + uniqueGenes.size() + "; Gene annotations" + annotationCount + ";Count of genes with annotations " + geneProfiles.keySet().size() + "; Annotations with known attributes " + usableAnnotationCount, reportWriter);
+		u.writeOrDump("Raw Genes " + uniqueGenes.size() + "; Distinct Gene annotations " + annotationCount + "; Count of genes with annotations " + geneProfiles.keySet().size() + "; Annotations to attributes other than Quality " + usableAnnotationCount, reportWriter);
 
-		u.writeOrDump("\nList of qualities that were placed under quality as an attribute by default\n", reportWriter);
-		for(Integer bad_id : badGeneQualities.keySet()){
-			u.writeOrDump(u.getNodeName(bad_id) + " " + badGeneQualities.get(bad_id), reportWriter);
-		}
 	}
 
 
@@ -645,8 +649,6 @@ public class PhenotypeProfileAnalysis {
 				for (Integer curAttribute : usedAttributes){
 					EQPair curEQ = new EQPair(profileEntity,curAttribute);
 					if (!phenotypeParentCache.containsKey(curEQ)){
-						curEQ.fillNames(u);
-						logger.info("Adding Parents of: " + curEQ);
 						Set<EQPair> eqParentSet = new HashSet<EQPair>();  //pass phenotype id, list of entities returned
 						phenotypeParentCache.put(curEQ,eqParentSet);
 						Set<Integer> phenoSet = currentProfile.getPhenotypeSet(profileEntity, curAttribute);
@@ -669,6 +671,7 @@ public class PhenotypeProfileAnalysis {
 							for(Integer entParent : entityParentSet){
 								for(Integer qualParent : qualityParentSet){
 									EQPair newParentEQ = new EQPair(entParent,qualParent);
+									String bestID = newParentEQ.getFullName(u);
 									eqParentSet.add(newParentEQ);
 								}
 							}
@@ -819,6 +822,9 @@ public class PhenotypeProfileAnalysis {
 							if (currentTaxonProfile.hasPhenotypeSet(tEntity, att) && currentGeneProfile.hasPhenotypeSet(gEntity, att)){
 								if (phenotypeScores.hasScore(tEntity, gEntity, att)){
 									if (phenotypeScores.getScore(tEntity, gEntity,att)>IC_CUTOFF){
+										if ("ttna".equals(u.getNodeName(currentGene))){
+											System.out.println("ttna: " + tEntity + "( " + u.getNodeName(tEntity) + "); " + gEntity +"( " + u.getNodeName(gEntity) + "); " + att +"( " + u.getNodeName(att) + "); ");
+										}
 										EQPair bestSubsumer = phenotypeScores.getBestSubsumer(tEntity, gEntity,att);
 										StringBuilder lineBuilder = new StringBuilder(200);
 										String bestID = bestSubsumer.getFullName(u);

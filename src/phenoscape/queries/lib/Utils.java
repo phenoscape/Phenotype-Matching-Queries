@@ -28,14 +28,6 @@ public class Utils {
 	final private static String termRoot = pathStrRoot;
 	final private static String pathSuffix = "/path";
 
-	final static public Pattern PARENPATTERN = Pattern.compile("\\(");
-	final static public Pattern CIRCUMFLEXPATTERN = Pattern.compile("\\^");
-	
-	final static public Pattern TAOPATTERN = Pattern.compile("TAO:\\d+");
-	final static public Pattern ZFAPATTERN = Pattern.compile("ZFA:\\d+");
-	final static public Pattern GOPATTERN = Pattern.compile("GO:\\d+");
-	final static public Pattern PATOPATTERN = Pattern.compile("PATO:\\d+");
-	final static public Pattern BSPOPATTERN = Pattern.compile("BSPO:\\d+");
 
 	private static final String CONNECTION_PROPERTIES_FILENAME = "connection.properties"; 
 	
@@ -140,7 +132,8 @@ public class Utils {
 	private final static String STRUCTUREQUERY = "select node.node_id FROM node where node.label = 'structure'";
 	
 	/**
-	 * This creates and fills a Map from qualities to attributes, stored as node_ids
+	 * This creates and fills a Map from qualities to attributes, stored as node_ids and tries to separate composition from structure
+	 * since these are not disjoint.
 	 * @param c
 	 * @param u
 	 * @throws SQLException
@@ -166,6 +159,9 @@ public class Utils {
 			throw new RuntimeException("Query for node id of 'structure' failed");
 		
 		ResultSet attributeResults = s1.executeQuery(ATTRIBUTEQUERY);
+		//loops through and if there is an assignment of 'composition' to the quality already and the current result
+		//maps the quality to 'structure' then ignore this result.  This should be safe if using a character slim that
+		//doesn't include 'composition' as an attribute.
 		while(attributeResults.next()){
 			final int quality_id = attributeResults.getInt(1);
 			final int attribute_id = attributeResults.getInt(2);
@@ -182,7 +178,48 @@ public class Utils {
 		return attMap;
 	}
 
+	private final static String RECIPROCALIDQUERY = "SELECT node.node_id FROM node WHERE node.label = 'reciprocal_of'";
+	private final static String RECIPROCALQUERY = "SELECT link.node_id,link.object_id FROM link WHERE link.is_inferred = false AND link.predicate_id = ";
+	public Map<Integer,Integer> setupReciprocals() throws SQLException{
+		Map<Integer,Integer> recipMap = new HashMap<Integer,Integer>();
+		int recipID;
+		Statement s1 = connection.createStatement();
+		ResultSet idResult = s1.executeQuery(RECIPROCALIDQUERY);
+		if (idResult.next()){
+			recipID = idResult.getInt(1);
+		}
+		else
+			throw new RuntimeException("Query for node id of 'reciprocal' failed");
+		ResultSet recipResult = s1.executeQuery(RECIPROCALQUERY + recipID);
+		while(recipResult.next()){
+			int oldTerm = recipResult.getInt(1);
+			int preferredTerm = recipResult.getInt(2);
+			recipMap.put(oldTerm, preferredTerm);
+		}
+		return recipMap;
+	}
 	
+	private final static String CORRELATESIDQUERY = "SELECT node.node_id FROM node WHERE node.label = 'correlates_with'";
+	private final static String CORRELATESQUERY = "SELECT link.node_id,link.object_id FROM link WHERE link.predicate_id = ";
+	public Map<Integer,Integer> setupCorrelatesMap() throws SQLException{
+		Map<Integer,Integer> corMap = new HashMap<Integer,Integer>();
+		int recipID;
+		Statement s1 = connection.createStatement();
+		ResultSet idResult = s1.executeQuery(CORRELATESIDQUERY);
+		if (idResult.next()){
+			recipID = idResult.getInt(1);
+		}
+		else
+			throw new RuntimeException("Query for node id of 'reciprocal' failed");
+		ResultSet recipResult = s1.executeQuery(CORRELATESQUERY + recipID);
+		while(recipResult.next()){
+			int oldTerm = recipResult.getInt(1);
+			int preferredTerm = recipResult.getInt(2);
+			corMap.put(oldTerm, preferredTerm);
+		}
+		return corMap;
+	}
+
 	
 	private final static String QUALITYNODEQUERY = "SELECT node.node_id,node.uid,simple_label(node.node_id) FROM node WHERE node.label = 'quality'";
 	public int getQualityNodeID() throws SQLException{
@@ -280,9 +317,7 @@ public class Utils {
 		if (results.isEmpty())
 			throw new RuntimeException("");
 		return results;
-
 	}
-	
 	
 	
 	
@@ -344,6 +379,22 @@ public class Utils {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	final static String testQuery = "SELECT * FROM node limit 1";
+	public boolean checkConnection(){
+		try{
+			Statement s = connection.createStatement();
+			ResultSet tResult = s.executeQuery(testQuery);
+		}
+		catch (SQLException e){
+			return false;
+		}
+		return true;
+	}
+	
+	public void retryKB() throws SQLException{
+		openKB();
 	}
 
 	final static String lineSeparator = System.getProperty("line.separator");
