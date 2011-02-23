@@ -71,9 +71,7 @@ public class VariationTable {
 		Map<Integer,String> taxonList = new HashMap<Integer,String>();
 		for(Integer att : getUsedAttributes()){
 			for (Integer ent : getUsedEntities()){
-				if (hasExhibitorSet(ent,att)){
-					
-					
+				if (hasExhibitorSet(ent,att)){					
 					Set <Integer> taxa = getExhibitorSet(ent,att);
 					sum += taxa.size(); 
 					if (attributeSums.containsKey(att)){

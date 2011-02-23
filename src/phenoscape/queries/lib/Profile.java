@@ -53,6 +53,30 @@ public class Profile {
 			table.put(entity_node_id, entity_entry);
 		}
 	}
+
+	public void retainAllFromPhenotypeSet(Integer entity_node_id, Integer attribute_node_id,Set<Integer> toRetain){
+		if (table.containsKey(entity_node_id)){
+			Map<Integer,Set<Integer>> entity_entry = table.get(entity_node_id);
+			if (entity_entry.containsKey(attribute_node_id)){
+				Set<Integer> phenotypeSet = entity_entry.get(attribute_node_id);
+				phenotypeSet.retainAll(toRetain);
+			}
+			else {
+				Set<Integer> phenotypeSet = new HashSet<Integer>();
+				phenotypeSet.addAll(toRetain);   //add here because new set
+				entity_entry.put(attribute_node_id,phenotypeSet);
+			}
+		}
+		else {
+			Map<Integer,Set<Integer>> entity_entry = new HashMap<Integer,Set<Integer>>();
+			Set<Integer> phenotypeSet = new HashSet<Integer>();
+			phenotypeSet.addAll(toRetain);  //add here because new set
+			entity_entry.put(attribute_node_id,phenotypeSet);
+			table.put(entity_node_id, entity_entry);
+		}
+	}
+	
+
 	
 	public boolean isEmpty(){
 		return table.isEmpty();
@@ -131,9 +155,17 @@ public class Profile {
 				table.remove(entity);
 			}
 		}
-		
-		// TODO Auto-generated method stub
-		
+	}
+	
+	public void removeAllEmpties(){
+		for (Integer ent : table.keySet()){
+			Map<Integer,Set<Integer>> entityValue = table.get(ent);
+			for (Integer att : entityValue.keySet()){
+				Set<Integer> attSet = entityValue.get(att);
+				if (attSet.isEmpty())
+					entityValue.remove(ent);
+			}
+		}
 	}
 
 }

@@ -14,6 +14,7 @@ import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import phenoscape.queries.TaxonomyTree.TaxonomicNode;
 import phenoscape.queries.lib.Utils;
 
 public class TestTaxonomyTree {
@@ -32,7 +33,6 @@ public class TestTaxonomyTree {
 	"WHERE (n.uid = ?)";
 
 	TaxonomyTree t1;
-	TaxonomyTree t2;
 	
 	@Before
 	public void setUp() throws Exception {
@@ -51,15 +51,23 @@ public class TestTaxonomyTree {
 		}
 		t1 = new TaxonomyTree(ASPIDORASROOT,u);
 		t1.traverseOntologyTree(u);
-		//t2 = new TaxonomyTree(OSTARIOPHYSIROOT,u);
 	}
 
 	@Test
-	public void testTaxonomyTree() {
+	public void testTaxonomyTree() throws SQLException {
 		TaxonomyTree t = new TaxonomyTree(ASPIDORASROOT,u);
 		Assert.assertNotNull(t);
 	}
 
+	@Test
+	public void testTaxonomyTree_fromNode() throws SQLException {
+		TaxonomicNode n = TaxonomyTree.getRootFromKB(u,ASPIDORASROOT);
+		TaxonomyTree t = new TaxonomyTree(n,u);
+		Assert.assertNotNull(t);
+	}
+
+	
+	
 	@Test
 	public void testGetRootNodeID() {
 		Integer rootNode = t1.getRootNodeID();

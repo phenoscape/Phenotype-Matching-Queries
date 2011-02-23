@@ -4,6 +4,7 @@ import java.io.Writer;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -13,65 +14,68 @@ import phenoscape.queries.lib.Utils;
 
 public class TaxonomyTree {
 
-	private static final String ROOTQUERY = "SELECT n.node_id,simple_label(n.node_id),t.rank_label FROM node AS n " +
-		"JOIN taxon AS t ON (t.node_id = n.node_id) "+
-		"WHERE (n.uid = ?)";
-	private static final String ONTOLOGYTREEQUERY = "SELECT n.node_id,n.uid,simple_label(n.node_id),t.is_extinct,t.rank_label FROM link AS l "+   
-		"JOIN node AS n ON (n.node_id = l.node_id) " +
-		"JOIN taxon AS t ON (t.node_id = l.node_id) " +
-		"WHERE l.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:is_a') " +
-		"AND l.object_id = ? AND is_inferred=false";
-	
+	private static final String TAXONNODEFIELDS = "n.node_id,n.uid,simple_label(n.node_id),t.is_extinct,t.rank_label";
+
+	private static final String ONTOLOGYTREEQUERY = "SELECT " + TAXONNODEFIELDS +  " FROM link AS l "+   
+	"JOIN node AS n ON (n.node_id = l.node_id) " +
+	"JOIN taxon AS t ON (t.node_id = l.node_id) " +
+	"WHERE l.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:is_a') " +
+	"AND l.object_id = ? AND is_inferred=false";
+
 	private final int rootNodeID;
-	
-	
+
+
 	private final Map<String,Integer> rankCounts;
 	private int extinctCounter = 0;
 	private int taxonCounter = -1;
 	private final Map<Integer,Set<Integer>> taxonomyTable = new HashMap<Integer,Set<Integer>>(40000);  //This holds the taxonomy <parent, children> using node_ids
 	private final Set<Integer> allTaxa;
 
-	public TaxonomyTree(String rootUID,Utils u) {
+
+	public TaxonomyTree(String rootUID,Utils u) throws SQLException {
+		this(getRootFromKB(u,rootUID),u);
+	}
+
+	public TaxonomyTree(TaxonomicNode root, Utils u){
 		super();
 		allTaxa = new HashSet<Integer>();
 		rankCounts = new HashMap<String,Integer>();
-		rankCounts.put("phylum", new Integer(0));
-		rankCounts.put("class", new Integer(0));
-		rankCounts.put("order", new Integer(0));
-		rankCounts.put("family",new Integer(0));
-		rankCounts.put("genus",new Integer(0));
-		rankCounts.put("species",new Integer(0));
+		rankCounts.put("phylum", 0);
+		rankCounts.put("class", 0);
+		rankCounts.put("order", 0);
+		rankCounts.put("family", 0);
+		rankCounts.put("genus", 0);
+		rankCounts.put("species", 0);
 		int rootHolder = -1;
-		try {
-			final PreparedStatement p = u.getPreparedStatement(ROOTQUERY);
-			p.setString(1,rootUID);
-			ResultSet r = p.executeQuery();
-			if(r.next()){
-				rootHolder = r.getInt(1);
-				String rootNodeLabel = r.getString(2);
-				String rootLabel = r.getString(3);
-				u.putNodeUIDName(rootHolder, rootUID,rootNodeLabel); 
-				Integer rCount = rankCounts.get(rootLabel);
-				if (rCount != null)
-					rankCounts.put(rootLabel,rCount.intValue()+1);
-			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		rootHolder = root.getID();
+		String rootNodeLabel = root.getLabel();
+		String rootRank = root.getRank();
+		u.putNodeUIDName(rootHolder, root.getUID(),rootNodeLabel); 
+		Integer rCount = rankCounts.get(rootRank);
+		if (rCount != null){
+			rankCounts.put(rootRank,rCount.intValue()+1);
 		}
-		finally {
-			rootNodeID = rootHolder;
-		}
+		rootNodeID = rootHolder;		
 	}
+
+
+
 
 	public int getRootNodeID (){
 		return rootNodeID;
 	}
-	
+
 	public Map<Integer,Set<Integer>> getTable(){
 		return taxonomyTable;
 	}
 
+	/**
+	 * 
+	 * @param node_id index of the node in the kb.
+	 * @param u used to report the uid of the node in case of a fatal error (exception
+	 * @return true if the node has children (so is internal)
+	 * @throws RuntimeException if there is no entry in the taxonomy table (meaning the presence of children is undefined) - shouldn't happen
+	 */
 	public boolean nodeIsInternal(Integer node_id,  Utils u) {
 		final Set<Integer> children = taxonomyTable.get(node_id);
 		if (children == null){
@@ -83,11 +87,17 @@ public class TaxonomyTree {
 			return true;
 	}
 
-	
-	 public Set<Integer> getAllTaxa(){
-		 return allTaxa;
-	 }
-	
+
+	public Set<Integer> getAllTaxa(){
+		return allTaxa;
+	}
+
+	public void traverseOntologyTreeUsingTaxonNodes(Collection<TaxonomicNode> nodes, Utils u){
+		
+	}
+
+
+
 	public void traverseOntologyTree(Utils u) throws SQLException {
 		PreparedStatement p1 = u.getPreparedStatement(ONTOLOGYTREEQUERY);
 		allTaxa.add(getRootNodeID());
@@ -95,34 +105,31 @@ public class TaxonomyTree {
 		taxonCounter = taxonomyTable.size();
 	}
 
-	private void traverseOntologyTreeAux(int node_id, Map<Integer, Set<Integer>> ontologyTable,PreparedStatement p, Utils u) throws SQLException {	
+	private void traverseOntologyTreeAux(int parentID, Map<Integer, Set<Integer>> ontologyTable,PreparedStatement p, Utils u) throws SQLException {	
 		final Set<Integer> childList = new HashSet<Integer>();
-		p.setInt(1, node_id);
-		ResultSet ts = p.executeQuery();
-		while(ts.next()){
-			final int nodeID = ts.getInt(1);
-			if (!u.hasNodeName(nodeID)){
-				final String nodeUID = ts.getString(2);
-				final String nodeName = ts.getString(3);
-				final boolean nodeExtinct = ts.getBoolean(4);
-				final String rankLabel = ts.getString(5);
-				u.putNodeUIDName(nodeID,nodeUID,nodeName);
-				if (nodeExtinct)
+		Collection<TaxonomicNode> children = getChildNodesFromKB(u, parentID, p);
+		for(TaxonomicNode child : children){
+			final int childID = child.getID();
+			if (!u.hasNodeName(childID)){
+				final String childUID = child.getUID();
+				final String childName = child.getLabel();
+				u.putNodeUIDName(childID,child.getUID(),child.getLabel());
+				if (child.getExtinct())
 					extinctCounter++;
+				final String rankLabel = child.getRank();
 				Integer rCount = rankCounts.get(rankLabel);
 				if (rCount != null)
 					rankCounts.put(rankLabel,rCount.intValue()+1);
 			}
-			childList.add(nodeID);
-			allTaxa.add(nodeID);
+			childList.add(childID);
+			allTaxa.add(childID);
 		}
-		ontologyTable.put(node_id,childList);
-		ts.close();
+		ontologyTable.put(parentID,childList);
 		for(Integer child : childList){
 			traverseOntologyTreeAux(child, ontologyTable,p,u);
 		}
 	}
-	
+
 	public void report(Utils u, Writer w){
 		u.writeOrDump("Taxon Count = " + taxonCounter,w);
 		u.writeOrDump("Extinct Taxa = " + extinctCounter,w);
@@ -132,6 +139,81 @@ public class TaxonomyTree {
 		u.writeOrDump("Taxa at family rank = " + rankCounts.get("family"),w);
 		u.writeOrDump("Taxa at genus rank = " + rankCounts.get("genus"),w);
 		u.writeOrDump("Taxa at species rank = " + rankCounts.get("species"),w);
+	}
+
+	private static final String ROOTQUERY = "SELECT " + TAXONNODEFIELDS + " FROM node AS n " +
+	"JOIN taxon AS t ON (t.node_id = n.node_id) "+
+	"WHERE (n.uid = ?)";
+
+	static TaxonomicNode getRootFromKB(Utils u, String rootUID) throws SQLException{
+		final PreparedStatement p = u.getPreparedStatement(ROOTQUERY);
+		p.setString(1,rootUID);
+		ResultSet r = p.executeQuery();
+		if(r.next()){
+			return new TaxonomicNode(r);
+		}
+		else{
+			throw new RuntimeException("Failed to find a node with UID " + rootUID + " to root the taxonomy");
+		}
+	}
+
+	
+	Collection<TaxonomicNode> getChildNodesFromKB(Utils u, int parentID, PreparedStatement p) throws SQLException{
+		final Collection<TaxonomicNode> result = new HashSet<TaxonomicNode>();
+		p.setInt(1, parentID);
+		ResultSet ts = p.executeQuery();
+		while (ts.next()){
+			TaxonomicNode n = new TaxonomicNode(ts);
+			result.add(n);
+		}
+		return result;
+	}
+	
+
+
+	static class TaxonomicNode{
+
+		private int id;
+		private String uid;
+		private String label;
+		private boolean extinct;
+		private String rank;
+
+		TaxonomicNode(int p_id, String p_uid, String p_label, boolean p_extinct, String p_rank){
+			id = p_id;
+			uid = p_uid;
+			label = p_label;
+			extinct = p_extinct;
+			rank = p_rank;
+		}
+
+		TaxonomicNode(ResultSet r) throws SQLException{
+			id = r.getInt(1);
+			uid = r.getString(2);
+			label = r.getString(3);
+			extinct = r.getBoolean(4);
+			rank = r.getString(5);
+		}
+
+		int getID(){
+			return id;
+		}
+
+		String getUID(){
+			return uid;
+		}
+
+		String getLabel(){
+			return label;
+		}
+
+		boolean getExtinct(){
+			return extinct;
+		}
+
+		String getRank(){
+			return rank;
+		}
 	}
 
 }
