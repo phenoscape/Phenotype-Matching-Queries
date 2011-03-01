@@ -347,7 +347,7 @@ public class Utils {
 		return openKBFromConnections(CONNECTION_PROPERTIES_FILENAME);
 	}
 	
-	private String openKBFromConnections(String connectionsSpec) throws SQLException {
+	public String openKBFromConnections(String connectionsSpec) throws SQLException {
 		final Properties properties = new Properties();
 		try {
 			//System.out.println("Connect path = " + this.getClass().getResource(CONNECTION_PROPERTIES_FILENAME));

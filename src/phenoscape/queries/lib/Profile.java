@@ -168,4 +168,29 @@ public class Profile {
 		}
 	}
 
+	public void setPhenotypeSet(Integer ent, Integer att, Set<Integer> newSet) {
+		if (table.containsKey(ent)){
+			Map<Integer,Set<Integer>> entity_entry = table.get(ent);
+			if (entity_entry.containsKey(att)){
+				Set<Integer> phenotypeSet = entity_entry.get(att);
+				phenotypeSet.clear();
+				phenotypeSet.addAll(newSet);
+			}
+			else {
+				Set<Integer> phenotypeSet = new HashSet<Integer>();
+				phenotypeSet.addAll(newSet);
+				entity_entry.put(att,phenotypeSet);
+			}
+		}
+		else {
+			Map<Integer,Set<Integer>> entity_entry = new HashMap<Integer,Set<Integer>>();
+			Set<Integer> phenotypeSet = new HashSet<Integer>();
+			phenotypeSet.addAll(newSet);
+			entity_entry.put(att,phenotypeSet);
+			table.put(ent, entity_entry);
+		}
+	}
+
+
+
 }

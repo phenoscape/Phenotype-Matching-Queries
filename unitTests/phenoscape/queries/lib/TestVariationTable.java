@@ -40,7 +40,7 @@ public class TestVariationTable {
 
 	@Before
 	public void setUp() throws Exception {
-		testTable = new VariationTable();
+		testTable = new VariationTable(VariationTable.VariationType.TAXON);  //testing needed?
 	}
 
 	

@@ -16,17 +16,22 @@ import org.junit.Test;
 public class TestUtils {
 
 	Utils u;
+	private static final String UNITTESTKB = "unitTestconnection.properties"; 
+
 	
 	@Before
 	public void setUp() throws Exception {
 		u = new Utils();
-		u.openKB();
+		u.openKBFromConnections(UNITTESTKB);
 		//u.cacheEntities();
 	}
 
 	@Test
 	public void testOpenKB() throws SQLException{
 		String kbStr = u.openKB();
+		System.out.println(kbStr);
+		u.closeKB();
+		kbStr = u.openKBFromConnections(UNITTESTKB);
 		System.out.println(kbStr);
 		u.closeKB();
 	}

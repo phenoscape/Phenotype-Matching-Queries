@@ -92,9 +92,6 @@ public class TaxonomyTree {
 		return allTaxa;
 	}
 
-	public void traverseOntologyTreeUsingTaxonNodes(Collection<TaxonomicNode> nodes, Utils u){
-		
-	}
 
 
 
@@ -169,6 +166,46 @@ public class TaxonomyTree {
 		return result;
 	}
 	
+	
+	public void traverseOntologyTreeUsingTaxonNodes(Map<TaxonomicNode,Integer> taxa, Utils u){
+		allTaxa.add(getRootNodeID());
+		traverseOntologyTreeAuxUsingTaxonNodes(getRootNodeID(),taxonomyTable,taxa,u);
+		taxonCounter = taxonomyTable.size();
+	}
+
+	private void traverseOntologyTreeAuxUsingTaxonNodes(int parentID, Map<Integer, Set<Integer>> ontologyTable,Map<TaxonomicNode,Integer> taxa, Utils u)  {	
+		final Set<Integer> childList = new HashSet<Integer>();
+		Collection<TaxonomicNode> children = getChildNodesFromCollection(taxa,parentID);
+		for(TaxonomicNode child : children){
+			final int childID = child.getID();
+			if (!u.hasNodeName(childID)){
+				final String childUID = child.getUID();
+				final String childName = child.getLabel();
+				u.putNodeUIDName(childID,child.getUID(),child.getLabel());
+				if (child.getExtinct())
+					extinctCounter++;
+				final String rankLabel = child.getRank();
+				Integer rCount = rankCounts.get(rankLabel);
+				if (rCount != null)
+					rankCounts.put(rankLabel,rCount.intValue()+1);
+			}
+			childList.add(childID);
+			allTaxa.add(childID);
+		}
+		ontologyTable.put(parentID,childList);
+		for(Integer child : childList){
+			traverseOntologyTreeAuxUsingTaxonNodes(child, ontologyTable,taxa,u);
+		}
+	}
+
+	Collection<TaxonomicNode> getChildNodesFromCollection(Map<TaxonomicNode,Integer> taxa, int parentID){
+		final Collection<TaxonomicNode> result = new HashSet<TaxonomicNode>();
+		for(TaxonomicNode n : taxa.keySet()){
+			if (taxa.get(n).intValue()== parentID)
+				result.add(n);
+		}
+		return result;
+	}
 
 
 	static class TaxonomicNode{

@@ -92,6 +92,7 @@ public class TestTaxonomyTree2 {
 
 	@Test
 	public void testTraverseOntologyTreeUsingTaxonNodes() {
+		
 		fail("Not yet implemented");
 	}
 
