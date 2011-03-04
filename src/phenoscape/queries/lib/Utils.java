@@ -29,7 +29,7 @@ public class Utils {
 	final private static String pathSuffix = "/path";
 
 
-	private static final String CONNECTION_PROPERTIES_FILENAME = "connection.properties"; 
+	private static final String CONNECTION_PROPERTIES_FILENAME = "stagingconnection.properties"; 
 	
 	
 	//These are rather unfortunate, but KB-DEV currently (11-15-2010) uses an unreleased PATO with 
@@ -236,6 +236,44 @@ public class Utils {
 		return result;
 	}
 
+	private final static String PHENOTYPEENTITYQUERY = "SELECT node_id, entity_node_id FROM phenotype";
+	private static final String ENTITYPARENTQUERY = 
+		"SELECT target.node_id FROM node AS pheno " +
+		"JOIN link ON (pheno.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:inheres_in_part_of')) " + 
+		"JOIN node AS target ON (target.node_id = link.object_id) WHERE pheno.node_id = ? ";
+	public Map<Integer,Set<Integer>> setupEntityParents() throws SQLException{
+		Map<Integer,Set<Integer>> result = new HashMap<Integer,Set<Integer>>();
+		final Statement s1 = getStatement();
+		final PreparedStatement entityParentsStatement = getPreparedStatement(ENTITYPARENTQUERY);
+		ResultSet entResults = s1.executeQuery(PHENOTYPEENTITYQUERY);
+		while(entResults.next()){
+			int phenoID = entResults.getInt(1);
+			int entityID = entResults.getInt(2);
+			if (!result.containsKey(entityID)){
+				cacheOneNode(entityID);
+				Set<Integer> entParentSet = new HashSet<Integer>();
+				entityParentsStatement.setInt(1,phenoID);
+				ResultSet parentResults = entityParentsStatement.executeQuery();
+				while (parentResults.next()){
+					int parentID = parentResults.getInt(1);
+					entParentSet.add(parentID);
+				}
+				if (entParentSet.isEmpty()){
+					throw new RuntimeException("empty parent set of " + getNodeName(entityID));
+				}
+				result.put(entityID, entParentSet);
+			}
+		}
+		return result;
+	}
+	
+
+
+	
+	
+	
+	
+	
 	
 	/**
 	 * 
@@ -283,22 +321,6 @@ public class Utils {
 		return getCount(ASSERTEDGENEPHENOTYPECOUNTQUERY);	
 	}
 
-	private static final String ENTITYPARENTQUERY = 
-		"SELECT target.node_id FROM node AS pheno " +
-		"JOIN link ON (pheno.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:inheres_in_part_of')) " + 
-		"JOIN node AS target ON (target.node_id = link.object_id) WHERE pheno.node_id = ? ";
-
-	public Set<Integer> collectEntityParents(int pheno) throws SQLException{
-		PreparedStatement entityParentsStatement = getPreparedStatement(ENTITYPARENTQUERY); 
-		final Set<Integer> results = new HashSet<Integer>();
-		entityParentsStatement.setInt(1, pheno);
-		ResultSet entityParents = entityParentsStatement.executeQuery();
-		while(entityParents.next()){
-			int target_id = entityParents.getInt(1);
-			results.add(target_id);
-		}
-		return results;
-	}
 
 	private static final String QUALITYPARENTQUERY = 
 		"SELECT target.node_id FROM node AS quality " +

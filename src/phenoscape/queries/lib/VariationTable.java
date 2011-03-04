@@ -25,7 +25,6 @@ public class VariationTable {
 	
 	
 	public void addExhibitor(Integer entity_node_id, Integer attribute_node_id, Integer exhibitor_node_id){
-		//System.out.println("Before Table = " + table + "; size = " + table.size());
 		if (table.containsKey(entity_node_id)){
 			Map<Integer,Set<Integer>> entity_entry = table.get(entity_node_id);
 			if (entity_entry.containsKey(attribute_node_id)){
@@ -45,7 +44,6 @@ public class VariationTable {
 			entity_entry.put(attribute_node_id,exhibitorSet);
 			table.put(entity_node_id, entity_entry);
 		}
-		//System.out.println("After Table = " + table + "; size = " + table.size());
 	}
 	
 	public void reportTable(){
@@ -120,10 +118,10 @@ public class VariationTable {
 				u.writeOrDump(att.intValue() + "\t" + attributeCount,bw);
 		}
 		if (repType==VariationType.TAXON){
-			u.writeOrDump("Total (number of phenotypes at taxonomically variable nodes counted by attribute):\t" + attributeTotal, bw);
+			u.writeOrDump("Total (number of attributes showing variation at taxonomically variable nodes):\t" + attributeTotal, bw);
 		}
 		else {
-			u.writeOrDump("Total (number of phenotypes for genes counted by attribute):\t" + attributeTotal, bw);			
+			u.writeOrDump("Total (number of attributes for genes):\t" + attributeTotal, bw);			
 		}
 		int entityTotal = 0;
 		u.writeOrDump("\n\n-- Entity Summary --",bw);
@@ -137,7 +135,7 @@ public class VariationTable {
 				u.writeOrDump(ent.intValue() + "\t" + entityCount,bw);
 		}
 		if (repType==VariationType.TAXON){
-			u.writeOrDump("Total (number of phenotypes at taxonomically variable nodes counted by entity):\t" + entityTotal, bw);
+			u.writeOrDump("Total (number of entities showing variation at taxonomically variable nodes):\t" + entityTotal, bw);
 			u.writeOrDump("\n\n-- Taxon Summary --",bw);
 		}
 		else{

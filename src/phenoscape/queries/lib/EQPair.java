@@ -8,6 +8,8 @@ public class EQPair {
 	private final int quality;
 	private final int hashCode;
 	private String nameString;
+	private static EQPair eqTop = null;
+	
 	public EQPair(Integer e, Integer q){
 		if (e.intValue()<= 0)
 			throw new IllegalArgumentException("Negative or zero entity id passed to EQPair constructor");
@@ -25,6 +27,23 @@ public class EQPair {
 		b.append(" Q: ");
 		b.append(quality);
 		nameString = b.toString();
+	}
+	
+	private EQPair(Utils u) throws SQLException{
+		entity = -1;
+		quality = u.getQualityNodeID();
+		int hc = 47;
+		hc = 31*hc + entity;
+		hc = 31*hc + quality;
+		hashCode = hc;
+		nameString = "EQ expression - Quality";
+	}
+	
+	// This represents the root of all phenotypes, which is the quality node
+	public static EQPair getEQTop(Utils u) throws SQLException{
+		if (eqTop == null)
+			eqTop = new EQPair(u);
+		return eqTop;
 	}
 	
 	public int getEntity(){
@@ -95,4 +114,34 @@ public class EQPair {
 		return b.toString();
 	}
 
+	public String getFullUID(Utils u) throws SQLException{
+		final StringBuilder b =  new StringBuilder(200);
+		String qualityUID = u.getNodeUID(quality);
+		if (qualityUID == null) {
+			if (!u.checkConnection()){
+				u.closeKB();
+				u.retryKB();
+			}
+			u.cacheOneNode(quality);
+			qualityUID = u.getNodeUID(quality);
+		}
+		String entityUID = u.getNodeUID(entity);
+		if (entityUID == null) {
+			if (!u.checkConnection()){
+				u.closeKB();
+				u.retryKB();
+			}
+			u.cacheOneNode(entity);
+			entityUID = u.getNodeUID(entity);
+		}
+		b.append(qualityUID);
+		b.append("^OBO_REL:inheres_in(");
+		b.append(entityUID);
+		b.append(")");
+		return b.toString();
+	}
+
+
+	
+	
 }

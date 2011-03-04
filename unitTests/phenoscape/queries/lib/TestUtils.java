@@ -22,7 +22,8 @@ public class TestUtils {
 	@Before
 	public void setUp() throws Exception {
 		u = new Utils();
-		u.openKBFromConnections(UNITTESTKB);
+		//u.openKBFromConnections(UNITTESTKB);
+		u.openKB();
 		//u.cacheEntities();
 	}
 
@@ -35,6 +36,47 @@ public class TestUtils {
 		System.out.println(kbStr);
 		u.closeKB();
 	}
+	
+	
+	String scaleLookup = "SELECT node.node_id FROM node WHERE node.label = 'scale'";
+
+	@Test
+	public void testSetupEntityParents() throws SQLException{
+		Map<Integer,Set<Integer>> entParents = u.setupEntityParents();
+		assertNotNull(entParents);
+		assertFalse(entParents.isEmpty());
+		System.out.println("Entity parents size = " + entParents.size());
+		
+		Statement s = u.getStatement();
+		int scaleNodeID = -1;
+		ResultSet rs = s.executeQuery(scaleLookup);
+		if (rs.next())
+			scaleNodeID = rs.getInt(1);
+		else{
+			fail("Couldn't retreive node id for 'scale'");
+		}
+		Set <Integer> scaleParents = entParents.get(scaleNodeID);
+		assertNotNull(scaleParents);
+		assertFalse(scaleParents.isEmpty());
+
+	}
+	
+	
+	String shapeLookup = "SELECT node.node_id FROM node WHERE node.label = 'shape'";
+	@Test
+	public void testCollectQualityParents() throws SQLException{
+		Statement s = u.getStatement();
+		int shapeNodeID = -1;
+		ResultSet rs = s.executeQuery(shapeLookup);
+		if (rs.next())
+			shapeNodeID = rs.getInt(1);
+		else{
+			fail("Couldn't retreive node id for 'shape'");
+		}
+		Set <Integer> shapeParents = u.collectQualityParents(shapeNodeID);
+	}
+
+	
 	
 	private final static String NAMELOOKUP = "SELECT node.node_id FROM node WHERE node.uid = ?";
 	@Test
@@ -203,35 +245,7 @@ public class TestUtils {
 		fail("Not yet implemented");
 	}
 
-	String scaleLookup = "SELECT node.node_id FROM node WHERE node.label = 'scale'";
-	@Test
-	public void testCollectEntityParents() throws SQLException{
-		Statement s = u.getStatement();
-		int scaleNodeID = -1;
-		ResultSet rs = s.executeQuery(scaleLookup);
-		if (rs.next())
-			scaleNodeID = rs.getInt(1);
-		else{
-			fail("Couldn't retreive node id for 'scale'");
-		}
-		Set <Integer> scaleParents = u.collectEntityParents(scaleNodeID);
-		
-	}
 
-	
-	String shapeLookup = "SELECT node.node_id FROM node WHERE node.label = 'shape'";
-	@Test
-	public void testCollectQualityParents() throws SQLException{
-		Statement s = u.getStatement();
-		int shapeNodeID = -1;
-		ResultSet rs = s.executeQuery(shapeLookup);
-		if (rs.next())
-			shapeNodeID = rs.getInt(1);
-		else{
-			fail("Couldn't retreive node id for 'shape'");
-		}
-		Set <Integer> shapeParents = u.collectQualityParents(shapeNodeID);
-	}
 
 		
 	@Test

@@ -13,9 +13,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import phenoscape.queries.PhenotypeProfileAnalysis.TaxonPhenotypeLink;
 import phenoscape.queries.TaxonomyTree.TaxonomicNode;
 import phenoscape.queries.lib.Profile;
+import phenoscape.queries.lib.TaxonPhenotypeLink;
 import phenoscape.queries.lib.Utils;
 import phenoscape.queries.lib.VariationTable;
 
