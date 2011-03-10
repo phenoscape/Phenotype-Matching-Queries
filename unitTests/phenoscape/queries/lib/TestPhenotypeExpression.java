@@ -11,7 +11,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestEQPair {
+public class TestPhenotypeExpression {
 
 	@Before
 	public void setUp() throws Exception {
@@ -23,39 +23,39 @@ public class TestEQPair {
 
 	@Test
 	public void testEQPair() {
-		EQPair test = new EQPair(1006,70);
+		PhenotypeExpression test = new PhenotypeExpression(1006,70);
 		Assert.assertNotNull(test);
 	}
 	
 	@Test (expected = IllegalArgumentException.class) public void testBadEntityConstructor(){
-		EQPair test = new EQPair(-1006,70);
+		PhenotypeExpression test = new PhenotypeExpression(-1006,70);
 	}
 
 	@Test (expected = IllegalArgumentException.class) public void testBadQualityConstructor(){
-		EQPair test = new EQPair(1006,-70);
+		PhenotypeExpression test = new PhenotypeExpression(1006,-70);
 		Assert.assertNotNull(test);		
 	}
 
 	@Test
 	public void testGetEntity() {
-		EQPair test = new EQPair(1006,70);
+		PhenotypeExpression test = new PhenotypeExpression(1006,70);
 		Assert.assertEquals(1006,test.getEntity());
 	}
 
 	@Test
 	public void testGetQuality() {
-		EQPair test = new EQPair(1006,70);
+		PhenotypeExpression test = new PhenotypeExpression(1006,70);
 		Assert.assertEquals(70,test.getQuality());
 	}
 
 	@Test
 	public void testEqualsObject() {
-		EQPair test1 = new EQPair(1006,70);
-		EQPair test1b = new EQPair(1006,70);
-		EQPair test2 = new EQPair(1008,70);
-		EQPair test3 = new EQPair(1006,52);
-		EQPair test4 = new EQPair(1008,52);
-		EQPair test4b = new EQPair(1008,52);
+		PhenotypeExpression test1 = new PhenotypeExpression(1006,70);
+		PhenotypeExpression test1b = new PhenotypeExpression(1006,70);
+		PhenotypeExpression test2 = new PhenotypeExpression(1008,70);
+		PhenotypeExpression test3 = new PhenotypeExpression(1006,52);
+		PhenotypeExpression test4 = new PhenotypeExpression(1008,52);
+		PhenotypeExpression test4b = new PhenotypeExpression(1008,52);
 		Assert.assertFalse(test1.equals(test2));
 		Assert.assertFalse(test1.equals(test3));
 		Assert.assertFalse(test1.equals(test4));
@@ -80,12 +80,12 @@ public class TestEQPair {
 	
 	@Test
 	public void testHashCode() {
-		EQPair test1 = new EQPair(1006,70);
-		EQPair test1b = new EQPair(1006,70);
-		EQPair test2 = new EQPair(1008,70);
-		EQPair test3 = new EQPair(1006,52);
-		EQPair test4 = new EQPair(1008,52);
-		EQPair test4b = new EQPair(1008,52);
+		PhenotypeExpression test1 = new PhenotypeExpression(1006,70);
+		PhenotypeExpression test1b = new PhenotypeExpression(1006,70);
+		PhenotypeExpression test2 = new PhenotypeExpression(1008,70);
+		PhenotypeExpression test3 = new PhenotypeExpression(1006,52);
+		PhenotypeExpression test4 = new PhenotypeExpression(1008,52);
+		PhenotypeExpression test4b = new PhenotypeExpression(1008,52);
 		Assert.assertFalse(test1.hashCode() == test2.hashCode());
 		Assert.assertFalse(test1.hashCode() == test3.hashCode());
 		Assert.assertFalse(test1.hashCode() == test4.hashCode());
@@ -106,12 +106,12 @@ public class TestEQPair {
 
 	@Test
 	public void testEQSet(){
-		EQPair test1 = new EQPair(1006,70);
-		EQPair test1b = new EQPair(1006,70);
-		EQPair test2 = new EQPair(1008,70);
-		EQPair test3 = new EQPair(1006,52);
-		EQPair test4 = new EQPair(1008,52);
-		Set<EQPair> testSet1 = new HashSet<EQPair>();
+		PhenotypeExpression test1 = new PhenotypeExpression(1006,70);
+		PhenotypeExpression test1b = new PhenotypeExpression(1006,70);
+		PhenotypeExpression test2 = new PhenotypeExpression(1008,70);
+		PhenotypeExpression test3 = new PhenotypeExpression(1006,52);
+		PhenotypeExpression test4 = new PhenotypeExpression(1008,52);
+		Set<PhenotypeExpression> testSet1 = new HashSet<PhenotypeExpression>();
 		testSet1.add(test1);
 		Assert.assertTrue(testSet1.contains(test1));
 		testSet1.add(test2);

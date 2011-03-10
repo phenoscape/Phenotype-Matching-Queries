@@ -22,7 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import phenoscape.queries.lib.DistinctGeneAnnotationRecord;
-import phenoscape.queries.lib.EQPair;
+import phenoscape.queries.lib.PhenotypeExpression;
 import phenoscape.queries.lib.Profile;
 import phenoscape.queries.lib.TaxonPhenotypeLink;
 import phenoscape.queries.lib.Utils;
@@ -345,7 +345,7 @@ public class TestPhenotypeProfileAnalysis {
 	@Test
 	public void testBuildEQParents() throws SQLException {
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
-		Map <EQPair,Set<EQPair>> phenotypeParentCache = new HashMap<EQPair,Set<EQPair>>();
+		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 	}
 

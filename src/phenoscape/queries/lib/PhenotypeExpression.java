@@ -2,15 +2,15 @@ package phenoscape.queries.lib;
 
 import java.sql.SQLException;
 
-public class EQPair {
+public class PhenotypeExpression {
 	
 	private final int entity;
 	private final int quality;
 	private final int hashCode;
 	private String nameString;
-	private static EQPair eqTop = null;
+	private static PhenotypeExpression eqTop = null;
 	
-	public EQPair(Integer e, Integer q){
+	public PhenotypeExpression(Integer e, Integer q){
 		if (e.intValue()<= 0)
 			throw new IllegalArgumentException("Negative or zero entity id passed to EQPair constructor");
 		if (q.intValue()<= 0)
@@ -29,7 +29,7 @@ public class EQPair {
 		nameString = b.toString();
 	}
 	
-	private EQPair(Utils u) throws SQLException{
+	private PhenotypeExpression(Utils u) throws SQLException{
 		entity = -1;
 		quality = u.getQualityNodeID();
 		int hc = 47;
@@ -40,9 +40,9 @@ public class EQPair {
 	}
 	
 	// This represents the root of all phenotypes, which is the quality node
-	public static EQPair getEQTop(Utils u) throws SQLException{
+	public static PhenotypeExpression getEQTop(Utils u) throws SQLException{
 		if (eqTop == null)
-			eqTop = new EQPair(u);
+			eqTop = new PhenotypeExpression(u);
 		return eqTop;
 	}
 	
@@ -56,8 +56,8 @@ public class EQPair {
 	
 	@Override 
 	public boolean equals(Object anObject){
-		if (anObject instanceof EQPair){
-			EQPair other = (EQPair)anObject;
+		if (anObject instanceof PhenotypeExpression){
+			PhenotypeExpression other = (PhenotypeExpression)anObject;
 			if (other.getEntity() == getEntity()  &&
 				other.getQuality() == getQuality()){
 				return true;

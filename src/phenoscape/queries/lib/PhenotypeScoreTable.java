@@ -8,7 +8,7 @@ public class PhenotypeScoreTable {
 	
 	private Map<Integer,Map<Integer,Map<Integer,Result>>> table = new HashMap<Integer,Map<Integer,Map<Integer,Result>>>();  //Taxon Entity, Gene Entity, Attribute Result
 	
-	public void addScore(Integer tEntity, Integer gEntity, Integer attribute, Double score, EQPair bestSubsumer){
+	public void addScore(Integer tEntity, Integer gEntity, Integer attribute, Double score, PhenotypeExpression bestSubsumer){
 		if (table.containsKey(tEntity)){
 			Map<Integer,Map<Integer,Result>> taxon_entry = table.get(tEntity);
 			if (taxon_entry.containsKey(gEntity)){
@@ -57,7 +57,7 @@ public class PhenotypeScoreTable {
 		return table.get(tEntity).get(gEntity).get(attribute).getScore();
 	}
 	
-	public EQPair getBestSubsumer(Integer tEntity, Integer gEntity, Integer attribute){
+	public PhenotypeExpression getBestSubsumer(Integer tEntity, Integer gEntity, Integer attribute){
 		return table.get(tEntity).get(gEntity).get(attribute).getBestSubsumer();
 	}
 
@@ -65,9 +65,9 @@ public class PhenotypeScoreTable {
 	
 	static class Result {
 		double score;
-		EQPair best;
+		PhenotypeExpression best;
 
-		Result(Double sc, EQPair bestPair){
+		Result(Double sc, PhenotypeExpression bestPair){
 			score = sc.doubleValue();
 			best = bestPair;
 		}
@@ -76,7 +76,7 @@ public class PhenotypeScoreTable {
 			return score;
 		}
 		
-		EQPair getBestSubsumer(){
+		PhenotypeExpression getBestSubsumer(){
 			return best;
 		}
 	
