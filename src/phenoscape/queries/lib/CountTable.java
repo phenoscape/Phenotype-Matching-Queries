@@ -11,19 +11,17 @@ public class CountTable {
 	
 	private long sum;
 	
-	private Map<Integer,Map<Integer,Integer>> table = new HashMap<Integer,Map<Integer,Integer>>();  // entity -> (quality -> count)
+	private Map<PhenotypeExpression,Integer>table = new HashMap<PhenotypeExpression,Integer>();  // entity -> (quality -> count)
 	
+
+	public void addCount(PhenotypeExpression p, int score){
+		table.put(p, score);
+	}
+
 	
 	public void addCount(Integer entity_id, Integer quality_id, int score){
-		if (table.containsKey(entity_id)){
-			Map<Integer,Integer> entity_entry = table.get(entity_id);
-			entity_entry.put(quality_id, score);
-		}
-		else {
-			Map<Integer,Integer> entity_entry = new HashMap<Integer,Integer>();
-			entity_entry.put(quality_id, score);
-			table.put(entity_id, entity_entry);
-		}
+		PhenotypeExpression p = new PhenotypeExpression(entity_id,quality_id);
+		table.put(p, score);
 	}
 
 	public boolean isEmpty(){
@@ -36,33 +34,38 @@ public class CountTable {
 		return b.toString();
 	}
 	
-	public Set<Integer> getEntities(){
+	public Set<PhenotypeExpression> getPhenotypes(){
 		return table.keySet();
 	}
 	
-	@SuppressWarnings("unchecked")
-	public Set<Integer> getQualitiesForEntity(Integer entity_id){
-		Map<Integer,Integer> entity_entry = table.get(entity_id);
-		if (entity_entry == null){
-			return (Set<Integer>)Collections.EMPTY_SET;
-		}
-		else
-			return entity_entry.keySet();
-	}
 
 	public boolean hasCount(Integer entity, Integer quality){
-		if (table.containsKey(entity))
-			return (table.get(entity).containsKey(quality));
-		else
-			return false;
+		PhenotypeExpression p = new PhenotypeExpression(entity,quality);
+		return table.containsKey(p);
 	}
+
+	public boolean hasCount(PhenotypeExpression p){
+		return table.containsKey(p);
+	}
+
 	
 	public int getRawCount(Integer entity, Integer quality){
-		return table.get(entity).get(quality).intValue();
+		PhenotypeExpression p = new PhenotypeExpression(entity,quality);
+		return table.get(p).intValue();
 	}
+
+	public int getRawCount(PhenotypeExpression p){
+		return table.get(p).intValue();
+	}
+
 	
+	public double getFraction(PhenotypeExpression p){
+		return ((double)getRawCount(p))/(double)sum;
+	}
+
 	public double getFraction(Integer entity, Integer quality){
-		return ((double)getRawCount(entity, quality))/(double)sum;
+		PhenotypeExpression p = new PhenotypeExpression(entity,quality);
+		return ((double)getRawCount(p))/(double)sum;
 	}
 	
 	public double getIC(Integer entity, Integer quality){

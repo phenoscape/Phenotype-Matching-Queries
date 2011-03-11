@@ -66,7 +66,13 @@ public class PhenotypeProfileAnalysis {
 		"(SELECT phenotype.node_id from phenotype " +
 		"JOIN link phenotype_inheres_in_part_of ON (phenotype_inheres_in_part_of.node_id = phenotype.node_id AND phenotype_inheres_in_part_of.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:inheres_in_part_of')) " +
 		"JOIN link quality_is_a ON (quality_is_a.node_id = phenotype.node_id AND quality_is_a.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:is_a')) " +
-		"WHERE (phenotype_inheres_in_part_of.object_id = ?  AND quality_is_a.object_id = ?))";
+		"WHERE (phenotype_inheres_in_part_of.object_id =  ?  AND quality_is_a.object_id = ?))";
+
+	private static final String GENEQUALITYCOUNTQUERY =
+		"SELECT count(*) FROM distinct_gene_annotation  WHERE distinct_gene_annotation.phenotype_node_id IN " +
+		"(SELECT phenotype.node_id from phenotype " +
+		"JOIN link quality_is_a ON (quality_is_a.node_id = phenotype.node_id AND quality_is_a.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:is_a')) " +
+		"WHERE (quality_is_a.object_id = ?))";
 
 
 	Map<Integer,Profile> taxonProfiles;  //taxon_node_id -> Phenotype profile for taxon
@@ -229,7 +235,7 @@ public class PhenotypeProfileAnalysis {
 		buildEQParents(phenotypeParentCache,entityParentCache,u);
 
 		//fillCountTable(taxonProfiles, phenotypeCountsForTaxa,phenotypeParentCache, u, TAXONPHENOTYPECOUNTQUERY, u.countAssertedTaxonPhenotypeAnnotations());
-		fillCountTable(geneProfiles, phenotypeCountsForGenes,phenotypeParentCache, u, GENEPHENOTYPECOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		fillCountTable(geneProfiles, phenotypeCountsForGenes,phenotypeParentCache, u, GENEPHENOTYPECOUNTQUERY, GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 
 		//sumCountTables(phenotypeCountsCombined,phenotypeCountsForTaxa,phenotypeCountsForGenes);
 
@@ -616,7 +622,7 @@ public class PhenotypeProfileAnalysis {
 //	}
 
 	/**
-	 * For each phenotype in the taxonProfile, this builds the set of EQ class expression parents.
+	 * For each phenotype in the taxonProfile, this builds the set of class expression parents (both EQ and Q) of the phenotype.
 	 * Changed to save the parents (iipo parents) indexed by the entity, which is more efficient and useful later on.
 	 * 
 	 * @param entityParentCache
@@ -642,12 +648,14 @@ public class PhenotypeProfileAnalysis {
 						else
 							logger.info("Because the parent set of " + curAtt + " is empty");
 					}
-					for(Integer entParent : entityParentSet){
-						for(Integer qualParent : qualityParentSet){
+					for(Integer qualParent : qualityParentSet){
+						for(Integer entParent : entityParentSet){
 							PhenotypeExpression newParentEQ = new PhenotypeExpression(entParent,qualParent);
 							String bestID = newParentEQ.getFullName(u);
 							eqParentSet.add(newParentEQ);
 						}
+						PhenotypeExpression newParentQ = new PhenotypeExpression(qualParent);
+						eqParentSet.add(newParentQ);
 					}
 					if (eqParentSet.isEmpty()){
 						throw new RuntimeException("empty parentSet: " + u.getNodeName(curEntity) + " " + u.getNodeName(curAtt) );
@@ -670,11 +678,12 @@ public class PhenotypeProfileAnalysis {
 	 * @param parents
 	 * @throws SQLException 
 	 */
-	void fillCountTable(Map<Integer,Profile> profiles, CountTable counts,Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, Utils u, String query,int annotationCount) throws SQLException{
+	void fillCountTable(Map<Integer,Profile> profiles, CountTable counts,Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, Utils u, String phenotypeQuery, String qualityQuery, int annotationCount) throws SQLException{
 		counts.setSum(annotationCount);
 		final PhenotypeExpression topEQ = PhenotypeExpression.getEQTop(u);
-		counts.addCount(topEQ.getEntity(), topEQ.getQuality(), annotationCount);
-		final PreparedStatement p = u.getPreparedStatement(query);
+		counts.addCount(topEQ, annotationCount);
+		final PreparedStatement phenotypeStatement = u.getPreparedStatement(phenotypeQuery);
+		final PreparedStatement qualityStatement = u.getPreparedStatement(qualityQuery);
 		for(Profile currentProfile : profiles.values()){
 			Set <Integer> usedEntities = currentProfile.getUsedEntities();
 			Set <Integer> usedAttributes = currentProfile.getUsedAttributes();
@@ -688,17 +697,30 @@ public class PhenotypeProfileAnalysis {
 					else {
 						curEQ.fillNames(u);
 						//logger.info("Processing " + curEQ);
-						for(PhenotypeExpression eqParent : allParents){
-							if (!counts.hasCount(eqParent.getEntity(), eqParent.getQuality())){
-								p.setInt(1, eqParent.getEntity());
-								p.setInt(2, eqParent.getQuality());
-								ResultSet eaResult = p.executeQuery();
-								if(eaResult.next()){
-									int count = eaResult.getInt(1);
-									counts.addCount(eqParent.getEntity(), eqParent.getQuality(), count);
+						for(PhenotypeExpression phenotypeParent : allParents){
+							if (!counts.hasCount(phenotypeParent)){
+								if (phenotypeParent.isSimpleQuality()){
+									qualityStatement.setInt(1, phenotypeParent.getQuality());
+									ResultSet qResult = qualityStatement.executeQuery();
+									if(qResult.next()){
+										int count = qResult.getInt(1);
+										counts.addCount(phenotypeParent, count);
+									}
+									else {
+										throw new RuntimeException("count query failed for quality " + u.getNodeName(phenotypeParent.getQuality()));
+									}
 								}
 								else {
-									throw new RuntimeException("count query failed " + u.getNodeName(eqParent.getEntity()) + " " + u.getNodeName(eqParent.getQuality()));
+									phenotypeStatement.setInt(1, phenotypeParent.getEntity());
+									phenotypeStatement.setInt(2, phenotypeParent.getQuality());
+									ResultSet eaResult = phenotypeStatement.executeQuery();
+									if(eaResult.next()){
+										int count = eaResult.getInt(1);
+										counts.addCount(phenotypeParent, count);
+									}
+									else {
+										throw new RuntimeException("count query failed for phenotype expression " + u.getNodeName(phenotypeParent.getEntity()) + " " + u.getNodeName(phenotypeParent.getQuality()));
+									}
 								}
 							}
 						}
@@ -712,25 +734,19 @@ public class PhenotypeProfileAnalysis {
 	 * 
 	 */
 	void sumCountTables(CountTable sum, CountTable table1, CountTable table2){
-		for(Integer entity : table1.getEntities()){
-			Set<Integer>qualSet = table1.getQualitiesForEntity(entity);
-			for (Integer quality : qualSet){
-				int count1 = table1.getRawCount(entity, quality);
-				if (table2.hasCount(entity, quality)){
-					int count2 = table2.getRawCount(entity, quality);
-					sum.addCount(entity, quality, count1+count2);
-				}
-				else{
-					sum.addCount(entity, quality, count1);
-				}
+		for(PhenotypeExpression p : table1.getPhenotypes()){
+			int count1 = table1.getRawCount(p);
+			if (table2.hasCount(p)){
+				int count2 = table2.getRawCount(p);
+				sum.addCount(p, count1+count2);
+			}
+			else{
+				sum.addCount(p, count1);
 			}
 		}
-		for(Integer entity : table2.getEntities()){
-			Set<Integer>qualSet = table2.getQualitiesForEntity(entity);
-			for (Integer quality : qualSet){
-				if (!sum.hasCount(entity, quality)){
-					sum.addCount(entity, quality, table2.getRawCount(entity, quality));
-				}
+		for(PhenotypeExpression p : table2.getPhenotypes()){
+			if (!sum.hasCount(p)){
+				sum.addCount(p, table2.getRawCount(p));
 			}
 		}
 		sum.setSum(table1.getSum() + table2.getSum());
@@ -791,8 +807,8 @@ public class PhenotypeProfileAnalysis {
 										double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
 										PhenotypeExpression bestEQ = null;
 										for(PhenotypeExpression eqM : matches){
-											if (eaCounts.hasCount(eqM.getEntity(), eqM.getQuality())){    //EA counts needs to change soon
-												double matchScore = eaCounts.getFraction(eqM.getEntity(), eqM.getQuality());
+											if (eaCounts.hasCount(eqM)){    //EA counts needs to change soon
+												double matchScore = eaCounts.getFraction(eqM);
 												if (matchScore<bestMatch){
 													bestMatch = matchScore;
 													bestEQ = eqM;
