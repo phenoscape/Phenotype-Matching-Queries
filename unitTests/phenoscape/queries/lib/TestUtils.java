@@ -38,7 +38,7 @@ public class TestUtils {
 	}
 	
 	
-	String scaleLookup = "SELECT node.node_id FROM node WHERE node.label = 'scale'";
+	final String opercleLookup = "SELECT node.node_id FROM node WHERE node.label = 'opercle'";
 
 	@Test
 	public void testSetupEntityParents() throws SQLException{
@@ -48,16 +48,16 @@ public class TestUtils {
 		System.out.println("Entity parents size = " + entParents.size());
 		
 		Statement s = u.getStatement();
-		int scaleNodeID = -1;
-		ResultSet rs = s.executeQuery(scaleLookup);
+		int opercleNodeID = -1;
+		ResultSet rs = s.executeQuery(opercleLookup);
 		if (rs.next())
-			scaleNodeID = rs.getInt(1);
+			opercleNodeID = rs.getInt(1);
 		else{
 			fail("Couldn't retreive node id for 'scale'");
 		}
-		Set <Integer> scaleParents = entParents.get(scaleNodeID);
-		assertNotNull(scaleParents);
-		assertFalse(scaleParents.isEmpty());
+		Set <Integer> opercleParents = entParents.get(opercleNodeID);
+		assertNotNull(opercleParents);
+		assertFalse(opercleParents.isEmpty());
 
 	}
 	
@@ -194,17 +194,43 @@ public class TestUtils {
 		assertEquals(preferredID,testMap.get(legacyID).intValue());
 	}
 	
+
+	@Test
+	public void testHasNodeName() throws SQLException {
+		Statement s = u.getStatement();
+		int opercleNodeID = -1;
+		ResultSet rs = s.executeQuery(opercleLookup);
+		if (rs.next())
+			opercleNodeID = rs.getInt(1);
+		else{
+			fail("Couldn't retreive node id for 'opercle'");
+		}
+		assertFalse(u.hasNodeName(opercleNodeID));
+		u.cacheOneNode(opercleNodeID);
+		assertTrue(u.hasNodeName(opercleNodeID));		
+	}
+
+
+	@Test
+	public void testGetNodeName() throws SQLException {
+		Statement s = u.getStatement();
+		int opercleNodeID = -1;
+		ResultSet rs = s.executeQuery(opercleLookup);
+		if (rs.next())
+			opercleNodeID = rs.getInt(1);
+		else{
+			fail("Couldn't retreive node id for 'opercle'");
+		}
+		u.cacheOneNode(opercleNodeID);
+		assertEquals("opercle",u.getNodeName(opercleNodeID));
+	}
+
+	@Test
+	public void testCountDistinctGenePhenotypeAnnotations() throws SQLException {
+		 assertEquals(19,u.countDistinctGenePhenotypeAnnotations());
+	}
 	
-	@Test
-	public void testGetNodeName() {
-		fail("Not yet implemented");
-	}
-
-	@Test
-	public void testHasNodeName() {
-		fail("Not yet implemented");
-	}
-
+	
 	@Test
 	public void testPutNodeUIDName() {
 		fail("Not yet implemented");

@@ -19,8 +19,8 @@ public class TestPhenotypeScoreTable {
 	final static int ATTRIBUTE = 6;
 	final static double SCORE1 = 0.12;
 	final static double SCORE2 = 0.024;
-	final static EQPair BESTENTITY1 = new EQPair(ENTITY1,ATTRIBUTE);
-	final static EQPair BESTENTITY2 = new EQPair(ENTITY2,ATTRIBUTE);
+	final static PhenotypeExpression BESTENTITY1 = new PhenotypeExpression(ENTITY1,ATTRIBUTE);
+	final static PhenotypeExpression BESTENTITY2 = new PhenotypeExpression(ENTITY2,ATTRIBUTE);
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {

@@ -29,7 +29,7 @@ public class Utils {
 	final private static String pathSuffix = "/path";
 
 
-	private static final String CONNECTION_PROPERTIES_FILENAME = "stagingconnection.properties"; 
+	private static final String CONNECTION_PROPERTIES_FILENAME = "unitTestconnection.properties"; 
 	
 	
 	//These are rather unfortunate, but KB-DEV currently (11-15-2010) uses an unreleased PATO with 

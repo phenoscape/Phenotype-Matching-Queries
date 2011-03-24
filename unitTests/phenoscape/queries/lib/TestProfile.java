@@ -129,7 +129,19 @@ public class TestProfile {
 		Assert.assertTrue(testProfile.usesAttribute(testAttribute1));
 		Assert.assertTrue(testProfile.usesAttribute(testAttribute2));
 		Assert.assertFalse(testProfile.usesAttribute(testAttribute3));
-		
+	}
+	
+	@Test
+	public void testRemoveAllEmpties(){
+		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype1);
+		testProfile.addPhenotype(testEntity2, testAttribute2, testPhenotype2);
+		System.out.println("phenos: " + testProfile.getAllPhenotypes());
+		testProfile.clearPhenotypeSet(testEntity1, testAttribute1);
+		System.out.println("phenos: " + testProfile.getAllPhenotypes());
+		testProfile.removeAllEmpties();
+		System.out.println("phenos: " + testProfile.getAllPhenotypes());
+		Assert.assertFalse(testProfile.getAllPhenotypes().contains(testPhenotype1));
+		Assert.assertTrue(testProfile.getAllPhenotypes().contains(testPhenotype2));
 	}
 
 }

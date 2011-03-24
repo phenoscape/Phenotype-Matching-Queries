@@ -28,6 +28,7 @@ public class TestPhenotypeProfileAnalysisFullKB {
 	private static final String OSTARIOCLUPEOMORPHAROOT = "TTO:253";	
 	private static final String FULLKBCONNECTION = "stagingconnection.properties"; 
 	private static final String ASPIDORASALBATERNODESTR = "TTO:1004787";
+	private static final String ASPIDORASROOT = "TTO:105426";
 
 
 	
@@ -45,12 +46,12 @@ public class TestPhenotypeProfileAnalysisFullKB {
 	@Before
 	public void setUp() throws Exception {
 		BasicConfigurator.configure();   //prevent complaints by log4j
-		u.openKBFromConnections(FULLKBCONNECTION);
+		u.openKB();
 		testAnalysis = new PhenotypeProfileAnalysis(u);
 		attMap = u.setupAttributes();
 		nodeIDofQuality = u.getQualityNodeID();
 		badQualities = new HashMap<Integer,Integer>();
-		String taxonomyRoot = OSTARIOCLUPEOMORPHAROOT; 
+		String taxonomyRoot = ASPIDORASROOT; 
 		t1 = new TaxonomyTree(taxonomyRoot,u);
 		t1.traverseOntologyTree(u);
 

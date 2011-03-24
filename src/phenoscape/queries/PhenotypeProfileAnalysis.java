@@ -49,7 +49,8 @@ public class PhenotypeProfileAnalysis {
 	private static final String SILURIFORMESROOT = "TTO:1380";
 	private static final String CHEIRODONROOT =  "TTO:102205";
 	private static final String CATOSTOMIDAEROOT= "TTO:10810";
-	private String ANALYSISROOT = OSTARIOCLUPEOMORPHAROOT;
+	private static final String TESTROOT = "TTO:0000015";
+	private String ANALYSISROOT = TESTROOT;
 
 	private static final double IC_CUTOFF =  0.0;
 
@@ -61,14 +62,14 @@ public class PhenotypeProfileAnalysis {
 	private static final String TAXONGENEMAXICSCOREFILENAME = "../MaxICReport.txt";
 
 
-	private static final String GENEPHENOTYPECOUNTQUERY =
+	static final String GENEPHENOTYPECOUNTQUERY =
 		"SELECT count(*) FROM distinct_gene_annotation  WHERE distinct_gene_annotation.phenotype_node_id IN " +
 		"(SELECT phenotype.node_id from phenotype " +
 		"JOIN link phenotype_inheres_in_part_of ON (phenotype_inheres_in_part_of.node_id = phenotype.node_id AND phenotype_inheres_in_part_of.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:inheres_in_part_of')) " +
 		"JOIN link quality_is_a ON (quality_is_a.node_id = phenotype.node_id AND quality_is_a.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:is_a')) " +
 		"WHERE (phenotype_inheres_in_part_of.object_id =  ?  AND quality_is_a.object_id = ?))";
 
-	private static final String GENEQUALITYCOUNTQUERY =
+	static final String GENEQUALITYCOUNTQUERY =
 		"SELECT count(*) FROM distinct_gene_annotation  WHERE distinct_gene_annotation.phenotype_node_id IN " +
 		"(SELECT phenotype.node_id from phenotype " +
 		"JOIN link quality_is_a ON (quality_is_a.node_id = phenotype.node_id AND quality_is_a.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:is_a')) " +
@@ -76,7 +77,7 @@ public class PhenotypeProfileAnalysis {
 
 
 	Map<Integer,Profile> taxonProfiles;  //taxon_node_id -> Phenotype profile for taxon
-	Map<Integer,Profile> geneProfiles = new HashMap<Integer,Profile>();   //gene_node_id -> Phenotype profile for gene
+	Map<Integer,Profile> geneProfiles;  //gene_node_id -> Phenotype profile for gene
 
 
 	Map<Integer,Integer>childDist = new HashMap<Integer,Integer>();
@@ -207,7 +208,7 @@ public class PhenotypeProfileAnalysis {
 
 		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
 
-		processGeneExpression(geneVariation,u, w2);
+		geneProfiles = processGeneExpression(geneVariation,u, w2);
 		geneVariation.variationReport(u, w2);
 		u.writeOrDump("\nList of qualities that were placed under quality as an attribute by default\n", w2);
 		for(Integer bad_id : badGeneQualities.keySet()){
@@ -223,17 +224,12 @@ public class PhenotypeProfileAnalysis {
 
 		logger.info("Building entity parents");
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
-//		logger.info("Building entity parents of taxon phenotypes");
-//		buildEntityParents(entityParentCache,taxonProfiles,u);
-//
-//
-//		logger.info("Building entity parents of gene phenotypes");
-//		buildEntityParents(entityParentCache,geneProfiles,u);
 
 		/* Test introduction of phenotypeParentCache, which should map an attribute level EQ to all its parents via inheres_in_part_of entity parents and is_a quality parents (cross product) */
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		buildEQParents(phenotypeParentCache,entityParentCache,u);
 
+		logger.info("Filling count table");
 		//fillCountTable(taxonProfiles, phenotypeCountsForTaxa,phenotypeParentCache, u, TAXONPHENOTYPECOUNTQUERY, u.countAssertedTaxonPhenotypeAnnotations());
 		fillCountTable(geneProfiles, phenotypeCountsForGenes,phenotypeParentCache, u, GENEPHENOTYPECOUNTQUERY, GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 
@@ -438,7 +434,6 @@ public class PhenotypeProfileAnalysis {
 	}
 
 
-
 	Collection<TaxonPhenotypeLink> getTaxonPhenotypeLinksFromKB(Utils u, int taxonID) throws SQLException{
 		final PreparedStatement p = u.getPreparedStatement(TaxonPhenotypeLink.getQuery());
 		final Collection<TaxonPhenotypeLink> result = new HashSet<TaxonPhenotypeLink>();
@@ -450,10 +445,6 @@ public class PhenotypeProfileAnalysis {
 		}
 		return result;
 	}
-
-
-
-
 
 
 	/**
@@ -516,7 +507,12 @@ public class PhenotypeProfileAnalysis {
 
 
 	/**
-	 * This method removes all phenotypes that don't indicate variation from the profile.
+	 * This method removes all phenotypes that don't indicate variation from the profile.  
+	 * Note: After this runs, cells in each profile will either contain the intersection set (which may be empty)
+	 * or null which indicates no variation in the entity attribute combination that addresses the cell.  It is
+	 * important to notice that an empty set still indicates variation (and will frequently do so), and should not
+	 * be confused with a null entry.  Code downstream from this method just look at whether there is a non-null value
+	 * in profile cells.
 	 */
 	void flushUnvaryingPhenotypes(Map<Integer,Profile> taxonProfileSet, VariationTable variation, Utils u){
 		for (Integer taxon : taxonProfileSet.keySet()){
@@ -547,7 +543,8 @@ public class PhenotypeProfileAnalysis {
 	/**
 	 * Name is a little dicy, but better than GeneVariation
 	 */
-	void processGeneExpression(VariationTable variation, Utils u, Writer reportWriter) throws SQLException{
+	HashMap<Integer,Profile> processGeneExpression(VariationTable variation, Utils u, Writer reportWriter) throws SQLException{
+		HashMap<Integer,Profile> profiles = new HashMap<Integer,Profile>();
 		int annotationCount = 0;
 		int usableAnnotationCount = 0;
 		Set<Integer>uniqueGenes = new HashSet<Integer>();
@@ -559,23 +556,23 @@ public class PhenotypeProfileAnalysis {
 			final int quality_id = annotation.getQualityID();
 			if (attributeMap.containsKey(annotation.getQualityID())){
 				final int attribute_id = attributeMap.get(annotation.getQualityID());
-				if (geneProfiles.containsKey(geneID)){
-					geneProfiles.get(geneID).addPhenotype(annotation.getEntityID(),attribute_id, phenotype_id);
+				if (profiles.containsKey(geneID)){
+					profiles.get(geneID).addPhenotype(annotation.getEntityID(),attribute_id, phenotype_id);
 				}
 				else {
-					geneProfiles.put(geneID, new Profile());
-					geneProfiles.get(geneID).addPhenotype(entity_id,attribute_id, phenotype_id);
+					profiles.put(geneID, new Profile());
+					profiles.get(geneID).addPhenotype(entity_id,attribute_id, phenotype_id);
 				}
 				variation.addExhibitor(entity_id, attribute_id, geneID);
 				usableAnnotationCount++;
 			}
 			else{
-				if (geneProfiles.containsKey(geneID)){
-					geneProfiles.get(geneID).addPhenotype(entity_id, qualityNodeID, phenotype_id);
+				if (profiles.containsKey(geneID)){
+					profiles.get(geneID).addPhenotype(entity_id, qualityNodeID, phenotype_id);
 				}
 				else {
-					geneProfiles.put(geneID, new Profile());
-					geneProfiles.get(geneID).addPhenotype(entity_id, qualityNodeID, phenotype_id);
+					profiles.put(geneID, new Profile());
+					profiles.get(geneID).addPhenotype(entity_id, qualityNodeID, phenotype_id);
 				}
 				variation.addExhibitor(entity_id, qualityNodeID, geneID);
 				if (badGeneQualities.containsKey(quality_id)){
@@ -592,8 +589,8 @@ public class PhenotypeProfileAnalysis {
 			annotationCount++;
 			uniqueGenes.add(annotation.getGeneID());
 		}
-
-		u.writeOrDump("Raw Genes " + uniqueGenes.size() + "; Distinct Gene annotations " + annotationCount + "; Count of genes with annotations " + geneProfiles.keySet().size() + "; Annotations to attributes other than Quality " + usableAnnotationCount, reportWriter);
+		u.writeOrDump("Raw Genes " + uniqueGenes.size() + "; Distinct Gene annotations " + annotationCount + "; Count of genes with annotations " + profiles.keySet().size() + "; Annotations to attributes other than Quality " + usableAnnotationCount, reportWriter);
+		return profiles;
 	}
 
 	
@@ -609,17 +606,6 @@ public class PhenotypeProfileAnalysis {
 	}
 
 
-	/**
-	 * For each phenotype in the taxonProfile, this builds the set of entity parents.
-	 * Changed to save the parents (iipo parents) indexed by the entity, which is more efficient and useful later on.
-	 * 
-	 * @param entityParentCache
-	 * @param u
-	 * @throws SQLException
-	 */
-//	void buildEntityParents(Map <Integer,Set<Integer>> entityParentCache, Map<Integer,Profile> profiles, Utils u) throws SQLException{
-//		return u.setupEntityParents();
-//	}
 
 	/**
 	 * For each phenotype in the taxonProfile, this builds the set of class expression parents (both EQ and Q) of the phenotype.
@@ -692,7 +678,7 @@ public class PhenotypeProfileAnalysis {
 					PhenotypeExpression curEQ = new PhenotypeExpression(profileEntity,curAttribute);
 					Set<PhenotypeExpression> allParents = phenotypeParentCache.get(curEQ);
 					if (allParents == null){
-						logger.error("The EQ pair " + curEQ + " seems to have no parents");
+						logger.error("The Phenotype " + curEQ + " seems to have no parents");
 					}
 					else {
 						curEQ.fillNames(u);
@@ -807,7 +793,8 @@ public class PhenotypeProfileAnalysis {
 										double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
 										PhenotypeExpression bestEQ = null;
 										for(PhenotypeExpression eqM : matches){
-											if (eaCounts.hasCount(eqM)){    //EA counts needs to change soon
+											if (eaCounts.hasCount(eqM)){    
+												eqM.fillNames(u);
 												double matchScore = eaCounts.getFraction(eqM);
 												if (matchScore<bestMatch){
 													bestMatch = matchScore;
