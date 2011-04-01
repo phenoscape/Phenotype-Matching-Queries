@@ -39,7 +39,7 @@ public class CountTable {
 	}
 	
 
-	public boolean hasCount(Integer entity, Integer quality){
+	public  boolean hasCount(Integer entity, Integer quality){
 		PhenotypeExpression p = new PhenotypeExpression(entity,quality);
 		return table.containsKey(p);
 	}
@@ -49,7 +49,7 @@ public class CountTable {
 	}
 
 	
-	public int getRawCount(Integer entity, Integer quality){
+	private int getRawCount(Integer entity, Integer quality){
 		PhenotypeExpression p = new PhenotypeExpression(entity,quality);
 		return table.get(p).intValue();
 	}
@@ -63,12 +63,16 @@ public class CountTable {
 		return ((double)getRawCount(p))/(double)sum;
 	}
 
-	public double getFraction(Integer entity, Integer quality){
+	private double getFraction(Integer entity, Integer quality){
 		PhenotypeExpression p = new PhenotypeExpression(entity,quality);
 		return ((double)getRawCount(p))/(double)sum;
 	}
 	
-	public double getIC(Integer entity, Integer quality){
+	public double getIC(PhenotypeExpression p) {
+		return -1*Math.log(getFraction(p))/LOG2;
+	}
+	
+	public  double getIC(Integer entity, Integer quality){
 		return -1*Math.log(getFraction(entity,quality))/LOG2;
 	}
 
@@ -83,7 +87,8 @@ public class CountTable {
 	public static double calcIC(double fraction){
 		return -1*Math.log(fraction)/LOG2;
 	}
-	
+
+
 	
 
 }

@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 
 
@@ -80,8 +82,26 @@ public class VariationTable {
 		Map<Integer,Integer> attributeSums = new HashMap<Integer,Integer>();
 		Map<Integer,Integer> entitySums = new HashMap<Integer,Integer>();
 		Map<Integer,String> taxonList = new HashMap<Integer,String>();
-		for(Integer att : getUsedAttributes()){
-			for (Integer ent : getUsedEntities()){
+		final SortedMap<String,Integer> sortedAttributes = new TreeMap<String,Integer>();
+		final SortedMap<String,Integer> sortedEntities = new TreeMap<String,Integer>();
+		for (Integer att : getUsedAttributes()){
+			String attName = u.getNodeName(att);
+			if (attName == null){
+				attName = att.toString();
+			}
+			sortedAttributes.put(attName, att);
+		}
+		for (Integer ent : getUsedEntities()){
+			String entName = u.getNodeName(ent);
+			if (entName == null){
+				entName = ent.toString();
+			}			
+			sortedEntities.put(entName, ent);
+		}
+		for(String attName : sortedAttributes.keySet()){
+			for (String entName : sortedEntities.keySet()){
+				final Integer att = sortedAttributes.get(attName);
+				final Integer ent = sortedEntities.get(entName);
 				if (hasExhibitorSet(ent,att)){					
 					Set <Integer> taxa = getExhibitorSet(ent,att);
 					sum += taxa.size(); 
@@ -96,7 +116,7 @@ public class VariationTable {
 					else
 						entitySums.put(ent,taxa.size());
 					for(Integer taxon : taxa){
-						String addition = "\n\t" + u.getNodeName(ent) + "\t" + u.getNodeName(att);
+						String addition = "\n\t" + entName + "\t" + attName;
 						if (!taxonList.containsKey(taxon))
 							taxonList.put(taxon, "\n" + u.getNodeName(taxon));
 						String tl = taxonList.get(taxon);
@@ -108,38 +128,34 @@ public class VariationTable {
 		u.writeOrDump("Summary of detected variation",bw);
 		int attributeTotal = 0;
 		u.writeOrDump("-- Attribute Summary --",bw);
-		for(Integer att : attributeSums.keySet()){
+		for(String attName : sortedAttributes.keySet()){
+			final Integer att = sortedAttributes.get(attName);
 			final int attributeCount =  attributeSums.get(att).intValue();
 			attributeTotal += attributeCount;
-			if (u.hasNodeUID(att)){
-				u.writeOrDump(u.getNodeName(att) + "\t" + attributeCount,bw);
-			}
-			else
-				u.writeOrDump(att.intValue() + "\t" + attributeCount,bw);
+			u.writeOrDump(attName + "\t" + attributeCount,bw);
 		}
 		if (repType==VariationType.TAXON){
-			u.writeOrDump("Total (number of attributes showing variation at taxonomically variable nodes):\t" + attributeTotal, bw);
+			u.writeOrDump("Total number of phenotypes (at attribute level) at taxonomically variable nodes (attribute counts should sum to this):\t" + attributeTotal, bw);
 		}
 		else {
-			u.writeOrDump("Total (number of attributes for genes):\t" + attributeTotal, bw);			
+			u.writeOrDump("Total number of phenotypes (at attribute level) for genes (attribute counts should sum to this; will be less than gene phenotype count in KB):\t" + attributeTotal, bw);			
 		}
 		int entityTotal = 0;
 		u.writeOrDump("\n\n-- Entity Summary --",bw);
-		for (Integer ent : entitySums.keySet()){
-			final int entityCount = entitySums.get(ent).intValue();
-			entityTotal += entityCount;
-			if (u.hasNodeUID(ent)){
-				u.writeOrDump(u.getNodeName(ent) + "\t" + entityCount,bw);
+		for(String entName : sortedEntities.keySet()){
+			final Integer ent = sortedEntities.get(entName);
+			if (entitySums.containsKey(ent)){
+				final int entityCount = entitySums.get(ent).intValue();
+				entityTotal += entityCount;
+				u.writeOrDump(entName + "\t" + entityCount,bw);
 			}
-			else
-				u.writeOrDump(ent.intValue() + "\t" + entityCount,bw);
 		}
 		if (repType==VariationType.TAXON){
-			u.writeOrDump("Total (number of entities showing variation at taxonomically variable nodes):\t" + entityTotal, bw);
+			u.writeOrDump("Total number of phenotypes (at attribute level) at taxonomically variable nodes (entity counts should sum to this):\t" + entityTotal, bw);
 			u.writeOrDump("\n\n-- Taxon Summary --",bw);
 		}
 		else{
-			u.writeOrDump("Total (number of phenotypes for genes counted by entity):\t" + entityTotal, bw);
+			u.writeOrDump("Total number of phenotypes (at attribute level) for genes (entity counts should sum to this; will be less than gene phenotype count in KB):\t" + entityTotal, bw);
 			u.writeOrDump("\n\n-- Gene Summary --",bw);
 		}
 		for (Integer taxon : taxonList.keySet()){
@@ -147,12 +163,11 @@ public class VariationTable {
 		}
 		if (repType==VariationType.TAXON){
 			u.writeOrDump("\n Count of taxa with variation:\t" + taxonList.size(),bw);
-			u.writeOrDump("\n\n Total:\t" + sum,bw);
 		}
 		else{
 			u.writeOrDump("Count of genes with annotations:\t" + taxonList.size(), bw);
-			u.writeOrDump("\n\n Total:\t" + sum,bw);
 		}		
+		u.writeOrDump("\n\n Total phenotypes at attribute level:\t" + sum,bw);
 	}
 
 

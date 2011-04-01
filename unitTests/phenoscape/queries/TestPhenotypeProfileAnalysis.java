@@ -350,6 +350,18 @@ public class TestPhenotypeProfileAnalysis {
 	public void testProcessGeneExpression() throws SQLException {
 		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
 		testAnalysis.processGeneExpression(geneVariation, u, null);
+		Set<Integer> genes = new HashSet<Integer>();
+		for(Integer att : geneVariation.getUsedAttributes()){
+			for (Integer ent : geneVariation.getUsedEntities()){
+				if (geneVariation.hasExhibitorSet(ent,att)){					
+					genes.addAll(geneVariation.getExhibitorSet(ent,att));
+				}
+			}
+		}
+		System.out.println("Genes");
+		for (Integer gene : genes){
+			System.out.println(u.getNodeName(gene));
+		}
 	}
 
 	@Test

@@ -19,6 +19,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
@@ -49,8 +51,9 @@ public class PhenotypeProfileAnalysis {
 	private static final String SILURIFORMESROOT = "TTO:1380";
 	private static final String CHEIRODONROOT =  "TTO:102205";
 	private static final String CATOSTOMIDAEROOT= "TTO:10810";
+	private static final String CHARACIDAEROOT = "TTO:10910";
 	private static final String TESTROOT = "TTO:0000015";
-	private String ANALYSISROOT = TESTROOT;
+	private String ANALYSISROOT = OSTARIOCLUPEOMORPHAROOT;
 
 	private static final double IC_CUTOFF =  0.0;
 
@@ -103,6 +106,11 @@ public class PhenotypeProfileAnalysis {
 	 * This holds the node id for the term 'quality.'
 	 */
 	int qualityNodeID;
+	
+	int absentSiblingCount = 0; 
+	Set<Integer> absentSiblingTaxa = new HashSet<Integer>();
+	Set<Integer> absentSiblingEntities = new HashSet<Integer>();
+	Set<Integer> absentSiblingAttributes = new HashSet<Integer>();
 
 	static Logger logger = Logger.getLogger(PhenotypeProfileAnalysis.class.getName());
 
@@ -158,6 +166,7 @@ public class PhenotypeProfileAnalysis {
 			u.writeOrDump(timeStamp, w3);
 			u.writeOrDump(timeStamp, w4);
 			u.writeOrDump(timeStamp, w5);
+			u.writeOrDump("Starting analysis: " + timeStamp, null);
 			listQuery.process(u, w1, w2, w3, w4,w5);
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -201,11 +210,20 @@ public class PhenotypeProfileAnalysis {
 		traverseTaxonomy(t, t.getRootNodeID(), taxonProfiles, taxonVariation, u);
 		t.report(u, w1);
 		taxonVariation.variationReport(u,w1);	
+		u.writeOrDump("\nList of qualities that were placed under quality as an attribute by default\n", w1);
+		for(Integer bad_id : badTaxonQualities.keySet()){
+			u.writeOrDump(u.getNodeName(bad_id) + " " + badTaxonQualities.get(bad_id), w1);
+		}
 		flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
 		if (taxonProfiles.isEmpty()){
 			throw new RuntimeException("No taxa in Profile Set");
 		}
 
+		logger.info("Absent Sibling rule invoked " + absentSiblingCount + " times");
+		logger.info("Absent Sibling taxa total: " + absentSiblingTaxa.size());
+		logger.info("Absent Sibling entities total: " + absentSiblingEntities.size());
+		logger.info("Absent Sibling attributes total: " + absentSiblingAttributes.size());
+		
 		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
 
 		geneProfiles = processGeneExpression(geneVariation,u, w2);
@@ -217,10 +235,7 @@ public class PhenotypeProfileAnalysis {
 
 		w2.close();
 
-		/* These need to happen after the profiles have been constructed, since we don't want to count taxon annotations that don't reflect change */
-		CountTable phenotypeCountsForTaxa = new CountTable();  
 		CountTable phenotypeCountsForGenes = new CountTable();
-		CountTable phenotypeCountsCombined = new CountTable();
 
 		logger.info("Building entity parents");
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
@@ -446,7 +461,7 @@ public class PhenotypeProfileAnalysis {
 		return result;
 	}
 
-
+	
 	/**
 	 * This method marks taxon phenotypes that display variation. 
 	 *  There are two additional twists: the absence of an annotation for a particular entity-attribute
@@ -483,11 +498,22 @@ public class PhenotypeProfileAnalysis {
 						if (!childProfile.isEmpty() && childProfile.hasPhenotypeSet(ent, att)){
 							unionSet.addAll(childProfile.getPhenotypeSet(ent,att));
 						}
-					}
+					}					
 					intersectionSet.addAll(unionSet);  // start intersection from the union and intersect each child in turn
 					for (Profile childProfile : childProfiles){
-						if (!childProfile.isEmpty() && childProfile.hasPhenotypeSet(ent, att)){
-							intersectionSet.retainAll(childProfile.getPhenotypeSet(ent,att));
+						if (!childProfile.isEmpty()){
+							if (childProfile.hasPhenotypeSet(ent, att)){
+								intersectionSet.retainAll(childProfile.getPhenotypeSet(ent,att));
+							}
+							else {
+								if (!unionSet.isEmpty()){
+									absentSiblingCount++;
+									absentSiblingTaxa.add(taxon);
+									absentSiblingEntities.add(ent);
+									absentSiblingAttributes.add(att);
+								}
+								intersectionSet.clear();	//if a child has no annotations to this ent/att pair, this will tag variation
+							}
 						}
 					}
 					// now the union and intersection sets reflect the sets of children.
@@ -593,14 +619,24 @@ public class PhenotypeProfileAnalysis {
 		return profiles;
 	}
 
-	
+	/**
+	 * 
+	 * @param u Utils object provides access to database connection
+	 * @return
+	 * @throws SQLException
+	 */
 	Collection<DistinctGeneAnnotationRecord> getAllGeneAnnotationsFromKB(Utils u) throws SQLException{
 		final Statement s = u.getStatement();
 		final Collection<DistinctGeneAnnotationRecord> result = new HashSet<DistinctGeneAnnotationRecord>();
 		ResultSet ts = s.executeQuery(DistinctGeneAnnotationRecord.getQuery());
 		while (ts.next()){
 			DistinctGeneAnnotationRecord l = new DistinctGeneAnnotationRecord(ts);
-			result.add(l);
+			if ("BSPO:".equals(l.getEntityUID().substring(0,5))){  //filter out gene annotations we want to suppress for counting here
+				logger.info("Supressing  " + l.getEntityUID());
+			}
+			else {
+				result.add(l);
+			}
 		}
 		return result;
 	}
@@ -790,15 +826,19 @@ public class PhenotypeProfileAnalysis {
 											}
 											throw new RuntimeException("Bad intersection");
 										}
-										double bestMatch = Double.MAX_VALUE;  //we're using fractions, so minimize
-										PhenotypeExpression bestEQ = null;
+										int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
+										Set<PhenotypeExpression> bestEQSet = new HashSet<PhenotypeExpression>();
 										for(PhenotypeExpression eqM : matches){
 											if (eaCounts.hasCount(eqM)){    
 												eqM.fillNames(u);
-												double matchScore = eaCounts.getFraction(eqM);
+												int matchScore = eaCounts.getRawCount(eqM);
 												if (matchScore<bestMatch){
 													bestMatch = matchScore;
-													bestEQ = eqM;
+													bestEQSet.clear();
+													bestEQSet.add(eqM);
+												}
+												else if (matchScore == bestMatch){
+													bestEQSet.add(eqM);
 												}
 												else if (matchScore < 0)
 													throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.getNodeName(eqM.getEntity()) + " " + u.getNodeName(eqM.getQuality()));
@@ -807,8 +847,18 @@ public class PhenotypeProfileAnalysis {
 												throw new RuntimeException("eq has no score " + eqM.getFullName(u),null);
 											}
 										}
-										if (bestMatch<Double.MAX_VALUE && bestEQ != null){
-											phenotypeScores.addScore(taxonEntity,geneEntity,curAtt,CountTable.calcIC(bestMatch),bestEQ);
+										if (bestMatch<Double.MAX_VALUE && !bestEQSet.isEmpty()){
+											final SortedMap<String,PhenotypeExpression> sortedPhenotypes = new TreeMap<String,PhenotypeExpression>();
+											for (PhenotypeExpression eq : bestEQSet){
+												String eqName = eq.getFullName(u);
+												if (eqName == null){
+													eqName = eq.toString();
+												}
+												sortedPhenotypes.put(eqName,eq);
+											}
+											final String last = sortedPhenotypes.lastKey();
+											final PhenotypeExpression bestPhenotype = sortedPhenotypes.get(last);
+											phenotypeScores.addScore(taxonEntity,geneEntity,curAtt,eaCounts.getIC(bestPhenotype),bestPhenotype);
 										}
 										else{
 											u.writeOrDump("Intersection", null);
@@ -860,6 +910,9 @@ public class PhenotypeProfileAnalysis {
 										lineBuilder.append(phenotypeScores.getScore(tEntity, gEntity,att));
 										u.writeOrDump(lineBuilder.toString(),w);	
 									}
+								}
+								else {
+									logger.warn("PhenotypeScores missing entry for " + u.getNodeName(tEntity) + ", " + u.getNodeName(gEntity) + u.getNodeName(att));
 								}
 							}
 						}
