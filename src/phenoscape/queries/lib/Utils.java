@@ -128,8 +128,14 @@ public class Utils {
 	private final static String ATTRIBUTEQUERY = "SELECT quality_node_id,attribute_node_id,n.uid,simple_label(attribute_node_id) FROM quality_to_attribute " +
 	"JOIN node AS n ON (n.node_id = attribute_node_id)";
 	
-	private final static String COMPOSITIONQUERY = "select node.node_id FROM NODE WHERE node.label = 'composition'";
-	private final static String STRUCTUREQUERY = "select node.node_id FROM node where node.label = 'structure'";
+	private final static String COMPOSITIONQUERY = "select node.node_id FROM node WHERE node.label = 'composition'";
+	private final static String STRUCTUREQUERY = "select node.node_id FROM node WHERE node.label = 'structure'";
+	private final static String CLOSUREQUERY = "select node.node_id FROM node WHERE node.label = closure";
+	private final static String SIZEQUERY = "select node.node_id FROM node WHERE node.label = size";
+	private final static String SHAPEQUERY = "select node.node_id FROM node WHERE node.label = shape";
+
+	private final static String CLOSURESTRUCTUREQUERY = "select node.node_id FROM node WHERE node.label = Closure+Structure";
+	private final static String SHAPESIZEQUERY = "select node.node_id FROM node WHERE node.label = Shape+Size";
 	
 	/**
 	 * This creates and fills a Map from qualities to attributes, stored as node_ids and tries to separate composition from structure
@@ -142,21 +148,16 @@ public class Utils {
 		Map<Integer,Integer> attMap = new HashMap<Integer,Integer>();
 		Statement s1 = connection.createStatement();
 		
-		int compositionNodeID = 0;
-		int structureNodeID = 0;
-		ResultSet compositionResults = s1.executeQuery(COMPOSITIONQUERY);
-		if (compositionResults.next()){
-			compositionNodeID = compositionResults.getInt(1);
-		}
-		else 
-			throw new RuntimeException("Query for node id of 'composition' failed");
-
-		ResultSet structureResults = s1.executeQuery(STRUCTUREQUERY);
-		if (structureResults.next()){
-			structureNodeID = structureResults.getInt(1);
-		}
-		else 
-			throw new RuntimeException("Query for node id of 'structure' failed");
+		
+		// if getOneName fails, these will be assigned -1 and shouldn't affect anything (handles unit test cases with incomplete attribute sets)
+		int compositionNodeID = getOneName("composition");
+		int structureNodeID = getOneName("structure");
+		int closureNodeID = getOneName("closure");
+		int sizeNodeID = getOneName("size");
+		int shapeNodeID = getOneName("shape");
+		int closureStructureNodeID = getOneName("Closure+Structure");
+		int shapeSizeNodeID = getOneName("Shape+Size");
+		
 		
 		ResultSet attributeResults = s1.executeQuery(ATTRIBUTEQUERY);
 		//loops through and if there is an assignment of 'composition' to the quality already and the current result
@@ -168,12 +169,19 @@ public class Utils {
 			if (attribute_id == structureNodeID && attMap.containsKey(quality_id) && attMap.get(quality_id).intValue()==compositionNodeID){
 				// do nothing
 			}
+			else if ((attribute_id == closureStructureNodeID) || attribute_id == shapeSizeNodeID) {
+				// do nothing
+			}
 			else {
 				attMap.put(quality_id,attribute_id);				
 			}
 			if (!hasNodeUID(attribute_id))
 				putNodeUIDName(attribute_id,attributeResults.getString(3),attributeResults.getString(4));
 		}		
+
+
+		
+		
 		
 		return attMap;
 	}
@@ -267,12 +275,22 @@ public class Utils {
 		return result;
 	}
 	
+	private final static String NAMEQUERY = "select node.node_id FROM node WHERE node.label = ?";
 
-
-	
-	
-	
-	
+	public int getOneName(String name) throws SQLException{
+		int result= -1;
+		PreparedStatement p1 = connection.prepareStatement(NAMEQUERY);
+		p1.setString(1, name);
+		ResultSet results = p1.executeQuery();
+		if (results.next()){
+			result = results.getInt(1);
+			return result;
+		}
+		else {
+			System.err.println("Failed to lookup " + name);
+			return -1;
+		}
+	}
 	
 	
 	/**

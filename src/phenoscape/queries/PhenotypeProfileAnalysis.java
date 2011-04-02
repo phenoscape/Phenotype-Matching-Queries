@@ -64,6 +64,8 @@ public class PhenotypeProfileAnalysis {
 	private static final String PROFILEMATCHREPORTFILENAME = "../ProfileMatchReport.txt";
 	private static final String TAXONGENEMAXICSCOREFILENAME = "../MaxICReport.txt";
 
+	
+	private static final String SPATIALPOSTCOMPUIDPREFIX = "BSPO:";
 
 	static final String GENEPHENOTYPECOUNTQUERY =
 		"SELECT count(*) FROM distinct_gene_annotation  WHERE distinct_gene_annotation.phenotype_node_id IN " +
@@ -107,11 +109,6 @@ public class PhenotypeProfileAnalysis {
 	 */
 	int qualityNodeID;
 	
-	int absentSiblingCount = 0; 
-	Set<Integer> absentSiblingTaxa = new HashSet<Integer>();
-	Set<Integer> absentSiblingEntities = new HashSet<Integer>();
-	Set<Integer> absentSiblingAttributes = new HashSet<Integer>();
-
 	static Logger logger = Logger.getLogger(PhenotypeProfileAnalysis.class.getName());
 
 	public PhenotypeProfileAnalysis(Utils u) throws SQLException{
@@ -218,12 +215,8 @@ public class PhenotypeProfileAnalysis {
 		if (taxonProfiles.isEmpty()){
 			throw new RuntimeException("No taxa in Profile Set");
 		}
-
-		logger.info("Absent Sibling rule invoked " + absentSiblingCount + " times");
-		logger.info("Absent Sibling taxa total: " + absentSiblingTaxa.size());
-		logger.info("Absent Sibling entities total: " + absentSiblingEntities.size());
-		logger.info("Absent Sibling attributes total: " + absentSiblingAttributes.size());
 		
+
 		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
 
 		geneProfiles = processGeneExpression(geneVariation,u, w2);
@@ -393,10 +386,7 @@ public class PhenotypeProfileAnalysis {
 			}
 		}
 		return ((double)matchCount)/((double)totalCount);	
-
 	}
-
-
 
 
 
@@ -506,12 +496,6 @@ public class PhenotypeProfileAnalysis {
 								intersectionSet.retainAll(childProfile.getPhenotypeSet(ent,att));
 							}
 							else {
-								if (!unionSet.isEmpty()){
-									absentSiblingCount++;
-									absentSiblingTaxa.add(taxon);
-									absentSiblingEntities.add(ent);
-									absentSiblingAttributes.add(att);
-								}
 								intersectionSet.clear();	//if a child has no annotations to this ent/att pair, this will tag variation
 							}
 						}
@@ -631,12 +615,7 @@ public class PhenotypeProfileAnalysis {
 		ResultSet ts = s.executeQuery(DistinctGeneAnnotationRecord.getQuery());
 		while (ts.next()){
 			DistinctGeneAnnotationRecord l = new DistinctGeneAnnotationRecord(ts);
-			if ("BSPO:".equals(l.getEntityUID().substring(0,5))){  //filter out gene annotations we want to suppress for counting here
-				logger.info("Supressing  " + l.getEntityUID());
-			}
-			else {
-				result.add(l);
-			}
+			result.add(l);
 		}
 		return result;
 	}
@@ -813,6 +792,21 @@ public class PhenotypeProfileAnalysis {
 										Set<PhenotypeExpression>matches = new HashSet<PhenotypeExpression>();
 										matches.addAll(teParents);	// add the EQ parents of the EA level taxon phenotype
 										matches.retainAll(geParents);   // intersect the EQ parents of the gene phenotype, leaving intersection in matches
+										
+										Set<PhenotypeExpression> matchesCopy = new HashSet<PhenotypeExpression>();
+										matchesCopy.addAll(matches);
+										// filter out spatial postcompositions
+										for(PhenotypeExpression pe : matchesCopy){	
+											String eUID = u.getNodeUID(pe.getEntity());
+											//logger.info("Checking " + eUID);
+											if (eUID != null){
+												if (SPATIALPOSTCOMPUIDPREFIX.equals(u.getNodeUID(pe.getEntity()).substring(0,5))){
+													//logger.info("Supressing " + pe.getFullName(u) + " from intersection");
+													matches.remove(pe);
+												}
+											}
+										}
+										
 										if (matches.isEmpty()){
 											u.writeOrDump("Taxon Parents", null);
 											for (PhenotypeExpression taxonP : teParents){
