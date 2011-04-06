@@ -134,7 +134,7 @@ public class Profile {
 	}
 
 	
-	public Set<Integer> getAllPhenotypes(){
+	public Set<Integer> getAllEQPhenotypes(){
 		Set<Integer> result = new HashSet<Integer>();
 		for (Integer curEnt : getUsedEntities()){ 
 			Map<Integer,Set<Integer>> entValue = table.get(curEnt);
@@ -144,6 +144,18 @@ public class Profile {
 		}
 		return result;
 	}
+	
+	public Set<PhenotypeExpression> getAllEAPhenotypes(){
+		Set<PhenotypeExpression> result = new HashSet<PhenotypeExpression>();
+		for (Integer curEnt : getUsedEntities()){ 
+			Map<Integer,Set<Integer>> entValue = table.get(curEnt);
+			for (Integer att : entValue.keySet()){
+				result.add(new PhenotypeExpression(curEnt,att));
+			}
+		}	
+		return result;
+	}
+	
 
 	public void clearPhenotypeSet(Integer entity, Integer att) {
 		if (table.containsKey(entity)){

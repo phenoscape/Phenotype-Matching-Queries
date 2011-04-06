@@ -29,7 +29,7 @@ public class Utils {
 	final private static String pathSuffix = "/path";
 
 
-	private static final String CONNECTION_PROPERTIES_FILENAME = "connection.properties"; 
+	private static final String CONNECTION_PROPERTIES_FILENAME = "unitTestConnection.properties"; 
 	
 	
 	//These are rather unfortunate, but KB-DEV currently (11-15-2010) uses an unreleased PATO with 
@@ -128,14 +128,6 @@ public class Utils {
 	private final static String ATTRIBUTEQUERY = "SELECT quality_node_id,attribute_node_id,n.uid,simple_label(attribute_node_id) FROM quality_to_attribute " +
 	"JOIN node AS n ON (n.node_id = attribute_node_id)";
 	
-	private final static String COMPOSITIONQUERY = "select node.node_id FROM node WHERE node.label = 'composition'";
-	private final static String STRUCTUREQUERY = "select node.node_id FROM node WHERE node.label = 'structure'";
-	private final static String CLOSUREQUERY = "select node.node_id FROM node WHERE node.label = closure";
-	private final static String SIZEQUERY = "select node.node_id FROM node WHERE node.label = size";
-	private final static String SHAPEQUERY = "select node.node_id FROM node WHERE node.label = shape";
-
-	private final static String CLOSURESTRUCTUREQUERY = "select node.node_id FROM node WHERE node.label = Closure+Structure";
-	private final static String SHAPESIZEQUERY = "select node.node_id FROM node WHERE node.label = Shape+Size";
 	
 	/**
 	 * This creates and fills a Map from qualities to attributes, stored as node_ids and tries to separate composition from structure
@@ -178,10 +170,6 @@ public class Utils {
 			if (!hasNodeUID(attribute_id))
 				putNodeUIDName(attribute_id,attributeResults.getString(3),attributeResults.getString(4));
 		}		
-
-
-		
-		
 		
 		return attMap;
 	}
@@ -327,6 +315,45 @@ public class Utils {
 		
 	}
 
+	
+	private static final String GENEFULLNAMEQUERY = 
+		"SELECT gtn.label FROM gene_annotation AS ga " +
+		"JOIN node AS gtn ON (gtn.node_id = ga.genotype_node_id) "+
+		"WHERE ga.gene_node_id = ? ";
+
+	
+	/**
+	 * This is a little different than other queries as the usual case will be return of multiple results, but they ought to
+	 * all be the same string; otherwise, issue a warning and concatenate with a comma separator
+	 * @param geneID
+	 * @return
+	 * @throws SQLException
+	 */
+	public String getGeneFullName(int geneID) throws SQLException {
+		final PreparedStatement p1 = getPreparedStatement(GENEFULLNAMEQUERY);
+		p1.setInt(1, geneID);
+		StringBuilder resultBuilder = new StringBuilder();
+		Set<String> resultSet= new HashSet<String>();
+		ResultSet nameResults = p1.executeQuery();
+		if (nameResults.next()){
+			String name = nameResults.getString(1);
+			resultBuilder.append(name);
+			resultSet.add(name);
+			while(nameResults.next()){
+				String nextName = nameResults.getString(1);
+				if (!resultSet.contains(nextName)){
+					System.out.println("Multiple names for gene " + geneID + " (" + resultBuilder.toString() + ")");
+					resultBuilder.append(", ");
+					resultBuilder.append(nextName);
+					resultSet.add(nextName);
+				}
+			}
+			return resultBuilder.toString();
+		}
+		else {
+			throw new RuntimeException("Gene full name lookup failed; id = " + geneID);
+		}
+	}
 
 	
 	private static final String ASSERTEDTAXONPHENOTYPECOUNTQUERY = "SELECT COUNT(*) FROM asserted_taxon_annotation";
@@ -452,29 +479,15 @@ public class Utils {
 		}
 	}
 	
-	public void listIntegerMembers(Set<Integer> s, Writer b){
+	public String listIntegerMembers(Set<Integer> s){
+		StringBuilder b = new StringBuilder();
+		b.append("{");
 		for(Integer v : s){
-			if (b == null){
-				System.out.print(v.intValue() + " ");
-			}
-			else{
-				try {
-					b.write(v.intValue() + " ");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
+			b.append(v.intValue());
+			b.append(" ");
 		}
-		if (b == null)
-			System.out.println();
-		else
-			try {
-				b.write(lineSeparator);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+		b.append("}");
+		return b.toString();
 	}
 
 	public Statement getStatement() throws SQLException{
@@ -484,6 +497,7 @@ public class Utils {
 	public PreparedStatement getPreparedStatement(String sqlStatement) throws SQLException{
 		return connection.prepareStatement(sqlStatement);
 	}
+
 
 
 	

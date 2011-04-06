@@ -116,7 +116,7 @@ public class TestProfile {
 		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype1);
 		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype2);
 		testProfile.addAlltoPhenotypeSet(testAttribute2, testEntity2, testSet3);
-		Set<Integer> allPhenotypes = testProfile.getAllPhenotypes();
+		Set<Integer> allPhenotypes = testProfile.getAllEQPhenotypes();
 		Assert.assertEquals(4,allPhenotypes.size());
 		Assert.assertTrue(allPhenotypes.contains(testPhenotype1));
 		Assert.assertTrue(allPhenotypes.contains(testPhenotype2));
@@ -135,13 +135,13 @@ public class TestProfile {
 	public void testRemoveAllEmpties(){
 		testProfile.addPhenotype(testEntity1, testAttribute1, testPhenotype1);
 		testProfile.addPhenotype(testEntity2, testAttribute2, testPhenotype2);
-		System.out.println("phenos: " + testProfile.getAllPhenotypes());
+		System.out.println("phenos: " + testProfile.getAllEQPhenotypes());
 		testProfile.clearPhenotypeSet(testEntity1, testAttribute1);
-		System.out.println("phenos: " + testProfile.getAllPhenotypes());
+		System.out.println("phenos: " + testProfile.getAllEQPhenotypes());
 		testProfile.removeAllEmpties();
-		System.out.println("phenos: " + testProfile.getAllPhenotypes());
-		Assert.assertFalse(testProfile.getAllPhenotypes().contains(testPhenotype1));
-		Assert.assertTrue(testProfile.getAllPhenotypes().contains(testPhenotype2));
+		System.out.println("phenos: " + testProfile.getAllEQPhenotypes());
+		Assert.assertFalse(testProfile.getAllEQPhenotypes().contains(testPhenotype1));
+		Assert.assertTrue(testProfile.getAllEQPhenotypes().contains(testPhenotype2));
 	}
 
 }

@@ -17,6 +17,8 @@ public class TestPhenotypeScoreTable {
 	final static int ENTITY1 = 1010;
 	final static int ENTITY2 = 1021;
 	final static int ATTRIBUTE = 6;
+	final static int ATTRIBUTE2 = 8;
+	final static int ATTRIBUTE3 = 10;
 	final static double SCORE1 = 0.12;
 	final static double SCORE2 = 0.024;
 	final static PhenotypeExpression BESTENTITY1 = new PhenotypeExpression(ENTITY1,ATTRIBUTE);
@@ -33,43 +35,57 @@ public class TestPhenotypeScoreTable {
 
 	@Test
 	public void testAddScore() {
-		table1.addScore(TAXONENTITY,GENEENTITY,ATTRIBUTE, SCORE1,BESTENTITY1);
+		PhenotypeExpression tPhenotype = new PhenotypeExpression(TAXONENTITY,ATTRIBUTE);
+		PhenotypeExpression gPhenotype = new PhenotypeExpression(GENEENTITY,ATTRIBUTE);		
+		table1.addScore(tPhenotype,gPhenotype, SCORE1,BESTENTITY1);
 	}
 
 	@Test
 	public void testIsEmpty() {
 		Assert.assertTrue(table1.isEmpty());
-		table1.addScore(TAXONENTITY,GENEENTITY,ATTRIBUTE,SCORE1, BESTENTITY1);
+		PhenotypeExpression tPhenotype = new PhenotypeExpression(TAXONENTITY,ATTRIBUTE);
+		PhenotypeExpression gPhenotype = new PhenotypeExpression(GENEENTITY,ATTRIBUTE);		
+		table1.addScore(tPhenotype,gPhenotype,SCORE1, BESTENTITY1);
 		Assert.assertFalse(table1.isEmpty());
 	}
 
 	@Test
 	public void testSummary() {
-		table1.addScore(TAXONENTITY, GENEENTITY, ATTRIBUTE, SCORE1,BESTENTITY1);
-		table1.addScore(TAXONENTITY, GENEENTITY, ATTRIBUTE, SCORE2,BESTENTITY2);
+		PhenotypeExpression tPhenotype = new PhenotypeExpression(TAXONENTITY,ATTRIBUTE);
+		PhenotypeExpression gPhenotype = new PhenotypeExpression(GENEENTITY,ATTRIBUTE);		
+		table1.addScore(tPhenotype, gPhenotype, SCORE1,BESTENTITY1);
+		table1.addScore(tPhenotype, gPhenotype, SCORE2,BESTENTITY2);
 		table1.summary();
 	}
 
 	@Test
 	public void testHasScore() {
-		Assert.assertFalse(table1.hasScore(TAXONENTITY, GENEENTITY, ATTRIBUTE));
-		table1.addScore(TAXONENTITY, GENEENTITY, ATTRIBUTE, SCORE1, BESTENTITY1);
-		Assert.assertTrue(table1.hasScore(TAXONENTITY, GENEENTITY, ATTRIBUTE));
-		Assert.assertFalse(table1.hasScore(TAXONENTITY, GENEENTITY, 8));
-		Assert.assertFalse(table1.hasScore(10010, GENEENTITY, 6));
-		Assert.assertFalse(table1.hasScore(TAXONENTITY,10012, 6));
+		PhenotypeExpression tPhenotype = new PhenotypeExpression(TAXONENTITY,ATTRIBUTE);
+		PhenotypeExpression gPhenotype = new PhenotypeExpression(GENEENTITY,ATTRIBUTE);
+		PhenotypeExpression tPhenotype2 = new PhenotypeExpression(TAXONENTITY,ATTRIBUTE2);
+		PhenotypeExpression gPhenotype2 = new PhenotypeExpression(GENEENTITY,ATTRIBUTE3);
+		Assert.assertFalse(table1.hasScore(tPhenotype, gPhenotype));
+		table1.addScore(tPhenotype, gPhenotype, SCORE1, BESTENTITY1);
+		Assert.assertTrue(table1.hasScore(tPhenotype,gPhenotype));
+		Assert.assertFalse(table1.hasScore(tPhenotype,gPhenotype2));
+		Assert.assertFalse(table1.hasScore(tPhenotype2,gPhenotype));
+		Assert.assertFalse(table1.hasScore(tPhenotype2,gPhenotype2));
 	}
 
 	@Test
 	public void testGetScore() {
-		table1.addScore(TAXONENTITY, GENEENTITY, ATTRIBUTE, SCORE1,BESTENTITY1);
-		Assert.assertTrue(table1.getScore(TAXONENTITY, GENEENTITY, ATTRIBUTE)==SCORE1);
+		PhenotypeExpression tPhenotype = new PhenotypeExpression(TAXONENTITY,ATTRIBUTE);
+		PhenotypeExpression gPhenotype = new PhenotypeExpression(GENEENTITY,ATTRIBUTE);
+		table1.addScore(tPhenotype, gPhenotype, SCORE1,BESTENTITY1);
+		Assert.assertTrue(table1.getScore(tPhenotype, gPhenotype)==SCORE1);
 	}
 
 	@Test
 	public void testGetBestEntity() {
-		table1.addScore(TAXONENTITY, GENEENTITY, ATTRIBUTE, SCORE1,BESTENTITY1);
-		Assert.assertTrue(table1.getBestSubsumer(TAXONENTITY, GENEENTITY, ATTRIBUTE)  == BESTENTITY1);
+		PhenotypeExpression tPhenotype = new PhenotypeExpression(TAXONENTITY,ATTRIBUTE);
+		PhenotypeExpression gPhenotype = new PhenotypeExpression(GENEENTITY,ATTRIBUTE);
+		table1.addScore(tPhenotype, gPhenotype, SCORE1,BESTENTITY1);
+		Assert.assertTrue(table1.getBestSubsumer(tPhenotype, gPhenotype).equals(BESTENTITY1));
 	}
 
 }

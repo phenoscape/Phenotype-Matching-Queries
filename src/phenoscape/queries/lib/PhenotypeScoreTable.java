@@ -6,30 +6,19 @@ import java.util.Map;
 public class PhenotypeScoreTable {
 
 	
-	private Map<Integer,Map<Integer,Map<Integer,Result>>> table = new HashMap<Integer,Map<Integer,Map<Integer,Result>>>();  //Taxon Entity, Gene Entity, Attribute Result
+	private Map<PhenotypeExpression,Map<PhenotypeExpression,Result>> table = new HashMap<PhenotypeExpression,Map<PhenotypeExpression,Result>>();  //Taxon Entity, Gene Entity, Attribute Result
 	
-	public void addScore(Integer tEntity, Integer gEntity, Integer attribute, Double score, PhenotypeExpression bestSubsumer){
-		if (table.containsKey(tEntity)){
-			Map<Integer,Map<Integer,Result>> taxon_entry = table.get(tEntity);
-			if (taxon_entry.containsKey(gEntity)){
-				Map<Integer,Result> gene_entry = taxon_entry.get(gEntity);
-				Result r = new Result(score,bestSubsumer);
-				gene_entry.put(attribute, r);
-			}
-			else{
-				Map<Integer,Result> gene_entry = new HashMap<Integer,Result>();
-				Result r = new Result(score,bestSubsumer);
-				gene_entry.put(attribute, r);
-				taxon_entry.put(gEntity,gene_entry);
-			}
+	public void addScore(PhenotypeExpression tPhenotype, PhenotypeExpression gPhenotype, Double score, PhenotypeExpression bestSubsumer){
+		if (table.containsKey(tPhenotype)){
+			Map<PhenotypeExpression,Result>taxon_entry = table.get(tPhenotype);
+			Result r = new Result(score,bestSubsumer);
+			taxon_entry.put(gPhenotype, r);
 		}
 		else {
-			Map <Integer,Map<Integer,Result>> taxon_entry = new HashMap<Integer,Map<Integer,Result>>();
-			Map<Integer,Result> gene_entry = new HashMap<Integer,Result>();
+			Map <PhenotypeExpression,Result> taxon_entry = new HashMap<PhenotypeExpression,Result>();
 			Result r = new Result(score,bestSubsumer);
-			gene_entry.put(attribute, r);
-			taxon_entry.put(gEntity, gene_entry);
-			table.put(tEntity, taxon_entry);
+			taxon_entry.put(gPhenotype, r);
+			table.put(tPhenotype, taxon_entry);
 		}
 	}
 
@@ -43,22 +32,19 @@ public class PhenotypeScoreTable {
 		return b.toString();
 	}
 
-	public boolean hasScore(Integer tEntity, Integer gEntity, Integer attribute){
-		if (table.containsKey(tEntity))
-			if (table.get(tEntity).containsKey(gEntity))
-				return (table.get(tEntity).get(gEntity).containsKey(attribute));
-			else
-				return false;
+	public boolean hasScore(PhenotypeExpression tPhenotype , PhenotypeExpression gPhenotype){
+		if (table.containsKey(tPhenotype))
+			return (table.get(tPhenotype).containsKey(gPhenotype));
 		else
 			return false;
 	}
 	
-	public double getScore(Integer tEntity, Integer gEntity, Integer attribute){
-		return table.get(tEntity).get(gEntity).get(attribute).getScore();
+	public double getScore(PhenotypeExpression tPhenotype, PhenotypeExpression gPhenotype){
+		return table.get(tPhenotype).get(gPhenotype).getScore();
 	}
 	
-	public PhenotypeExpression getBestSubsumer(Integer tEntity, Integer gEntity, Integer attribute){
-		return table.get(tEntity).get(gEntity).get(attribute).getBestSubsumer();
+	public PhenotypeExpression getBestSubsumer(PhenotypeExpression tPhenotype, PhenotypeExpression gPhenotype){
+		return table.get(tPhenotype).get(gPhenotype).getBestSubsumer();
 	}
 
 	

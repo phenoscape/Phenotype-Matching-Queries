@@ -5,10 +5,16 @@ import java.sql.SQLException;
 
 public class TaxonPhenotypeLink {
 
-	private static final String TAXONQUERY = "SELECT taxon.node_id,link.node_id, phenotype.node_id,phenotype.entity_node_id, phenotype.entity_uid, phenotype.quality_node_id,phenotype.quality_uid,phenotype.uid,simple_label(phenotype.node_id),simple_label(phenotype.entity_node_id),simple_label(phenotype.quality_node_id) FROM link " +
-	"JOIN taxon ON (taxon.node_id = link.node_id AND taxon.node_id = ? AND link.predicate_id = (select node_id FROM node WHERE uid = 'PHENOSCAPE:exhibits'))" +
-	"JOIN phenotype ON (link.object_id = phenotype.node_id) WHERE is_inferred = false";		
+//	private static final String TAXONQUERY = "SELECT taxon.node_id,link.node_id, phenotype.node_id,phenotype.entity_node_id, phenotype.entity_uid, phenotype.quality_node_id,phenotype.quality_uid,phenotype.uid,simple_label(phenotype.node_id),simple_label(phenotype.entity_node_id),simple_label(phenotype.quality_node_id) FROM link " +
+//	"JOIN taxon ON (taxon.node_id = link.node_id AND taxon.node_id = ? AND link.predicate_id = (select node_id FROM node WHERE uid = 'PHENOSCAPE:exhibits'))" +
+//	"JOIN phenotype ON (link.object_id = phenotype.node_id) WHERE is_inferred = false";		
 
+	private static final String TAXONQUERY = "SELECT taxon.node_id,taxon.node_id, ata.phenotype_node_id,phenotype.entity_node_id, phenotype.entity_uid, phenotype.quality_node_id,phenotype.quality_uid,phenotype.uid,simple_label(phenotype.node_id),simple_label(phenotype.entity_node_id),simple_label(phenotype.quality_node_id) FROM asserted_taxon_annotation AS ata " +
+	"JOIN taxon ON (taxon.node_id = ata.taxon_node_id AND taxon.node_id = ?) " +
+	"JOIN phenotype ON (phenotype.node_id = ata.phenotype_node_id)";		
+	
+	
+	
 	int taxonNodeID;
 	int linkNodeID;
 	int phenotypeNodeID;
@@ -36,7 +42,6 @@ public class TaxonPhenotypeLink {
 		phenotypeLabel = r.getString(9);
 		entityLabel = r.getString(10);
 		qualityLabel = r.getString(11);
-
 	}
 
 	public static String getQuery(){
@@ -88,6 +93,7 @@ public class TaxonPhenotypeLink {
 	public String getQualityLabel(){
 		return qualityLabel;
 	}
+	
 	//
 	public void setTaxonNodeID(int id){
 		taxonNodeID = id;
