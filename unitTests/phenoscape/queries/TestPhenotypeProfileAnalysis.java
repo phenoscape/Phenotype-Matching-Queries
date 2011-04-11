@@ -272,7 +272,7 @@ public class TestPhenotypeProfileAnalysis {
 	
 	@Test
 	public void TestGetAllTaxonPhenotypeLinksFromKB() throws Exception{
-		Map<Integer,Collection<TaxonPhenotypeLink>> links = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1, u);
+		Map<Integer,Set<TaxonPhenotypeLink>> links = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1, u);
 		assertNotNull(links);
 		Assert.assertEquals(15,links.size());   //this is just the number of taxa in the KB
 		for(Integer taxonID : t1.getAllTaxa()){
@@ -283,7 +283,7 @@ public class TestPhenotypeProfileAnalysis {
 	@Test
 	public void testLoadTaxonProfiles() throws SQLException{
 		t1.traverseOntologyTree(u);
-		Map<Integer,Collection<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
 		HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);		
 		assertFalse(taxonProfiles.isEmpty());
 		Assert.assertEquals(15, taxonProfiles.size());  //again, should be equal to the number of taxa
@@ -293,7 +293,7 @@ public class TestPhenotypeProfileAnalysis {
 	@Test
 	public void testTraverseTaxonomy() throws SQLException {
 		t1.traverseOntologyTree(u);
-		Map<Integer,Collection<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
 		HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
 		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
@@ -315,7 +315,7 @@ public class TestPhenotypeProfileAnalysis {
 	@Test
 	public void testFlushUnvaryingPhenotypes() throws SQLException {
 		t1.traverseOntologyTree(u);
-		Map<Integer,Collection<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
 		HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
 		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
@@ -367,7 +367,7 @@ public class TestPhenotypeProfileAnalysis {
 	@Test
 	public void testBuildEQParents() throws SQLException {
 		t1.traverseOntologyTree(u);
-		Map<Integer,Collection<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
 		HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
 		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
@@ -407,7 +407,7 @@ public class TestPhenotypeProfileAnalysis {
 	@Test
 	public void testBuildPhenotypeMatchCache() throws SQLException {
 		t1.traverseOntologyTree(u);
-		Map<Integer,Collection<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
 		HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
 		testAnalysis.taxonProfiles= taxonProfiles;
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);

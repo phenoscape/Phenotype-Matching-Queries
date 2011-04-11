@@ -73,7 +73,7 @@ public class TestPhenotypeProfileAnalysisFullKB {
 		else{
 			fail("Couldn't find node for " + ASPIDORASALBATERNODESTR);
 		}
-		Collection<TaxonPhenotypeLink> c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, aspidorasid);
+		Set<TaxonPhenotypeLink> c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, aspidorasid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
 		
@@ -82,7 +82,7 @@ public class TestPhenotypeProfileAnalysisFullKB {
 	
 	@Test
 	public void TestGetAllTaxonPhenotypeLinksFromKB() throws Exception{
-		Map<Integer,Collection<TaxonPhenotypeLink>> links = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1, u);
+		Map<Integer,Set<TaxonPhenotypeLink>> links = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1, u);
 		assertNotNull(links);
 		assertFalse(links.isEmpty());
 		for(Integer taxonID : t1.getAllTaxa()){
@@ -106,7 +106,7 @@ public class TestPhenotypeProfileAnalysisFullKB {
 
 	@Test
 	public void testProcessTaxonVariation() throws SQLException {
-		Map<Integer,Collection<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
 		HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
 	}
 

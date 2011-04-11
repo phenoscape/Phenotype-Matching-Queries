@@ -7,7 +7,8 @@ public class PhenotypeExpression {
 	private final int entity;
 	private final int quality;
 	private final int hashCode;
-	private String nameString;
+	private String entityName;
+	private String qualityName;
 	private static PhenotypeExpression eqTop = null;
 	
 	private final int HASHBASE = 47;
@@ -30,12 +31,8 @@ public class PhenotypeExpression {
 		hc = HASHMULTIPLIER*hc + entity;
 		hc = HASHMULTIPLIER*hc + quality;
 		hashCode = hc;
-		final StringBuilder b = new StringBuilder(100);
-		b.append("EQ expression; E: ");
-		b.append(entity);
-		b.append(" Q: ");
-		b.append(quality);
-		nameString = b.toString();
+		entityName = e.toString();
+		qualityName = q.toString();
 	}
 	
 	/**
@@ -58,7 +55,7 @@ public class PhenotypeExpression {
 		hc = 31*HASHMULTIPLIER + entity;
 		hc = 31*HASHMULTIPLIER + quality;
 		hashCode = hc;
-		nameString = "EQ expression - Quality";
+		qualityName = "Quality";
 	}
 	
 	// This represents the root of all phenotypes, which is the quality node
@@ -100,29 +97,31 @@ public class PhenotypeExpression {
 	}
 	
 	public void fillNames(Utils u){
-		final StringBuilder b = new StringBuilder(100);
-		if (isSimpleQuality()){
-			b.append("Subsuming Quality: ");
-			b.append(u.getNodeName(quality));
+		if (!isSimpleQuality()){
+			entityName = u.getNodeName(entity);
 		}
-		else{
-			b.append("Phenotype expression; E: ");
-			b.append(u.getNodeName(entity));
-			b.append(" Q: ");
-			b.append(u.getNodeName(quality));
-		}
-		nameString = b.toString();
+		qualityName = u.getNodeName(quality);
 	}
 	
 	@Override
 	public String toString(){
-		return nameString;
+		final StringBuilder b = new StringBuilder(100);
+		if (isSimpleQuality()){
+			b.append("Subsuming Quality: ");
+			b.append(quality);
+		}
+		else{
+			b.append("Phenotype expression; E: ");
+			b.append(entityName);
+			b.append(" Q: ");
+			b.append(qualityName);
+		}
+		return b.toString();
 	}
 
 	public String getFullName(Utils u) throws SQLException{
 		final StringBuilder b =  new StringBuilder(200);
-		String qualityName = u.getNodeName(quality);
-		if (qualityName == null) {
+		if (qualityName == null || !qualityName.equals(u.getNodeName(quality))) {
 			if (!u.checkConnection()){
 				u.closeKB();
 				u.retryKB();
@@ -131,8 +130,7 @@ public class PhenotypeExpression {
 			qualityName = u.getNodeName(quality);
 		}
 		if (!isSimpleQuality()){
-			String entityName = u.getNodeName(entity);
-			if (entityName == null) {
+			if (entityName == null || !entityName.equals(u.getNodeName(entity))) {
 				if (!u.checkConnection()){
 					u.closeKB();
 					u.retryKB();

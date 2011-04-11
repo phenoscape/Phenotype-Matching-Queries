@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.BasicConfigurator;
 import org.junit.After;
@@ -51,7 +52,7 @@ public class TestTaxonVariationWithHarnessTree1 {
 	Map<Integer,Integer> attMap;
 	Map<Integer,Integer> badQualities;
 	PhenotypeProfileAnalysis a;
-	Map<Integer,Collection<TaxonPhenotypeLink>> testLinks;
+	Map<Integer, Set<TaxonPhenotypeLink>> testLinks;
 
 
 
@@ -171,16 +172,16 @@ public class TestTaxonVariationWithHarnessTree1 {
 	}
 
 	
-	private Map<Integer,Collection<TaxonPhenotypeLink>>fillTestLinks(Collection<TaxonPhenotypeLink> links){
-		Map<Integer,Collection<TaxonPhenotypeLink>> result = new HashMap<Integer,Collection<TaxonPhenotypeLink>>();
+	private Map<Integer, Set<TaxonPhenotypeLink>> fillTestLinks(Collection<TaxonPhenotypeLink> links){
+		Map<Integer,Set<TaxonPhenotypeLink>> result = new HashMap<Integer,Set<TaxonPhenotypeLink>>();
 		for(TaxonPhenotypeLink link : links){
 			int taxon = link.getTaxonNodeID();
 			if (result.containsKey(taxon)){
-				Collection<TaxonPhenotypeLink> linkSet = result.get(link.getTaxonNodeID());
+				Set<TaxonPhenotypeLink> linkSet = result.get(link.getTaxonNodeID());
 				linkSet.add(link);
 			}
 			else {
-				Collection<TaxonPhenotypeLink> linkSet = new HashSet<TaxonPhenotypeLink>();
+				Set<TaxonPhenotypeLink> linkSet = new HashSet<TaxonPhenotypeLink>();
 				linkSet.add(link);
 				result.put(link.getTaxonNodeID(),linkSet);
 			}
