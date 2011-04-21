@@ -147,8 +147,8 @@ public class Utils {
 		int closureNodeID = getOneName("closure");
 		int sizeNodeID = getOneName("size");
 		int shapeNodeID = getOneName("shape");
-		int closureStructureNodeID = getOneName("Closure+Structure");
-		int shapeSizeNodeID = getOneName("Shape+Size");
+		//int closureStructureNodeID = getOneName("Closure+Structure");
+		//int shapeSizeNodeID = getOneName("Shape+Size");
 		
 		
 		ResultSet attributeResults = s1.executeQuery(ATTRIBUTEQUERY);
@@ -161,9 +161,9 @@ public class Utils {
 			if (attribute_id == structureNodeID && attMap.containsKey(quality_id) && attMap.get(quality_id).intValue()==compositionNodeID){
 				// do nothing
 			}
-			else if ((attribute_id == closureStructureNodeID) || attribute_id == shapeSizeNodeID) {
+			//else if ((attribute_id == closureStructureNodeID) || attribute_id == shapeSizeNodeID) {
 				// do nothing
-			}
+			//}
 			else {
 				attMap.put(quality_id,attribute_id);				
 			}
@@ -417,11 +417,9 @@ public class Utils {
 	public String openKBFromConnections(String connectionsSpec) throws SQLException {
 		final Properties properties = new Properties();
 		try {
-			//System.out.println("Connect path = " + this.getClass().getResource(CONNECTION_PROPERTIES_FILENAME));
 			properties.load(this.getClass().getResourceAsStream(connectionsSpec));
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+		} catch (Exception e1) {
+			throw new RuntimeException("Failed to open connection properties file; path = " + CONNECTION_PROPERTIES_FILENAME);
 		} 
 		try {
 			Class.forName("org.postgresql.Driver");

@@ -274,10 +274,7 @@ public class PhenotypeProfileAnalysis {
 		buildEQParents(phenotypeParentCache,entityParentCache,u);
 
 		logger.info("Filling count table");
-		//fillCountTable(taxonProfiles, phenotypeCountsForTaxa,phenotypeParentCache, u, TAXONPHENOTYPECOUNTQUERY, u.countAssertedTaxonPhenotypeAnnotations());
 		fillCountTable(geneProfiles, phenotypeCountsForGenes,phenotypeParentCache, u, GENEPHENOTYPECOUNTQUERY, GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
-
-		//sumCountTables(phenotypeCountsCombined,phenotypeCountsForTaxa,phenotypeCountsForGenes);
 
 		CountTable phenotypeCountsToUse = phenotypeCountsForGenes;
 
@@ -301,7 +298,19 @@ public class PhenotypeProfileAnalysis {
 		logger.info("Calculating Profile Scores");
 
 		//List<ProfileScoreSet> results = new ArrayList<ProfileScoreSet>(1000);
-		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t maxIC \t iccs \t simIC \t simJ",w4);
+		profileMatchReport(phenotypeScores,w4,u);
+		w4.close();
+		logger.info("Done");
+	}
+
+	/**
+	 * This writes the report containing profile matches
+	 * @param phenotypeScores holds the IC scores for each pair of matchable phenotypes
+	 * @param w connected to the file to receive report, or null for console output
+	 * @param u just used for writing
+	 */
+	void profileMatchReport(PhenotypeScoreTable phenotypeScores, Writer w, Utils u){
+		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t maxIC \t iccs \t simIC \t simJ",w);
 
 		long zeroCount = 0;
 		//u.writeOrDump("Sizes: Taxon profiles: " + taxonProfiles.keySet().size() + "; Gene profiles: " + geneProfiles.keySet().size(), null);
@@ -327,18 +336,24 @@ public class PhenotypeProfileAnalysis {
 				result.setSimJScore(-1.0);
 
 				if (result.isNonZero())
-					result.writeScores(u, w4);
+					result.writeScores(u, w);
 				else
 					zeroCount++;
 			}
 		}
-		u.writeOrDump("Pairs with zero score = " + zeroCount, w4);
-		w4.close();
-		logger.info("Done");
-	}
+		u.writeOrDump("Pairs with zero score = " + zeroCount, w);
 
+	}
+	
+	/**
+	 * 
+	 * @param taxonProfile
+	 * @param geneProfile
+	 * @param phenotypeScores
+	 * @return
+	 */
 	double calcMaxIC(Profile taxonProfile, Profile geneProfile, PhenotypeScoreTable phenotypeScores){
-		double maxPhenotypeMatch = Double.NEGATIVE_INFINITY;
+		double maxPhenotypeMatch = 0;
 		for (PhenotypeExpression tPhenotype : taxonProfile.getAllEAPhenotypes()){
 			for (PhenotypeExpression gPhenotype : geneProfile.getAllEAPhenotypes()){
 				if(phenotypeScores.hasScore(tPhenotype,gPhenotype))
@@ -350,6 +365,13 @@ public class PhenotypeProfileAnalysis {
 		return maxPhenotypeMatch;
 	}
 
+	/**
+	 * 
+	 * @param taxonProfile
+	 * @param geneProfile
+	 * @param phenotypeScores
+	 * @return
+	 */
 	double calcICCS(Profile taxonProfile, Profile geneProfile, PhenotypeScoreTable phenotypeScores){
 		List<Double> maxByTaxon = new ArrayList<Double>();
 		for (PhenotypeExpression  tPhenotype : taxonProfile.getAllEAPhenotypes()){
@@ -497,7 +519,11 @@ public class PhenotypeProfileAnalysis {
 	//	}
 
 
-
+	/**
+	 * 
+	 * @param t provides the set of taxa to query against the KB
+	 * @param u provides access to the KB connection
+	 */
 	Map<Integer,Set<TaxonPhenotypeLink>> getAllTaxonPhenotypeLinksFromKB(TaxonomyTree t, Utils u) throws SQLException{
 		Map<Integer,Set<TaxonPhenotypeLink>> result = new HashMap<Integer,Set<TaxonPhenotypeLink>>();
 		Set<Integer> taxonSet = t.getAllTaxa();
@@ -505,12 +531,16 @@ public class PhenotypeProfileAnalysis {
 			Set<TaxonPhenotypeLink> tLinks = getTaxonPhenotypeLinksFromKB(u,taxonID);
 			result.put(taxonID, tLinks);
 		}
-		logger.info("Linked taxa count = " + linkedTaxa);
-		logger.info("distinct taxon annotation count = " + taxonPhenotypeLinkCount);
 		return result;
 	}
 
-
+	/**
+	 * 
+	 * @param u used to get a prepared statement from the KB connection
+	 * @param taxonID nodeID of the taxon 
+	 * @return links (marshalled as TaxonPhenotypeLinks) with the specified taxon as subject
+	 * @throws SQLException
+	 */
 	Set<TaxonPhenotypeLink> getTaxonPhenotypeLinksFromKB(Utils u, int taxonID) throws SQLException{
 		final PreparedStatement p = u.getPreparedStatement(TaxonPhenotypeLink.getQuery());
 		final Set<TaxonPhenotypeLink> result = new HashSet<TaxonPhenotypeLink>();
@@ -528,6 +558,12 @@ public class PhenotypeProfileAnalysis {
 	}
 
 
+	/**
+	 * 
+	 * @param profiles
+	 * @param u
+	 * @return
+	 */
 	int countEAAnnotations(Map<Integer,Profile> profiles, Utils u){
 		int result = 0;
 		System.out.println("Number of profiles = " + profiles.keySet().size());
@@ -851,27 +887,6 @@ public class PhenotypeProfileAnalysis {
 		}		
 	}
 
-	/**
-	 * 
-	 */
-	void sumCountTables(CountTable sum, CountTable table1, CountTable table2){
-		for(PhenotypeExpression p : table1.getPhenotypes()){
-			int count1 = table1.getRawCount(p);
-			if (table2.hasCount(p)){
-				int count2 = table2.getRawCount(p);
-				sum.addCount(p, count1+count2);
-			}
-			else{
-				sum.addCount(p, count1);
-			}
-		}
-		for(PhenotypeExpression p : table2.getPhenotypes()){
-			if (!sum.hasCount(p)){
-				sum.addCount(p, table2.getRawCount(p));
-			}
-		}
-		sum.setSum(table1.getSum() + table2.getSum());
-	}
 
 
 
@@ -913,12 +928,21 @@ public class PhenotypeProfileAnalysis {
 							matchesCopy.addAll(matches);
 							// filter out spatial postcompositions
 							for(PhenotypeExpression pe : matchesCopy){	
-								final String eUID = u.getNodeUID(pe.getEntity());
-								//logger.info("Checking " + eUID);
-								if (eUID != null){
-									if (SPATIALPOSTCOMPUIDPREFIX.equals(eUID.substring(0,5))){
-										//logger.info("Supressing " + pe.getFullName(u) + " from intersection");
-										matches.remove(pe);
+								if (!pe.isSimpleQuality()){
+									if (u.getNodeUID(pe.getEntity()) == null){
+										u.cacheOneNode(pe.getEntity());
+									
+									}
+									final String eUID = u.getNodeUID(pe.getEntity()); 
+									//logger.info("Checking " + eUID);
+									if (eUID != null){
+										if (SPATIALPOSTCOMPUIDPREFIX.equals(eUID.substring(0,5))){
+											logger.info("Supressing " + pe.getFullName(u) + " from intersection");
+											matches.remove(pe);
+										}
+									}
+									else {
+										logger.info("Found null entity: " + pe.getFullUID(u));
 									}
 								}
 							}
