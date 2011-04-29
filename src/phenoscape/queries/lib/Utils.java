@@ -63,6 +63,26 @@ public class Utils {
 		return nodeNames.get(id);
 	}
 	
+	public int getIDFromName(String name){
+		if (name == null)
+			return -1;
+		for (Integer nodeInt : nodeNames.keySet()){
+			if (name.equals(nodeNames.get(nodeInt)))
+				return nodeInt.intValue();
+		}
+		return -1;
+	}
+
+	public int getUIDFromName(String name){
+		if (name == null)
+			return -1;
+		for (Integer nodeInt : nodeUIDs.keySet()){
+			if (name.equals(nodeUIDs.get(nodeInt)))
+				return nodeInt.intValue();
+		}
+		return -1;
+	}
+
 	public boolean hasNodeName(int id){
 		return nodeNames.containsKey(id);
 	}
@@ -316,45 +336,6 @@ public class Utils {
 	}
 
 	
-	private static final String GENEFULLNAMEQUERY = 
-		"SELECT gtn.label FROM gene_annotation AS ga " +
-		"JOIN node AS gtn ON (gtn.node_id = ga.genotype_node_id) "+
-		"WHERE ga.gene_node_id = ? ";
-
-	
-	/**
-	 * This is a little different than other queries as the usual case will be return of multiple results, but they ought to
-	 * all be the same string; otherwise, issue a warning and concatenate with a comma separator
-	 * @param geneID
-	 * @return
-	 * @throws SQLException
-	 */
-	public String getGeneFullName(int geneID) throws SQLException {
-		final PreparedStatement p1 = getPreparedStatement(GENEFULLNAMEQUERY);
-		p1.setInt(1, geneID);
-		StringBuilder resultBuilder = new StringBuilder();
-		Set<String> resultSet= new HashSet<String>();
-		ResultSet nameResults = p1.executeQuery();
-		if (nameResults.next()){
-			String name = nameResults.getString(1);
-			resultBuilder.append(name);
-			resultSet.add(name);
-			while(nameResults.next()){
-				String nextName = nameResults.getString(1);
-				if (!resultSet.contains(nextName)){
-					System.out.println("Multiple names for gene " + geneID + " (" + resultBuilder.toString() + ")");
-					resultBuilder.append(", ");
-					resultBuilder.append(nextName);
-					resultSet.add(nextName);
-				}
-			}
-			return resultBuilder.toString();
-		}
-		else {
-			throw new RuntimeException("Gene full name lookup failed; id = " + geneID);
-		}
-	}
-
 	
 	private static final String ASSERTEDTAXONPHENOTYPECOUNTQUERY = "SELECT COUNT(*) FROM asserted_taxon_annotation";
 	public int countAssertedTaxonPhenotypeAnnotations() throws SQLException{

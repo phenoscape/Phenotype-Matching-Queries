@@ -20,6 +20,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -27,9 +28,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
@@ -67,6 +71,7 @@ public class PhenotypeProfileAnalysis {
 	private static final String PHENOTYPEMATCHREPORTFILENAME = "../PhenotypeMatchReport.txt";
 	private static final String PROFILEMATCHREPORTFILENAME = "../ProfileMatchReport.txt";
 	private static final String TAXONGENEMAXICSCOREFILENAME = "../MaxICReport.txt";
+	private static final String PERMUTATIONSCORESFILENAME = "../ProfileScores.txt";
 
 
 	private static final String SPATIALPOSTCOMPUIDPREFIX = "BSPO:";
@@ -124,6 +129,8 @@ public class PhenotypeProfileAnalysis {
 	 */
 	int annotatedTaxa=0;
 	int parentsOfAnnotatedTaxa = 0;
+	
+	Random rand = new Random();
 
 	static Logger logger = Logger.getLogger(PhenotypeProfileAnalysis.class.getName());
 
@@ -296,10 +303,27 @@ public class PhenotypeProfileAnalysis {
 		logger.info("Finished Writing maxIC for taxon/gene summary");		
 
 		logger.info("Calculating Profile Scores");
+		List<PermutedProfileScore> pScores = calcPermutedProfileScores(taxonProfiles,geneProfiles,phenotypeScores,u);
 
-		//List<ProfileScoreSet> results = new ArrayList<ProfileScoreSet>(1000);
-		profileMatchReport(phenotypeScores,w4,u);
+		profileMatchReport(phenotypeScores,pScores,w4,u);
 		w4.close();
+		
+		
+		File outFile6 = new File(PERMUTATIONSCORESFILENAME);
+		Writer w6 = new BufferedWriter(new FileWriter(outFile6));		
+		Date today;
+		DateFormat dateFormatter;
+
+		dateFormatter = DateFormat.getDateInstance(DateFormat.DEFAULT);
+		today = new Date();
+		DateFormat timeFormatter = DateFormat.getTimeInstance(DateFormat.DEFAULT);
+		String timeStamp = dateFormatter.format(today) + " " + timeFormatter.format(today);		
+
+		u.writeOrDump(timeStamp, w6);
+
+		w6.close();
+		
+		
 		logger.info("Done");
 	}
 
@@ -309,8 +333,8 @@ public class PhenotypeProfileAnalysis {
 	 * @param w connected to the file to receive report, or null for console output
 	 * @param u just used for writing
 	 */
-	void profileMatchReport(PhenotypeScoreTable phenotypeScores, Writer w, Utils u){
-		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t maxIC \t iccs \t simIC \t simJ",w);
+	void profileMatchReport(PhenotypeScoreTable phenotypeScores, List<PermutedProfileScore> pScores, Writer w, Utils u){
+		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t maxIC \t 95% \t 99%  \t iccs",w);
 
 		long zeroCount = 0;
 		//u.writeOrDump("Sizes: Taxon profiles: " + taxonProfiles.keySet().size() + "; Gene profiles: " + geneProfiles.keySet().size(), null);
@@ -318,10 +342,17 @@ public class PhenotypeProfileAnalysis {
 			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
 			for(Integer currentGene : geneProfiles.keySet()){
 				Profile currentGeneProfile = geneProfiles.get(currentGene);
-				ProfileScoreSet result = new ProfileScoreSet(currentTaxon, currentGene,currentTaxonProfile.getAllEQPhenotypes(), currentGeneProfile.getAllEQPhenotypes());
+				ProfileScoreSet result = new ProfileScoreSet(currentTaxon, currentGene,currentTaxonProfile.getAllEAPhenotypes(), currentGeneProfile.getAllEAPhenotypes());
+				PermutedProfileScore pScore = matchProfileSizes(currentTaxonProfile.getAllEAPhenotypes().size(),
+						                                        currentGeneProfile.getAllEAPhenotypes().size(),
+						                                        pScores);
 				// calculate maxIC
-				double maxIC = calcMaxIC(currentTaxonProfile, currentGeneProfile,phenotypeScores);
+				double maxIC = calcMaxIC(currentTaxonProfile.getAllEAPhenotypes(), currentGeneProfile.getAllEAPhenotypes(),phenotypeScores);
 				result.setMaxICScore(maxIC);
+				
+				// install critical values
+				result.setMaxIC95(pScore.cutoff095);
+				result.setMaxIC99(pScore.cutoff099);
 
 				//calculate ICCS score for this pair of profiles
 				double iccs = calcICCS(currentTaxonProfile, currentGeneProfile, phenotypeScores);
@@ -345,6 +376,87 @@ public class PhenotypeProfileAnalysis {
 
 	}
 	
+	PermutedProfileScore matchProfileSizes(int taxonSize, int geneSize,List<PermutedProfileScore> scores){
+		for(PermutedProfileScore pps : scores){
+			if (pps.taxonSize == taxonSize && pps.geneSize == geneSize){
+				return pps;
+			}
+		}
+		throw new RuntimeException("Couldn't find a permuted Profile size for taxon profile size = " + taxonSize + " and gene profile size = " + geneSize);
+	}
+
+	
+	
+	
+	final static int DISTSIZE = 1000;
+	final static int DISTSIZE095 = (int)(0.95*DISTSIZE);
+	final static int DISTSIZE099 = (int)(0.99*DISTSIZE);
+	List<PermutedProfileScore> calcPermutedProfileScores(Map<Integer,Profile>taxonProfiles,Map<Integer,Profile>geneProfiles,PhenotypeScoreTable phenotypeScores, Utils u){
+		logger.info("Starting generation of permuted profile scores");
+		List<PermutedProfileScore> result = new ArrayList<PermutedProfileScore>();
+		List<PhenotypeExpression> allTaxonPhenotypes = new ArrayList<PhenotypeExpression>();
+		HashSet<Integer>taxonProfileSizes = new HashSet<Integer>();
+		HashSet<Integer>geneProfileSizes = new HashSet<Integer>();
+		for(Integer currentTaxon : taxonProfiles.keySet()){
+			Set<PhenotypeExpression> eaPhenotypes = taxonProfiles.get(currentTaxon).getAllEAPhenotypes();
+			allTaxonPhenotypes.addAll(eaPhenotypes);
+			taxonProfileSizes.add(eaPhenotypes.size());
+		}
+		ArrayList<PhenotypeExpression> allGenePhenotypes = new ArrayList<PhenotypeExpression>();
+		for(Integer currentGene : geneProfiles.keySet()){
+			Set<PhenotypeExpression> eaPhenotypes = geneProfiles.get(currentGene).getAllEAPhenotypes();
+			allGenePhenotypes.addAll(eaPhenotypes);
+			geneProfileSizes.add(eaPhenotypes.size());
+		}
+		logger.info(u.listIntegerMembers(taxonProfileSizes));
+		logger.info(u.listIntegerMembers(geneProfileSizes));
+		for(Integer taxonSize : taxonProfileSizes){
+			for (Integer geneSize : geneProfileSizes){
+				logger.info("Permuting taxon profile of size: " + taxonSize + " against gene profile of size: " + geneSize);
+				double[] dist = new double[DISTSIZE]; 
+				for (int i = 0; i<DISTSIZE;i++){
+					Set<PhenotypeExpression> generatedTaxonProfile = generateProfile(allTaxonPhenotypes,taxonSize);
+					Set<PhenotypeExpression> generatedGeneProfile = generateProfile(allGenePhenotypes,geneSize);
+					if (generatedTaxonProfile.size() != taxonSize)
+						logger.error("Bad generated taxon Profile");
+					if (generatedGeneProfile.size() != geneSize)
+						logger.error("Bad generated gene Profile");
+					dist[i]=(calcMaxIC(generatedTaxonProfile,generatedGeneProfile,phenotypeScores));
+				}
+				double statSum = 0;
+				double statSumSqr = 0;
+				for(double d : dist){
+					statSum += d;
+					statSumSqr += d*d;
+				}
+				double mean = statSum/DISTSIZE;
+				double var = (statSumSqr/DISTSIZE) - mean*mean;
+				PermutedProfileScore p = new PermutedProfileScore();
+				p.taxonSize = taxonSize;
+				p.geneSize = geneSize;
+				Arrays.sort(dist);
+				p.cutoff095 = dist[DISTSIZE095];
+				p.cutoff099 = dist[DISTSIZE099];
+				//logger.info("Generated pair: " + taxonSize + "  " + geneSize + "; mean = " + mean + "; var = " + var + "; 0.95 cutoff = " + p.cutoff095 + "; 0.99 cutoff = " + p.cutoff099);	
+				result.add(p);
+			}
+		}
+		logger.info("Finished generation of permuted profile scores");
+		return result;
+	}
+
+	Set<PhenotypeExpression> generateProfile(List<PhenotypeExpression> allProfiles, Integer profileSize){
+		final int profilesCount = allProfiles.size();
+		final Set<PhenotypeExpression>result = new HashSet<PhenotypeExpression>();
+		while(result.size()<profileSize){
+			int index = rand.nextInt(profilesCount);
+			PhenotypeExpression e = allProfiles.get(index);
+			result.add(e);
+		}
+		return result;
+	}
+	
+	
 	/**
 	 * 
 	 * @param taxonProfile
@@ -352,10 +464,10 @@ public class PhenotypeProfileAnalysis {
 	 * @param phenotypeScores
 	 * @return
 	 */
-	double calcMaxIC(Profile taxonProfile, Profile geneProfile, PhenotypeScoreTable phenotypeScores){
+	double calcMaxIC(Set<PhenotypeExpression> taxonPhenotypes, Set<PhenotypeExpression> genePhenotypes, PhenotypeScoreTable phenotypeScores){
 		double maxPhenotypeMatch = 0;
-		for (PhenotypeExpression tPhenotype : taxonProfile.getAllEAPhenotypes()){
-			for (PhenotypeExpression gPhenotype : geneProfile.getAllEAPhenotypes()){
+		for (PhenotypeExpression tPhenotype : taxonPhenotypes){
+			for (PhenotypeExpression gPhenotype : genePhenotypes){
 				if(phenotypeScores.hasScore(tPhenotype,gPhenotype))
 					if (phenotypeScores.getScore(tPhenotype,gPhenotype) > maxPhenotypeMatch){
 						maxPhenotypeMatch = phenotypeScores.getScore(tPhenotype,gPhenotype);
@@ -364,6 +476,8 @@ public class PhenotypeProfileAnalysis {
 		}
 		return maxPhenotypeMatch;
 	}
+	
+	
 
 	/**
 	 * 
@@ -937,7 +1051,7 @@ public class PhenotypeProfileAnalysis {
 									//logger.info("Checking " + eUID);
 									if (eUID != null){
 										if (SPATIALPOSTCOMPUIDPREFIX.equals(eUID.substring(0,5))){
-											logger.info("Supressing " + pe.getFullName(u) + " from intersection");
+											//logger.info("Supressing " + pe.getFullName(u) + " from intersection");
 											matches.remove(pe);
 										}
 									}
@@ -1109,7 +1223,13 @@ public class PhenotypeProfileAnalysis {
 		return attributeSet;
 	}	
 
-
+	private static class PermutedProfileScore{
+		int taxonSize;
+		int geneSize;
+		double[] dist;
+		double cutoff095;
+		double cutoff099;
+	}
 
 
 }

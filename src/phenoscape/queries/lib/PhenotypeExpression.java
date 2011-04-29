@@ -4,6 +4,8 @@ import java.sql.SQLException;
 
 public class PhenotypeExpression {
 	
+	private final static String IIPOSTR = "^OBO_REL:inheres_in_part_of(";
+	
 	private final int entity;
 	private final int quality;
 	private final int hashCode;
@@ -139,7 +141,7 @@ public class PhenotypeExpression {
 				entityName = u.getNodeName(entity);
 			}
 			b.append(qualityName);
-			b.append("^OBO_REL:inheres_in(");
+			b.append(IIPOSTR);
 			b.append(entityName);
 			b.append(")");
 		}
@@ -172,7 +174,7 @@ public class PhenotypeExpression {
 				entityUID = u.getNodeUID(entity);
 			}
 			b.append(qualityUID);
-			b.append("^OBO_REL:inheres_in(");
+			b.append(IIPOSTR);
 			b.append(entityUID);
 			b.append(")");
 		}

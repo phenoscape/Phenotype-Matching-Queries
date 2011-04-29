@@ -6,10 +6,12 @@ import java.io.StringWriter;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -49,7 +51,10 @@ public class TestPropTree3 {
 	private static final String TAXON13STR = "TTO:0000013";
 	private static final String TAXON14STR = "TTO:0000014";
 
-	
+	private final int genePhenotypeAnnotationCount = 23;   // True independent of the taxon data loaded
+	private final double IC3 = -1*(Math.log(3.0/(double)genePhenotypeAnnotationCount)/Math.log(2));
+	private final double IC4 = -1*(Math.log(4.0/(double)genePhenotypeAnnotationCount)/Math.log(2));
+
 	PhenotypeProfileAnalysis testAnalysis;
 	Utils u = new Utils();
 	StringWriter testWriter1;
@@ -85,363 +90,363 @@ public class TestPropTree3 {
 	
 	private void setupCountTableCheck(){
 		countTableCheck = new HashMap<String,Integer>();
-		countTableCheck.put("count^OBO_REL:inheres_in(anatomical cluster)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(anatomical group)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(anatomical structure)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(anatomical system)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(body)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(bone)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(cranium)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(dermal bone)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(dermatocranium)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(dorsal hyoid arch)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(head)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(hyoid arch)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(intramembranous bone)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(material anatomical entity)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(multi-tissue structure)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(opercle)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(opercular flap)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(opercular series)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(organism subdivision)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(pharyngeal arch 2)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(pharyngeal arch)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(portion of connective tissue)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(portion of tissue)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(skeletal system)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(splanchnocranium)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(surface structure)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(suspensorium)", 2);
-		countTableCheck.put("count^OBO_REL:inheres_in(teleost anatomical entity)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(anatomical cluster)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(anatomical group)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(anatomical structure)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(anatomical system)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(body)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(bone)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(cranium)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(dermal bone)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(dermatocranium)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(dorsal hyoid arch)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(head)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(hyoid arch)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(intramembranous bone)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(material anatomical entity)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(multi-tissue structure)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(opercle)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(opercular flap)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(opercular series)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(organism subdivision)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(pharyngeal arch 2)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(pharyngeal arch)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(portion of connective tissue)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(portion of tissue)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(skeletal system)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(splanchnocranium)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(surface structure)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(suspensorium)", 2);
+		countTableCheck.put("count^OBO_REL:inheres_in_part_of(teleost anatomical entity)", 2);
 		countTableCheck.put("count", 2);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(anatomical cluster)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(anatomical group)", 8);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(anatomical region)", 3);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(anatomical structure)", 20);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(anatomical system)", 8);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(body)", 20);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(bone)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(brain)", 3);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(cavitated compound organ)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(central nervous system)", 3);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(cerebellum)", 3);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(compound organ)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(cranium)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(dermal bone)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(dermatocranium)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(dorsal hyoid arch)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(dorsal region of cerebellum)", 2);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(dorsal region)", 2);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(eye)", 1);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(fin)", 12);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(head)", 5);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(hindbrain)", 3);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(hyoid arch)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(intramembranous bone)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(material anatomical entity)", 20);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(multi-tissue structure)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(nervous system)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(opercle)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(opercular flap)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(opercular series)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(organism subdivision)", 17);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(paired fin)", 12);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(pectoral fin)", 12);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(pharyngeal arch 2)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(pharyngeal arch)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(portion of connective tissue)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(portion of tissue)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(sensory system)", 1);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(skeletal system)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(splanchnocranium)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(surface structure)", 17);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(suspensorium)", 4);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(teleost anatomical entity)", 20);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(ventral region of cerebellum)", 1);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(ventral region)", 1);
-		countTableCheck.put("morphology^OBO_REL:inheres_in(visual system)", 1);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(anatomical cluster)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(anatomical group)", 8);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(anatomical region)", 3);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(anatomical structure)", 20);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(anatomical system)", 8);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(body)", 20);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(bone)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(brain)", 3);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(cavitated compound organ)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(central nervous system)", 3);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(cerebellum)", 3);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(compound organ)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(cranium)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(dermal bone)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(dermatocranium)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(dorsal hyoid arch)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(dorsal region of cerebellum)", 2);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(dorsal region)", 2);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(eye)", 1);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(fin)", 12);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(head)", 5);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(hindbrain)", 3);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(hyoid arch)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(intramembranous bone)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(material anatomical entity)", 20);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(multi-tissue structure)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(nervous system)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(opercle)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(opercular flap)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(opercular series)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(organism subdivision)", 17);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(paired fin)", 12);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(pectoral fin)", 12);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(pharyngeal arch 2)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(pharyngeal arch)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(portion of connective tissue)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(portion of tissue)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(sensory system)", 1);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(skeletal system)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(splanchnocranium)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(surface structure)", 17);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(suspensorium)", 4);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(teleost anatomical entity)", 20);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(ventral region of cerebellum)", 1);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(ventral region)", 1);
+		countTableCheck.put("morphology^OBO_REL:inheres_in_part_of(visual system)", 1);
 		countTableCheck.put("morphology", 20);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(anatomical cluster)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(anatomical group)", 9);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(anatomical region)", 3);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(anatomical structure)", 21);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(anatomical system)", 9);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(body)", 21);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(bone)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(brain)", 3);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(cavitated compound organ)", 4);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(central nervous system)", 3);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(cerebellum)", 3);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(compound organ)", 4);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(cranium)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(dermal bone)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(dermatocranium)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(dorsal hyoid arch)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(dorsal region of cerebellum)", 2);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(dorsal region)", 2);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(eye)", 1);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(fin)", 12);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(head)", 6);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(hindbrain)", 3);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(hyoid arch)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(intramembranous bone)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(material anatomical entity)", 21);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(multi-tissue structure)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(nervous system)", 4);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(opercle)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(opercular flap)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(opercular series)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(organism subdivision)", 18);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(paired fin)", 12);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(pectoral fin)", 12);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(pharyngeal arch 2)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(pharyngeal arch)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(portion of connective tissue)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(portion of tissue)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(sensory system)", 1);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(skeletal system)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(splanchnocranium)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(surface structure)", 18);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(suspensorium)", 5);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(teleost anatomical entity)", 21);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(ventral region of cerebellum)", 1);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(ventral region)", 1);
-		countTableCheck.put("physical object quality^OBO_REL:inheres_in(visual system)", 1);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(anatomical cluster)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(anatomical group)", 9);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(anatomical region)", 3);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(anatomical structure)", 21);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(anatomical system)", 9);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(body)", 21);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(bone)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(brain)", 3);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(cavitated compound organ)", 4);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(central nervous system)", 3);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(cerebellum)", 3);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(compound organ)", 4);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(cranium)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(dermal bone)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(dermatocranium)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(dorsal hyoid arch)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(dorsal region of cerebellum)", 2);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(dorsal region)", 2);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(eye)", 1);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(fin)", 12);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(head)", 6);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(hindbrain)", 3);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(hyoid arch)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(intramembranous bone)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(material anatomical entity)", 21);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(multi-tissue structure)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(nervous system)", 4);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(opercle)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(opercular flap)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(opercular series)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(organism subdivision)", 18);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(paired fin)", 12);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(pectoral fin)", 12);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(pharyngeal arch 2)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(pharyngeal arch)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(portion of connective tissue)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(portion of tissue)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(sensory system)", 1);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(skeletal system)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(splanchnocranium)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(surface structure)", 18);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(suspensorium)", 5);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(teleost anatomical entity)", 21);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(ventral region of cerebellum)", 1);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(ventral region)", 1);
+		countTableCheck.put("physical object quality^OBO_REL:inheres_in_part_of(visual system)", 1);
 		countTableCheck.put("physical object quality", 21);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(anatomical cluster)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(anatomical group)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(anatomical structure)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(anatomical system)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(body)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(bone)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(cranium)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(dermal bone)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(dermatocranium)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(dorsal hyoid arch)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(head)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(hyoid arch)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(intramembranous bone)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(material anatomical entity)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(multi-tissue structure)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(opercle)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(opercular flap)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(opercular series)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(organism subdivision)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(pharyngeal arch 2)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(pharyngeal arch)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(portion of connective tissue)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(portion of tissue)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(skeletal system)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(splanchnocranium)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(surface structure)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(suspensorium)", 1);
-		countTableCheck.put("physical quality^OBO_REL:inheres_in(teleost anatomical entity)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(anatomical cluster)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(anatomical group)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(anatomical structure)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(anatomical system)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(body)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(bone)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(cranium)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(dermal bone)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(dermatocranium)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(dorsal hyoid arch)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(head)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(hyoid arch)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(intramembranous bone)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(material anatomical entity)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(multi-tissue structure)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(opercle)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(opercular flap)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(opercular series)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(organism subdivision)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(pharyngeal arch 2)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(pharyngeal arch)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(portion of connective tissue)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(portion of tissue)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(skeletal system)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(splanchnocranium)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(surface structure)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(suspensorium)", 1);
+		countTableCheck.put("physical quality^OBO_REL:inheres_in_part_of(teleost anatomical entity)", 1);
 		countTableCheck.put("physical quality", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(anatomical cluster)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(anatomical group)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(anatomical structure)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(anatomical system)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(body)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(bone)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(cranium)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(dermal bone)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(dermatocranium)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(dorsal hyoid arch)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(head)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(hyoid arch)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(intramembranous bone)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(material anatomical entity)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(multi-tissue structure)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(opercle)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(opercular flap)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(opercular series)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(organism subdivision)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(pharyngeal arch 2)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(pharyngeal arch)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(portion of connective tissue)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(portion of tissue)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(skeletal system)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(splanchnocranium)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(surface structure)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(suspensorium)", 1);
-		countTableCheck.put("position^OBO_REL:inheres_in(teleost anatomical entity)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(anatomical cluster)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(anatomical group)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(anatomical structure)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(anatomical system)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(body)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(bone)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(cranium)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(dermal bone)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(dermatocranium)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(dorsal hyoid arch)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(head)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(hyoid arch)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(intramembranous bone)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(material anatomical entity)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(multi-tissue structure)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(opercle)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(opercular flap)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(opercular series)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(organism subdivision)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(pharyngeal arch 2)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(pharyngeal arch)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(portion of connective tissue)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(portion of tissue)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(skeletal system)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(splanchnocranium)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(surface structure)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(suspensorium)", 1);
+		countTableCheck.put("position^OBO_REL:inheres_in_part_of(teleost anatomical entity)", 1);
 		countTableCheck.put("position", 1);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(anatomical cluster)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(anatomical group)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(anatomical structure)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(anatomical system)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(body)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(bone)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(cranium)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(dermal bone)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(dermatocranium)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(dorsal hyoid arch)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(head)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(hyoid arch)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(intramembranous bone)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(material anatomical entity)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(multi-tissue structure)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(opercle)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(opercular flap)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(opercular series)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(organism subdivision)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(pharyngeal arch 2)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(pharyngeal arch)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(portion of connective tissue)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(portion of tissue)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(skeletal system)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(splanchnocranium)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(surface structure)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(suspensorium)", 2);
-		countTableCheck.put("qualitative^OBO_REL:inheres_in(teleost anatomical entity)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(anatomical cluster)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(anatomical group)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(anatomical structure)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(anatomical system)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(body)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(bone)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(cranium)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(dermal bone)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(dermatocranium)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(dorsal hyoid arch)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(head)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(hyoid arch)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(intramembranous bone)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(material anatomical entity)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(multi-tissue structure)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(opercle)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(opercular flap)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(opercular series)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(organism subdivision)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(pharyngeal arch 2)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(pharyngeal arch)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(portion of connective tissue)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(portion of tissue)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(skeletal system)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(splanchnocranium)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(surface structure)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(suspensorium)", 2);
+		countTableCheck.put("qualitative^OBO_REL:inheres_in_part_of(teleost anatomical entity)", 2);
 		countTableCheck.put("qualitative", 2);
-		countTableCheck.put("quality^OBO_REL:inheres_in(anatomical cluster)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(anatomical group)", 11);
-		countTableCheck.put("quality^OBO_REL:inheres_in(anatomical region)", 3);
-		countTableCheck.put("quality^OBO_REL:inheres_in(anatomical structure)", 23);
-		countTableCheck.put("quality^OBO_REL:inheres_in(anatomical system)", 11);
-		countTableCheck.put("quality^OBO_REL:inheres_in(body)", 23);
-		countTableCheck.put("quality^OBO_REL:inheres_in(bone)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(brain)", 3);
-		countTableCheck.put("quality^OBO_REL:inheres_in(cavitated compound organ)", 4);
-		countTableCheck.put("quality^OBO_REL:inheres_in(central nervous system)", 3);
-		countTableCheck.put("quality^OBO_REL:inheres_in(cerebellum)", 3);
-		countTableCheck.put("quality^OBO_REL:inheres_in(compound organ)", 4);
-		countTableCheck.put("quality^OBO_REL:inheres_in(cranium)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(dermal bone)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(dermatocranium)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(dorsal hyoid arch)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(dorsal region of cerebellum)", 2);
-		countTableCheck.put("quality^OBO_REL:inheres_in(dorsal region)", 2);
-		countTableCheck.put("quality^OBO_REL:inheres_in(eye)", 1);
-		countTableCheck.put("quality^OBO_REL:inheres_in(fin)", 12);
-		countTableCheck.put("quality^OBO_REL:inheres_in(head)", 8);
-		countTableCheck.put("quality^OBO_REL:inheres_in(hindbrain)", 3);
-		countTableCheck.put("quality^OBO_REL:inheres_in(hyoid arch)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(intramembranous bone)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(material anatomical entity)", 23);
-		countTableCheck.put("quality^OBO_REL:inheres_in(multi-tissue structure)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(nervous system)", 4);
-		countTableCheck.put("quality^OBO_REL:inheres_in(opercle)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(opercular flap)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(opercular series)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(organism subdivision)", 20);
-		countTableCheck.put("quality^OBO_REL:inheres_in(paired fin)", 12);
-		countTableCheck.put("quality^OBO_REL:inheres_in(pectoral fin)", 12);
-		countTableCheck.put("quality^OBO_REL:inheres_in(pharyngeal arch 2)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(pharyngeal arch)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(portion of connective tissue)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(portion of tissue)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(sensory system)", 1);
-		countTableCheck.put("quality^OBO_REL:inheres_in(skeletal system)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(splanchnocranium)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(surface structure)", 20);
-		countTableCheck.put("quality^OBO_REL:inheres_in(suspensorium)", 7);
-		countTableCheck.put("quality^OBO_REL:inheres_in(teleost anatomical entity)", 23);
-		countTableCheck.put("quality^OBO_REL:inheres_in(ventral region of cerebellum)", 1);
-		countTableCheck.put("quality^OBO_REL:inheres_in(ventral region)", 1);
-		countTableCheck.put("quality^OBO_REL:inheres_in(visual system)", 1);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(anatomical cluster)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(anatomical group)", 11);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(anatomical region)", 3);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(anatomical structure)", 23);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(anatomical system)", 11);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(body)", 23);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(bone)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(brain)", 3);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(cavitated compound organ)", 4);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(central nervous system)", 3);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(cerebellum)", 3);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(compound organ)", 4);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(cranium)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(dermal bone)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(dermatocranium)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(dorsal hyoid arch)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(dorsal region of cerebellum)", 2);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(dorsal region)", 2);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(eye)", 1);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(fin)", 12);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(head)", 8);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(hindbrain)", 3);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(hyoid arch)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(intramembranous bone)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(material anatomical entity)", 23);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(multi-tissue structure)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(nervous system)", 4);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(opercle)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(opercular flap)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(opercular series)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(organism subdivision)", 20);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(paired fin)", 12);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(pectoral fin)", 12);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(pharyngeal arch 2)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(pharyngeal arch)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(portion of connective tissue)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(portion of tissue)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(sensory system)", 1);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(skeletal system)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(splanchnocranium)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(surface structure)", 20);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(suspensorium)", 7);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(teleost anatomical entity)", 23);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(ventral region of cerebellum)", 1);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(ventral region)", 1);
+		countTableCheck.put("quality^OBO_REL:inheres_in_part_of(visual system)", 1);
 		countTableCheck.put("quality", 23);
-		countTableCheck.put("shape^OBO_REL:inheres_in(anatomical cluster)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(anatomical group)", 4);
-		countTableCheck.put("shape^OBO_REL:inheres_in(anatomical region)", 1);
-		countTableCheck.put("shape^OBO_REL:inheres_in(anatomical structure)", 4);
-		countTableCheck.put("shape^OBO_REL:inheres_in(anatomical system)", 4);
-		countTableCheck.put("shape^OBO_REL:inheres_in(body)", 4);
-		countTableCheck.put("shape^OBO_REL:inheres_in(bone)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(brain)", 1);
-		countTableCheck.put("shape^OBO_REL:inheres_in(cavitated compound organ)", 1);
-		countTableCheck.put("shape^OBO_REL:inheres_in(central nervous system)", 1);
-		countTableCheck.put("shape^OBO_REL:inheres_in(cerebellum)", 1);
-		countTableCheck.put("shape^OBO_REL:inheres_in(compound organ)", 1);
-		countTableCheck.put("shape^OBO_REL:inheres_in(cranium)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(dermal bone)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(dermatocranium)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(dorsal hyoid arch)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(dorsal region of cerebellum)", 1);
-		countTableCheck.put("shape^OBO_REL:inheres_in(dorsal region)", 1);
-		countTableCheck.put("shape^OBO_REL:inheres_in(eye)", 0);
-		countTableCheck.put("shape^OBO_REL:inheres_in(head)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(hindbrain)", 1);
-		countTableCheck.put("shape^OBO_REL:inheres_in(hyoid arch)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(intramembranous bone)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(material anatomical entity)", 4);
-		countTableCheck.put("shape^OBO_REL:inheres_in(multi-tissue structure)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(nervous system)", 1);
-		countTableCheck.put("shape^OBO_REL:inheres_in(opercle)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(opercular flap)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(opercular series)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(organism subdivision)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(pharyngeal arch 2)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(pharyngeal arch)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(portion of connective tissue)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(portion of tissue)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(sensory system)", 0);
-		countTableCheck.put("shape^OBO_REL:inheres_in(skeletal system)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(splanchnocranium)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(surface structure)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(suspensorium)", 3);
-		countTableCheck.put("shape^OBO_REL:inheres_in(teleost anatomical entity)", 4);
-		countTableCheck.put("shape^OBO_REL:inheres_in(ventral region of cerebellum)", 0);
-		countTableCheck.put("shape^OBO_REL:inheres_in(ventral region)", 0);
-		countTableCheck.put("shape^OBO_REL:inheres_in(visual system)", 0);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(anatomical cluster)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(anatomical group)", 4);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(anatomical region)", 1);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(anatomical structure)", 4);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(anatomical system)", 4);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(body)", 4);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(bone)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(brain)", 1);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(cavitated compound organ)", 1);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(central nervous system)", 1);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(cerebellum)", 1);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(compound organ)", 1);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(cranium)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(dermal bone)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(dermatocranium)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(dorsal hyoid arch)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(dorsal region of cerebellum)", 1);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(dorsal region)", 1);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(eye)", 0);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(head)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(hindbrain)", 1);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(hyoid arch)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(intramembranous bone)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(material anatomical entity)", 4);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(multi-tissue structure)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(nervous system)", 1);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(opercle)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(opercular flap)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(opercular series)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(organism subdivision)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(pharyngeal arch 2)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(pharyngeal arch)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(portion of connective tissue)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(portion of tissue)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(sensory system)", 0);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(skeletal system)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(splanchnocranium)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(surface structure)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(suspensorium)", 3);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(teleost anatomical entity)", 4);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(ventral region of cerebellum)", 0);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(ventral region)", 0);
+		countTableCheck.put("shape^OBO_REL:inheres_in_part_of(visual system)", 0);
 		countTableCheck.put("shape", 4);
-		countTableCheck.put("size^OBO_REL:inheres_in(anatomical group)", 3);
-		countTableCheck.put("size^OBO_REL:inheres_in(anatomical region)", 2);
-		countTableCheck.put("size^OBO_REL:inheres_in(anatomical structure)", 15);
-		countTableCheck.put("size^OBO_REL:inheres_in(anatomical system)", 3);
-		countTableCheck.put("size^OBO_REL:inheres_in(body)", 15);
-		countTableCheck.put("size^OBO_REL:inheres_in(brain)", 2);
-		countTableCheck.put("size^OBO_REL:inheres_in(cavitated compound organ)", 3);
-		countTableCheck.put("size^OBO_REL:inheres_in(central nervous system)", 2);
-		countTableCheck.put("size^OBO_REL:inheres_in(cerebellum)", 2);
-		countTableCheck.put("size^OBO_REL:inheres_in(compound organ)", 3);
-		countTableCheck.put("size^OBO_REL:inheres_in(dorsal region of cerebellum)", 1);
-		countTableCheck.put("size^OBO_REL:inheres_in(dorsal region)", 1);
-		countTableCheck.put("size^OBO_REL:inheres_in(eye)", 1);
-		countTableCheck.put("size^OBO_REL:inheres_in(fin)", 12);
-		countTableCheck.put("size^OBO_REL:inheres_in(head)", 1);
-		countTableCheck.put("size^OBO_REL:inheres_in(hindbrain)", 2);
-		countTableCheck.put("size^OBO_REL:inheres_in(material anatomical entity)", 15);
-		countTableCheck.put("size^OBO_REL:inheres_in(nervous system)", 3);
-		countTableCheck.put("size^OBO_REL:inheres_in(organism subdivision)", 13);
-		countTableCheck.put("size^OBO_REL:inheres_in(paired fin)", 12);
-		countTableCheck.put("size^OBO_REL:inheres_in(pectoral fin)", 12);
-		countTableCheck.put("size^OBO_REL:inheres_in(sensory system)", 1);
-		countTableCheck.put("size^OBO_REL:inheres_in(surface structure)", 13);
-		countTableCheck.put("size^OBO_REL:inheres_in(teleost anatomical entity)", 15);
-		countTableCheck.put("size^OBO_REL:inheres_in(ventral region of cerebellum)", 1);
-		countTableCheck.put("size^OBO_REL:inheres_in(ventral region)", 1);
-		countTableCheck.put("size^OBO_REL:inheres_in(visual system)", 1);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(anatomical group)", 3);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(anatomical region)", 2);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(anatomical structure)", 15);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(anatomical system)", 3);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(body)", 15);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(brain)", 2);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(cavitated compound organ)", 3);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(central nervous system)", 2);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(cerebellum)", 2);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(compound organ)", 3);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(dorsal region of cerebellum)", 1);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(dorsal region)", 1);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(eye)", 1);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(fin)", 12);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(head)", 1);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(hindbrain)", 2);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(material anatomical entity)", 15);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(nervous system)", 3);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(organism subdivision)", 13);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(paired fin)", 12);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(pectoral fin)", 12);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(sensory system)", 1);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(surface structure)", 13);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(teleost anatomical entity)", 15);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(ventral region of cerebellum)", 1);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(ventral region)", 1);
+		countTableCheck.put("size^OBO_REL:inheres_in_part_of(visual system)", 1);
 		countTableCheck.put("size", 15);
-		countTableCheck.put("texture^OBO_REL:inheres_in(anatomical cluster)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(anatomical group)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(anatomical structure)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(anatomical system)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(body)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(bone)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(cranium)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(dermal bone)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(dermatocranium)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(dorsal hyoid arch)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(head)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(hyoid arch)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(intramembranous bone)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(material anatomical entity)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(multi-tissue structure)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(opercle)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(opercular flap)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(opercular series)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(organism subdivision)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(pharyngeal arch 2)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(pharyngeal arch)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(portion of connective tissue)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(portion of tissue)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(skeletal system)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(splanchnocranium)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(surface structure)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(suspensorium)", 1);
-		countTableCheck.put("texture^OBO_REL:inheres_in(teleost anatomical entity)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(anatomical cluster)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(anatomical group)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(anatomical structure)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(anatomical system)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(body)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(bone)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(cranium)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(dermal bone)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(dermatocranium)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(dorsal hyoid arch)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(head)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(hyoid arch)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(intramembranous bone)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(material anatomical entity)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(multi-tissue structure)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(opercle)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(opercular flap)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(opercular series)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(organism subdivision)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(pharyngeal arch 2)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(pharyngeal arch)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(portion of connective tissue)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(portion of tissue)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(skeletal system)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(splanchnocranium)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(surface structure)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(suspensorium)", 1);
+		countTableCheck.put("texture^OBO_REL:inheres_in_part_of(teleost anatomical entity)", 1);
 		countTableCheck.put("texture", 1);
 
 	}
@@ -503,7 +508,7 @@ public class TestPropTree3 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(1,c.size());
+		Assert.assertEquals(2,c.size());
 
 		p.setString(1,TAXON5STR);
 		r = p.executeQuery();
@@ -516,7 +521,7 @@ public class TestPropTree3 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(2,c.size());
+		Assert.assertEquals(5,c.size());
 
 		p.setString(1,TAXON6STR);
 		r = p.executeQuery();
@@ -529,7 +534,7 @@ public class TestPropTree3 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(2,c.size());
+		Assert.assertEquals(5,c.size());
 
 		p.setString(1,TAXON7STR);
 		r = p.executeQuery();
@@ -578,7 +583,7 @@ public class TestPropTree3 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(1,c.size());
+		Assert.assertEquals(4,c.size());
 
 		p.setString(1,TAXON11STR);
 		r = p.executeQuery();
@@ -591,7 +596,7 @@ public class TestPropTree3 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(1,c.size());
+		Assert.assertEquals(4,c.size());
 
 		p.setString(1,TAXON12STR);
 		r = p.executeQuery();
@@ -604,7 +609,7 @@ public class TestPropTree3 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(1,c.size());
+		Assert.assertEquals(4,c.size());
 
 		p.setString(1,TAXON13STR);
 		r = p.executeQuery();
@@ -617,7 +622,7 @@ public class TestPropTree3 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(1,c.size());
+		Assert.assertEquals(3,c.size());
 		
 		p.setString(1,TAXON14STR);
 		r = p.executeQuery();
@@ -630,7 +635,7 @@ public class TestPropTree3 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(1,c.size());
+		Assert.assertEquals(3,c.size());
 		
 	}
 	
@@ -654,7 +659,8 @@ public class TestPropTree3 {
 		Assert.assertEquals(15, taxonProfiles.size());  //again, should be equal to the number of taxa
 	}
 	
-	
+	final List<String>entityNames= Arrays.asList("body","opercle","pectoral fin","posterior margin of opercle");
+	final List<String>attNames= Arrays.asList("optical quality","shape","size");
 	@Test
 	public void testTraverseTaxonomy() throws SQLException {
 		t1.traverseOntologyTree(u);
@@ -662,16 +668,14 @@ public class TestPropTree3 {
 		HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
 		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
-		Assert.assertEquals(1,taxonVariation.getUsedEntities().size());  //This should be {'opercle'}
-		Iterator<Integer> e_Itr = taxonVariation.getUsedEntities().iterator();
-		assertTrue(e_Itr.hasNext());
-		Integer entity = e_Itr.next();
-		Assert.assertEquals("opercle", u.getNodeName(entity.intValue()));
-		Assert.assertEquals(1,taxonVariation.getUsedAttributes().size());  //This should be {'shape'}
-		Iterator<Integer> a_Itr = taxonVariation.getUsedAttributes().iterator();
-		assertTrue(a_Itr.hasNext());
-		Integer att = a_Itr.next();
-		Assert.assertEquals("shape", u.getNodeName(att.intValue()));
+		Assert.assertEquals("Count of entities used",4,taxonVariation.getUsedEntities().size());
+		for (Integer entity : taxonVariation.getUsedEntities()){
+			Assert.assertTrue("Found unexpected entity " + u.getNodeName(entity.intValue()),entityNames.contains(u.getNodeName(entity.intValue())));
+		}
+		Assert.assertEquals("Count of qualities used",3,taxonVariation.getUsedAttributes().size());  //This should be {'shape'}
+		for (Integer att : taxonVariation.getUsedAttributes()){
+			Assert.assertTrue("Found unexpected attribute " + u.getNodeName(att.intValue()),attNames.contains(u.getNodeName(att.intValue())));
+		}
 		assertFalse(taxonProfiles.isEmpty());
 		Assert.assertEquals(15,taxonProfiles.size()); //The taxonVariation table 'knows' where the variation is, but profiles not updated yet
 	}
@@ -685,24 +689,10 @@ public class TestPropTree3 {
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
 		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
 		assertFalse(taxonProfiles.isEmpty());
-		Assert.assertEquals(15,taxonProfiles.size()); //profiles before the flush includes all taxa
+		Assert.assertEquals("Count of taxa before flush",15,taxonProfiles.size()); //profiles before the flush includes all taxa
 		testAnalysis.flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
 		assertFalse(taxonProfiles.isEmpty());
-		Assert.assertEquals(3,taxonProfiles.size()); //profiles has now been trimmed to only those taxa with variation
-		Set<String>taxonUIDs = new HashSet<String>();
-		for (Integer taxon : taxonProfiles.keySet()){ 
-			taxonUIDs.add(u.getNodeUID(taxon));
-			Profile curProfile = taxonProfiles.get(taxon);
-			curProfile.getUsedEntities();
-			Iterator<Integer> e_Itr = curProfile.getUsedEntities().iterator();
-			assertTrue(e_Itr.hasNext());
-			Integer ent = e_Itr.next();
-			Assert.assertEquals("opercle", u.getNodeName(ent.intValue()));
-			Iterator<Integer> a_Itr = curProfile.getUsedAttributes().iterator();
-			assertTrue(a_Itr.hasNext());
-			Integer att = a_Itr.next();
-			Assert.assertEquals("shape", u.getNodeName(att.intValue()));
-		}
+		Assert.assertEquals("Count of taxa with variation",5,taxonProfiles.size()); //profiles has now been trimmed to only those taxa with variation
 	}
 
 	@Test
@@ -755,6 +745,7 @@ public class TestPropTree3 {
 
 	@Test
 	public void testFillCountTable() throws SQLException {
+		setupCountTableCheck();
 		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
 		HashMap<Integer,Profile>geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
 		CountTable counts = new CountTable();
@@ -764,7 +755,11 @@ public class TestPropTree3 {
 		testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		for(PhenotypeExpression p : counts.getPhenotypes()){
 			p.fillNames(u);
-			System.out.println("Phenotype: " + p.getFullName(u) + " count: " + counts.getRawCount(p));
+			Assert.assertNotNull("Full phenotype name",p.getFullName(u));
+			Assert.assertNotNull(countTableCheck);
+			Assert.assertNotNull("Count table does not contain: " + p.getFullName(u),countTableCheck.containsKey(p.getFullName(u)));
+			Assert.assertNotNull("Raw count of "+ p.getFullName(u) + " is null?",counts.getRawCount(p));
+			Assert.assertEquals(countTableCheck.get(p.getFullName(u)).intValue(),counts.getRawCount(p));
 		}
 	}
 
@@ -793,24 +788,117 @@ public class TestPropTree3 {
 	}
 
 	@Test
-	public void testWritePhenotypeMatchSummary() {
-		
+	public void testWritePhenotypeMatchSummary() throws SQLException {
+		t1.traverseOntologyTree(u);
+		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
+		testAnalysis.taxonProfiles= taxonProfiles;
+		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
+		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
+		assertFalse(taxonProfiles.isEmpty());
+		Assert.assertEquals(15,taxonProfiles.size()); //profiles before the flush includes all taxa
+		testAnalysis.flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
+		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
+		HashMap<Integer,Profile>geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
+		testAnalysis.geneProfiles= geneProfiles;
+		CountTable counts = new CountTable();
+		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
+		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
+		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
+		testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
 		fail("Not yet implemented");
 	}
 
-
-
+	
 	@Test
-	public void testCalcMaxIC() {
-		fail("Not yet implemented");
+	public void testCalcMaxIC() throws SQLException {
+		t1.traverseOntologyTree(u);
+		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
+		testAnalysis.taxonProfiles= taxonProfiles;
+		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
+		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
+		assertFalse(taxonProfiles.isEmpty());
+		Assert.assertEquals(15,taxonProfiles.size()); //profiles before the flush includes all taxa
+		testAnalysis.flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
+		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
+		HashMap<Integer,Profile>geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
+		testAnalysis.geneProfiles= geneProfiles;
+		CountTable counts = new CountTable();
+		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
+		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
+		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
+		testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
+		int order1ID = u.getIDFromName("Order 1");
+		int genus1ID = u.getIDFromName("Genus 1");
+		int genus2ID = u.getIDFromName("Genus 2");
+		int jag1bID = u.getIDFromName("jag1b");
+		int apcID = u.getIDFromName("apc");
+		
+		double maxICScore = testAnalysis.calcMaxIC(taxonProfiles.get(order1ID).getAllEAPhenotypes(),
+				                                   geneProfiles.get(jag1bID).getAllEAPhenotypes(),
+				                                   phenotypeScores);
+		System.out.println("maxICScore = " + maxICScore);
+		Assert.assertTrue("Expected " + IC3 + "; found " + maxICScore, softCompare(maxICScore,IC3));
+		
+		maxICScore = testAnalysis.calcMaxIC(taxonProfiles.get(order1ID).getAllEAPhenotypes(),
+				                            geneProfiles.get(apcID).getAllEAPhenotypes(),
+				                            phenotypeScores);
+		System.out.println("maxICScore = " + maxICScore);
+		Assert.assertTrue("Expected " + IC4 + "; found " + maxICScore,softCompare(maxICScore,IC4));
+	
 	}
-
+	
 	@Test
 	public void testCalcICCS() {
 		fail("Not yet implemented");
 	}
 
+
+	@Test
+	public void testProfileMatchReport() throws SQLException{
+	t1.traverseOntologyTree(u);
+	Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+	HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
+	testAnalysis.taxonProfiles= taxonProfiles;
+	final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
+	testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
+	assertFalse(taxonProfiles.isEmpty());
+	Assert.assertEquals(15,taxonProfiles.size()); //profiles before the flush includes all taxa
+	testAnalysis.flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
+	VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
+	HashMap<Integer,Profile>geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
+	testAnalysis.geneProfiles= geneProfiles;
+	CountTable counts = new CountTable();
+	Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
+	Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+	PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
+	testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
+	testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+	testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
+	testAnalysis.profileMatchReport(phenotypeScores, null, null, u);
+	}
+
+
+
+
+	/**
+	 * Compares double values to within a range of the expected value (avoiding exact comparison of doubles)
+	 * @param value
+	 * @param expected
+	 * @return
+	 */
+	private boolean softCompare(double value, double expected){
+		if ((value < 1.0001*expected) && (0.9999*expected < value))
+			return true;
+		return false;
+	}
 	
+
 	@After
 	public void tearDown() throws Exception {
 		u.closeKB();
