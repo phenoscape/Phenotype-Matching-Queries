@@ -936,7 +936,8 @@ public class TestPropTree1 {
 	testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 	testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 	testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
-	testAnalysis.profileMatchReport(phenotypeScores, null, null, u);
+	List<PhenotypeProfileAnalysis.PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(taxonProfiles,geneProfiles,phenotypeScores,u);
+	testAnalysis.profileMatchReport(phenotypeScores, pScores, null, u);
 	}
 
 

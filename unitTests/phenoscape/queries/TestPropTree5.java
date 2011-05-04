@@ -27,6 +27,7 @@ import phenoscape.queries.lib.DistinctGeneAnnotationRecord;
 import phenoscape.queries.lib.PhenotypeExpression;
 import phenoscape.queries.lib.PhenotypeScoreTable;
 import phenoscape.queries.lib.Profile;
+import phenoscape.queries.lib.ProfileScoreSet;
 import phenoscape.queries.lib.TaxonPhenotypeLink;
 import phenoscape.queries.lib.Utils;
 import phenoscape.queries.lib.VariationTable;
@@ -50,6 +51,7 @@ public class TestPropTree5 {
 	private static final String TAXON14STR = "TTO:0000014";
 
 	private final int genePhenotypeAnnotationCount = 23;   // True independent of the taxon data loaded
+	private final double IC1 = -1*(Math.log(1.0/(double)genePhenotypeAnnotationCount)/Math.log(2));
 	private final double IC3 = -1*(Math.log(3.0/(double)genePhenotypeAnnotationCount)/Math.log(2));
 	private final double IC4 = -1*(Math.log(4.0/(double)genePhenotypeAnnotationCount)/Math.log(2));
 
@@ -508,7 +510,7 @@ public class TestPropTree5 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(1,c.size());
+		Assert.assertEquals(2,c.size());
 
 		p.setString(1,TAXON5STR);
 		r = p.executeQuery();
@@ -521,7 +523,7 @@ public class TestPropTree5 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(2,c.size());
+		Assert.assertEquals(7,c.size());
 
 		p.setString(1,TAXON6STR);
 		r = p.executeQuery();
@@ -534,7 +536,7 @@ public class TestPropTree5 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(2,c.size());
+		Assert.assertEquals(6,c.size());
 
 		p.setString(1,TAXON7STR);
 		r = p.executeQuery();
@@ -583,7 +585,7 @@ public class TestPropTree5 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(1,c.size());
+		Assert.assertEquals(6,c.size());
 
 		p.setString(1,TAXON11STR);
 		r = p.executeQuery();
@@ -596,7 +598,7 @@ public class TestPropTree5 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(1,c.size());
+		Assert.assertEquals(6,c.size());
 
 		p.setString(1,TAXON12STR);
 		r = p.executeQuery();
@@ -609,7 +611,7 @@ public class TestPropTree5 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(1,c.size());
+		Assert.assertEquals(6,c.size());
 
 		p.setString(1,TAXON13STR);
 		r = p.executeQuery();
@@ -622,7 +624,7 @@ public class TestPropTree5 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(1,c.size());
+		Assert.assertEquals(5,c.size());
 		
 		p.setString(1,TAXON14STR);
 		r = p.executeQuery();
@@ -635,7 +637,7 @@ public class TestPropTree5 {
 		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
-		Assert.assertEquals(1,c.size());
+		Assert.assertEquals(5,c.size());
 		
 	}
 	
@@ -659,8 +661,8 @@ public class TestPropTree5 {
 		Assert.assertEquals(15, taxonProfiles.size());  //again, should be equal to the number of taxa
 	}
 	
-	final List<String>entityNames= Arrays.asList("body","opercle","pectoral fin");
-	final List<String>attNames= Arrays.asList("optical quality","shape","size");
+	final List<String>entityNames= Arrays.asList("body","opercle","pectoral fin","posterior region of frontal bone","process of anterior region of dentary","vertebra");
+	final List<String>attNames= Arrays.asList("optical quality","shape","size","count");
 	@Test
 	public void testTraverseTaxonomy() throws SQLException {
 		t1.traverseOntologyTree(u);
@@ -668,11 +670,11 @@ public class TestPropTree5 {
 		HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
 		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
-		Assert.assertEquals("Count of entities used",3,taxonVariation.getUsedEntities().size()); 
+		Assert.assertEquals("Count of entities used",6,taxonVariation.getUsedEntities().size()); 
 		for (Integer entity : taxonVariation.getUsedEntities()){
 			Assert.assertTrue("Found unexpected entity " + u.getNodeName(entity.intValue()),entityNames.contains(u.getNodeName(entity.intValue())));
 		}
-		Assert.assertEquals("Count of qualities used",3,taxonVariation.getUsedAttributes().size());  //This should be {'shape'}
+		Assert.assertEquals("Count of qualities used",4,taxonVariation.getUsedAttributes().size());  
 		for (Integer att : taxonVariation.getUsedAttributes()){
 			Assert.assertTrue("Found unexpected attribute " + u.getNodeName(att.intValue()),attNames.contains(u.getNodeName(att.intValue())));
 		}
@@ -692,7 +694,7 @@ public class TestPropTree5 {
 		Assert.assertEquals("Count of taxa before flush",15,taxonProfiles.size()); //profiles before the flush includes all taxa
 		testAnalysis.flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
 		assertFalse(taxonProfiles.isEmpty());
-		Assert.assertEquals("Count of taxa with variation",3,taxonProfiles.size()); //profiles has now been trimmed to only those taxa with variation
+		Assert.assertEquals("Count of taxa with variation",5,taxonProfiles.size()); //profiles has now been trimmed to only those taxa with variation
 	}
 
 	@Test
@@ -732,14 +734,6 @@ public class TestPropTree5 {
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
-//		for(PhenotypeExpression pe : phenotypeParentCache.keySet()){
-//			pe.fillNames(u);
-//			System.out.println("Expression is " + pe);
-//			for (PhenotypeExpression peParent : phenotypeParentCache.get(pe)){
-//				peParent.fillNames(u);
-//				System.out.println("  Parent is " + peParent);
-//			}
-//		}
 	}
 
 	@Test
@@ -789,7 +783,6 @@ public class TestPropTree5 {
 	}
 
 
-
 	@Test
 	public void testCalcMaxIC() throws SQLException {
 		t1.traverseOntologyTree(u);
@@ -827,7 +820,7 @@ public class TestPropTree5 {
 				                            geneProfiles.get(apcID).getAllEAPhenotypes(),
 				                            phenotypeScores);
 		System.out.println("maxICScore = " + maxICScore);
-		Assert.assertTrue("Expected " + IC4 + "; found " + maxICScore,softCompare(maxICScore,IC4));
+		Assert.assertTrue("Expected " + IC1 + "; found " + maxICScore,softCompare(maxICScore,IC1));
 	
 	}
 
@@ -836,8 +829,9 @@ public class TestPropTree5 {
 		fail("Not yet implemented");
 	}
 
+
 	@Test
-	public void testProfileMatchReport() throws SQLException{
+	public void testMatchOneProfilePair() throws SQLException{
 	t1.traverseOntologyTree(u);
 	Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
 	HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
@@ -857,7 +851,17 @@ public class TestPropTree5 {
 	testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 	testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 	testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
-	testAnalysis.profileMatchReport(phenotypeScores, null, null, u);
+	List<PhenotypeProfileAnalysis.PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(taxonProfiles,geneProfiles,phenotypeScores,u);
+	int order1ID = u.getIDFromName("Order 1");
+	int genus1ID = u.getIDFromName("Genus 1");
+	int genus2ID = u.getIDFromName("Genus 2");
+	int jag1bID = u.getIDFromName("jag1b");
+	int apcID = u.getIDFromName("apc");
+
+	ProfileScoreSet pSet = testAnalysis.matchOneProfilePair(order1ID,jag1bID,pScores,phenotypeScores);
+	Assert.assertEquals(IC3, pSet.getMaxICScore());
+	
+	//	testAnalysis.profileMatchReport(phenotypeScores, pScores, null, u);
 	}
 	
 	/**
