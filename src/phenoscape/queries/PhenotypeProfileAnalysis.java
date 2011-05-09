@@ -37,6 +37,7 @@ import java.util.TreeSet;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
+import org.phenoscape.obd.loader.Vocab;
 
 import phenoscape.queries.TaxonomyTree.TaxonomicNode;
 import phenoscape.queries.lib.CountTable;
@@ -182,6 +183,7 @@ public class PhenotypeProfileAnalysis {
 			phenoWriter = new BufferedWriter(new FileWriter(outFile3));
 			profileWriter = new BufferedWriter(new FileWriter(outFile4));
 			w5 = new BufferedWriter(new FileWriter(outFile5));
+			List<String> foo = Vocab.SYMMETRIC_QUALITIES;
 			u.writeOrDump(timeStamp, taxonWriter);
 			u.writeOrDump(timeStamp, geneWriter);
 			u.writeOrDump(timeStamp, phenoWriter);
@@ -412,8 +414,10 @@ public class PhenotypeProfileAnalysis {
 			allGenePhenotypes.addAll(eaPhenotypes);
 			geneProfileSizes.add(eaPhenotypes.size());
 		}
-		logger.info(u.listIntegerMembers(taxonProfileSizes));
-		logger.info(u.listIntegerMembers(geneProfileSizes));
+		logger.info("taxon profile sizes: " + u.listIntegerMembers(taxonProfileSizes));
+		logger.info("gene profile sizes: " +  u.listIntegerMembers(geneProfileSizes));
+		logger.info("Number of phenotypes in appended taxon profile: " + allTaxonPhenotypes.size());
+		logger.info("Number of phenotypes in appended gene profile: " + allGenePhenotypes.size());
 		for(Integer taxonSize : taxonProfileSizes){
 			for (Integer geneSize : geneProfileSizes){
 				logger.info("Permuting taxon profile of size: " + taxonSize + " against gene profile of size: " + geneSize);
