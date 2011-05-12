@@ -38,7 +38,7 @@ import phenoscape.queries.lib.VariationTable;
 
 public class TestPropTree1 {
 
-	
+
 	private static final String UNITTESTROOT = "TTO:0000015";	
 	private static final String UNITTESTKB = "unitTestconnection.properties"; 
 	private static final String TAXON1STR = "TTO:0000001";
@@ -55,13 +55,13 @@ public class TestPropTree1 {
 	private static final String TAXON12STR = "TTO:0000012";
 	private static final String TAXON13STR = "TTO:0000013";
 	private static final String TAXON14STR = "TTO:0000014";
-	
+
 	private final int genePhenotypeAnnotationCount = 23;   // True independent of the taxon data loaded
 	private final double IC3 = -1*(Math.log(3.0/(double)genePhenotypeAnnotationCount)/Math.log(2));
 	private final double IC4 = -1*(Math.log(4.0/(double)genePhenotypeAnnotationCount)/Math.log(2));
 
 
-	
+
 	PhenotypeProfileAnalysis testAnalysis;
 	Utils u = new Utils();
 	StringWriter testWriter1;
@@ -81,7 +81,7 @@ public class TestPropTree1 {
 		attMap = u.setupAttributes();
 		nodeIDofQuality = u.getQualityNodeID();
 		testAnalysis.attributeMap = u.setupAttributes();   // this is icky
-		
+
 		PhenotypeExpression.getEQTop(u);   //just to initialize early.
 
 		testAnalysis.attributeSet.addAll(testAnalysis.attributeMap.values());		
@@ -93,7 +93,7 @@ public class TestPropTree1 {
 		t1.traverseOntologyTree(u);
 	}
 
-	
+
 
 	private static final String NODEQUERY = "SELECT n.node_id FROM node AS n WHERE n.uid = ?";
 
@@ -103,7 +103,7 @@ public class TestPropTree1 {
 		ResultSet r;
 		Collection<TaxonPhenotypeLink> c;
 		PreparedStatement p = u.getPreparedStatement(NODEQUERY);
-		
+
 		p.setString(1,TAXON1STR);
 		r = p.executeQuery();
 		if (r.next()){
@@ -266,7 +266,7 @@ public class TestPropTree1 {
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
 		Assert.assertEquals(1,c.size());
-		
+
 		p.setString(1,TAXON14STR);
 		r = p.executeQuery();
 		if (r.next()){
@@ -279,10 +279,10 @@ public class TestPropTree1 {
 		assertNotNull(c);
 		assertFalse(c.isEmpty());
 		Assert.assertEquals(1,c.size());
-		
+
 	}
-	
-	
+
+
 	@Test
 	public void TestGetAllTaxonPhenotypeLinksFromKB() throws Exception{
 		Map<Integer,Set<TaxonPhenotypeLink>> links = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1, u);
@@ -292,7 +292,7 @@ public class TestPropTree1 {
 			assertNotNull(links.get(taxonID));
 		}
 	}
-	
+
 	@Test
 	public void testLoadTaxonProfiles() throws SQLException{
 		t1.traverseOntologyTree(u);
@@ -301,8 +301,8 @@ public class TestPropTree1 {
 		assertFalse(taxonProfiles.isEmpty());
 		Assert.assertEquals(15, taxonProfiles.size());  //again, should be equal to the number of taxa
 	}
-	
-	
+
+
 	@Test
 	public void testTraverseTaxonomy() throws SQLException {
 		t1.traverseOntologyTree(u);
@@ -324,7 +324,7 @@ public class TestPropTree1 {
 		Assert.assertEquals(15,taxonProfiles.size()); //The taxonVariation table 'knows' where the variation is, but profiles not updated yet
 	}
 
-	
+
 	@Test
 	public void testFlushUnvaryingPhenotypes() throws SQLException {
 		t1.traverseOntologyTree(u);
@@ -359,7 +359,7 @@ public class TestPropTree1 {
 		Assert.assertEquals(23,annotations.size());
 	}
 
-	
+
 	final List<String> geneNames = Arrays.asList("fgf8a","apa","alf","macf1","ugdh","lof","furina","jag1b","edn1","fgf24","cyp26b1","sec24d","apc","rnd","brpf1","shha","hen","sec23a","lama5");
 	@Test
 	public void testProcessGeneExpression() throws SQLException {
@@ -391,14 +391,14 @@ public class TestPropTree1 {
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
-//		for(PhenotypeExpression pe : phenotypeParentCache.keySet()){
-//			pe.fillNames(u);
-//			System.out.println("Expression is " + pe);
-//			for (PhenotypeExpression peParent : phenotypeParentCache.get(pe)){
-//				peParent.fillNames(u);
-//				System.out.println("  Parent is " + peParent);
-//			}
-//		}
+		//		for(PhenotypeExpression pe : phenotypeParentCache.keySet()){
+		//			pe.fillNames(u);
+		//			System.out.println("Expression is " + pe);
+		//			for (PhenotypeExpression peParent : phenotypeParentCache.get(pe)){
+		//				peParent.fillNames(u);
+		//				System.out.println("  Parent is " + peParent);
+		//			}
+		//		}
 	}
 
 
@@ -468,7 +468,6 @@ public class TestPropTree1 {
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
-		fail("Not yet implemented");
 	}
 
 
@@ -499,19 +498,19 @@ public class TestPropTree1 {
 		int genus2ID = u.getIDFromName("Genus 2");
 		int jag1bID = u.getIDFromName("jag1b");
 		int apcID = u.getIDFromName("apc");
-		
+
 		double maxICScore = testAnalysis.calcMaxIC(taxonProfiles.get(order1ID).getAllEAPhenotypes(),
-				                                   geneProfiles.get(jag1bID).getAllEAPhenotypes(),
-				                                   phenotypeScores);
+				geneProfiles.get(jag1bID).getAllEAPhenotypes(),
+				phenotypeScores);
 		System.out.println("maxICScore = " + maxICScore);
 		Assert.assertTrue("Expected " + IC3 + "; found " + maxICScore, softCompare(maxICScore,IC3));
-		
+
 		maxICScore = testAnalysis.calcMaxIC(taxonProfiles.get(order1ID).getAllEAPhenotypes(),
-				                            geneProfiles.get(apcID).getAllEAPhenotypes(),
-				                            phenotypeScores);
+				geneProfiles.get(apcID).getAllEAPhenotypes(),
+				phenotypeScores);
 		System.out.println("maxICScore = " + maxICScore);
 		Assert.assertTrue("Expected " + IC4 + "; found " + maxICScore,softCompare(maxICScore,IC4));
-	
+
 	}
 
 	@Test
@@ -541,40 +540,37 @@ public class TestPropTree1 {
 		int genus2ID = u.getIDFromName("Genus 2");
 		int jag1bID = u.getIDFromName("jag1b");
 		int apcID = u.getIDFromName("apc");
-		
+
 		double iccsScore = testAnalysis.calcICCS(taxonProfiles.get(order1ID), geneProfiles.get(jag1bID), phenotypeScores);
 		System.out.println("ICCS Score = " +  iccsScore);
 
 		iccsScore = testAnalysis.calcICCS(taxonProfiles.get(order1ID), geneProfiles.get(apcID), phenotypeScores);
 		System.out.println("ICCS Score = " +  iccsScore);
-		
-		
-		fail("Not yet implemented");
 	}
-	
+
 	@Test
 	public void testProfileMatchReport() throws SQLException{
-	t1.traverseOntologyTree(u);
-	Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
-	HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
-	testAnalysis.taxonProfiles= taxonProfiles;
-	final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
-	testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
-	assertFalse(taxonProfiles.isEmpty());
-	Assert.assertEquals(15,taxonProfiles.size()); //profiles before the flush includes all taxa
-	testAnalysis.flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
-	VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
-	HashMap<Integer,Profile>geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
-	testAnalysis.geneProfiles= geneProfiles;
-	CountTable counts = new CountTable();
-	Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
-	Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
-	PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
-	testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
-	testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
-	testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
-	List<PhenotypeProfileAnalysis.PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(taxonProfiles,geneProfiles,phenotypeScores,u);
-	testAnalysis.profileMatchReport(phenotypeScores, pScores, null, u);
+		t1.traverseOntologyTree(u);
+		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
+		testAnalysis.taxonProfiles= taxonProfiles;
+		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
+		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
+		assertFalse(taxonProfiles.isEmpty());
+		Assert.assertEquals(15,taxonProfiles.size()); //profiles before the flush includes all taxa
+		testAnalysis.flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
+		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
+		HashMap<Integer,Profile>geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
+		testAnalysis.geneProfiles= geneProfiles;
+		CountTable counts = new CountTable();
+		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
+		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
+		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
+		testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
+		List<PhenotypeProfileAnalysis.PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(taxonProfiles,geneProfiles,phenotypeScores,u);
+		testAnalysis.profileMatchReport(phenotypeScores, pScores, null, u);
 	}
 
 
@@ -589,8 +585,8 @@ public class TestPropTree1 {
 			return true;
 		return false;
 	}
-	
-	
+
+
 	@After
 	public void tearDown() throws Exception {
 		u.closeKB();
