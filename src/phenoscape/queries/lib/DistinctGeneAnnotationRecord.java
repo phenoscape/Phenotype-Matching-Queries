@@ -18,10 +18,14 @@ public class DistinctGeneAnnotationRecord {
 	private String phenotype_label;
 	private String entity_label;
 	private String quality_label;
-	
+	int relatedEntityNodeID;
+	String relatedEntityUID;
+	String relatedEntityLabel;
+
 	
 	private static final String GENEQUERY = 		
-		"SELECT gene_node_id, gene_uid, gene_label, dga.phenotype_node_id, p1.entity_node_id, p1.entity_uid, p1.quality_node_id, p1.quality_uid,p1.uid,simple_label(dga.phenotype_node_id), simple_label(p1.entity_node_id),simple_label(p1.quality_node_id) FROM distinct_gene_annotation AS dga " +
+		"SELECT gene_node_id, gene_uid, gene_label, dga.phenotype_node_id, p1.entity_node_id, p1.entity_uid, p1.quality_node_id, p1.quality_uid,p1.uid,simple_label(dga.phenotype_node_id), simple_label(p1.entity_node_id),simple_label(p1.quality_node_id),p1.related_entity_node_id, p1.related_entity_uid, simple_label(p1.related_entity_node_id) " +
+		"       FROM distinct_gene_annotation AS dga " +
 		"JOIN phenotype AS p1 ON (p1.node_id = dga.phenotype_node_id)";
 
 	
@@ -42,6 +46,9 @@ public class DistinctGeneAnnotationRecord {
 		phenotype_label = r.getString(10);
 		entity_label = r.getString(11);
 		quality_label = r.getString(12);
+		relatedEntityNodeID = r.getInt(13);
+		relatedEntityUID = r.getString(14);
+		relatedEntityLabel = r.getString(15);
 
 	}
 	
@@ -97,4 +104,16 @@ public class DistinctGeneAnnotationRecord {
 		return quality_label;
 	}
 	
+	public int getRelatedEntityNodeID(){
+		return relatedEntityNodeID;
+	}
+	
+	public String getRelatedEntityUID(){
+		return relatedEntityUID;
+	}
+	
+	public String getRelatedEntityLabel(){ 
+		return relatedEntityLabel;
+	}
+
 }

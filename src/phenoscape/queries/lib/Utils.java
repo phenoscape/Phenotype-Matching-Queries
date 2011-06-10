@@ -300,6 +300,22 @@ public class Utils {
 		}
 	}
 	
+	private final static String UIDQUERY = "select node.node_id FROM node WHERE node.uid = ?";
+	public int getOneUID(String uid) throws SQLException{
+		int result= -1;
+		PreparedStatement p1 = connection.prepareStatement(UIDQUERY);
+		p1.setString(1, uid);
+		ResultSet results = p1.executeQuery();
+		if (results.next()){
+			result = results.getInt(1);
+			return result;
+		}
+		else {
+			System.err.println("Failed to lookup " + uid);
+			return -1;
+		}
+	}
+
 	
 	/**
 	 * 

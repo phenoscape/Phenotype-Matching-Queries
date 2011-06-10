@@ -2,7 +2,6 @@ package phenoscape.queries.lib;
 
 import java.sql.SQLException;
 
-import org.phenoscape.obd.loader.Vocab;
 
 public class PhenotypeExpression {
 
@@ -145,35 +144,7 @@ public class PhenotypeExpression {
 		return (getEntity2() != VOIDENTITY);
 	}
 
-	public boolean hasSymmetricRelationalQuality(Utils u) throws SQLException{
-		String qualityUID = u.getNodeUID(quality);
-		if (qualityUID == null) {
-			if (!u.checkConnection()){
-				u.closeKB();
-				u.retryKB();
-			}
-			u.cacheOneNode(quality);
-			qualityUID = u.getNodeUID(quality);
-		}
-		return Vocab.SYMMETRIC_QUALITIES.contains(qualityUID);
-	}
 
-	/**
-	 * Returns a new phenotypeExpression that is the inverse of this, assuming one exists (symmetric relational quality and entity2 defined).
-	 * Note: this method and the one that follows only support inverses involving the same symmetric relational property, as defined in
-	 * the Vocab.SYMMETRIC_QUALITIES list defined in the phenoscapeDataLoader.  This means A attached_to B and B attached_to A are inverses,
-	 * but A posterior_to B and B anterior_to A are not recognized as inverses.
-	 * @param u passed through to hasSymmetricRelationalQuality
-	 * @return new PhenotypeExpression that represents the inverse of this
-	 * @throws SQLException
-	 */
-	public PhenotypeExpression getInverse(Utils u) throws SQLException{
-		if (!hasSymmetricRelationalQuality(u))
-			return null;
-		if (!hasSecondEntity())
-			return null;
-		return new PhenotypeExpression(getEntity2(),getQuality(),getEntity());
-	}
 
 	/**
 	 * Tests if the argument is the symmetric inverse phenotype (e.g. reversed entities, same symmetric relational quality) of this.

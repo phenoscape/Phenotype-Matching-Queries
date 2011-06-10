@@ -179,4 +179,11 @@ public class VariationTable {
 		return false;
 	}
 
+	public boolean geneExhibits(Integer ent, Integer att, Integer gene){
+		if (hasExhibitorSet(ent, att)){	
+			if (getExhibitorSet(ent,att).contains(gene))
+				return true;
+		}
+		return false;
+	}
 }

@@ -9,9 +9,11 @@ public class TaxonPhenotypeLink {
 //	"JOIN taxon ON (taxon.node_id = link.node_id AND taxon.node_id = ? AND link.predicate_id = (select node_id FROM node WHERE uid = 'PHENOSCAPE:exhibits'))" +
 //	"JOIN phenotype ON (link.object_id = phenotype.node_id) WHERE is_inferred = false";		
 
-	private static final String TAXONQUERY = "SELECT taxon.node_id,taxon.node_id, ata.phenotype_node_id,phenotype.entity_node_id, phenotype.entity_uid, phenotype.quality_node_id,phenotype.quality_uid,phenotype.uid,simple_label(phenotype.node_id),simple_label(phenotype.entity_node_id),simple_label(phenotype.quality_node_id) FROM asserted_taxon_annotation AS ata " +
-	"JOIN taxon ON (taxon.node_id = ata.taxon_node_id AND taxon.node_id = ?) " +
-	"JOIN phenotype ON (phenotype.node_id = ata.phenotype_node_id)";		
+	private static final String TAXONQUERY = 
+		"SELECT taxon.node_id,taxon.node_id, ata.phenotype_node_id,p1.entity_node_id, p1.entity_uid, p1.quality_node_id, p1.quality_uid, p1.uid,simple_label(p1.node_id),simple_label(p1.entity_node_id),simple_label(p1.quality_node_id), p1.related_entity_node_id, p1.related_entity_uid, simple_label(p1.related_entity_node_id)" +
+		"      FROM asserted_taxon_annotation AS ata " +
+	    "JOIN taxon ON (taxon.node_id = ata.taxon_node_id AND taxon.node_id = ?) " +
+	    "JOIN phenotype AS p1 ON (p1.node_id = ata.phenotype_node_id)";		
 	
 	
 	
@@ -26,6 +28,9 @@ public class TaxonPhenotypeLink {
 	String phenotypeLabel;
 	String entityLabel;
 	String qualityLabel;
+	int relatedEntityNodeID;
+	String relatedEntityUID;
+	String relatedEntityLabel;
 
 	public TaxonPhenotypeLink(){
 	}
@@ -42,6 +47,9 @@ public class TaxonPhenotypeLink {
 		phenotypeLabel = r.getString(9);
 		entityLabel = r.getString(10);
 		qualityLabel = r.getString(11);
+		relatedEntityNodeID = r.getInt(12);
+		relatedEntityUID = r.getString(13);
+		relatedEntityLabel = r.getString(14);
 	}
 
 	public static String getQuery(){
@@ -94,50 +102,17 @@ public class TaxonPhenotypeLink {
 		return qualityLabel;
 	}
 	
-	//
-	public void setTaxonNodeID(int id){
-		taxonNodeID = id;
+	public int getRelatedEntityNodeID(){
+		return relatedEntityNodeID;
 	}
-
-	public void setLinkNodeID(int id){
-		linkNodeID = id;
+	
+	public String getRelatedEntityUID(){
+		return relatedEntityUID;
 	}
-
-	public void setPhenotypeNodeID(int id){
-		phenotypeNodeID = id;
+	
+	public String getRelatedEntityLabel(){ 
+		return relatedEntityLabel;
 	}
-
-	public void setEntityNodeID(int id){
-		entityNodeID = id;
-	}
-
-	public void setEntityUID(String uid){
-		entityUID = uid; 
-	}
-
-	public void setQualityNodeID(int id){
-		qualityNodeID = id;
-	}
-
-	public void setQualityUID(String uid){
-		qualityUID = uid;
-	}
-
-	public void setPhenotypeUID(String uid){
-		phenotypeUID = uid;
-	}
-
-	public void setPhenotypeLabel(String label){
-		phenotypeLabel = label;
-	}
-
-	public void setEntityLabel(String label){
-		entityLabel = label;
-	}
-
-	public void setQualityLabel(String label){
-		qualityLabel = label;
-	}
-
+	
 
 }
