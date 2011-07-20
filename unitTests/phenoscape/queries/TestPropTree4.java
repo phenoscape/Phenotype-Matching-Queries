@@ -419,14 +419,16 @@ public class TestPropTree4 extends PropTreeTest{
 
 	@Test
 	public void testFillCountTable() throws SQLException {
+		t1.traverseOntologyTree(u);
+		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);
 		CountTableCheck countTableCheck = new CountTableCheck(u);
 		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
 		HashMap<Integer,Profile>geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
-		CountTable counts = new CountTable();
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
-		testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		CountTable counts = testAnalysis.fillCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		for(PhenotypeExpression p : counts.getPhenotypes()){
 			p.fillNames(u);
 			final String fullName = p.getFullName(u);
@@ -453,12 +455,11 @@ public class TestPropTree4 extends PropTreeTest{
 		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
 		HashMap<Integer,Profile>geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
 		testAnalysis.geneProfiles= geneProfiles;
-		CountTable counts = new CountTable();
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
-		testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		CountTable counts = testAnalysis.fillCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
 	}
 
@@ -475,13 +476,12 @@ public class TestPropTree4 extends PropTreeTest{
 		testAnalysis.flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
 		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
 		HashMap<Integer,Profile>geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
-		testAnalysis.geneProfiles= geneProfiles;
-		CountTable counts = new CountTable();
+		testAnalysis.geneProfiles = geneProfiles;
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
-		testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		CountTable counts = testAnalysis.fillCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
 	}
 
@@ -501,12 +501,11 @@ public class TestPropTree4 extends PropTreeTest{
 		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
 		HashMap<Integer,Profile>geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
 		testAnalysis.geneProfiles= geneProfiles;
-		CountTable counts = new CountTable();
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
-		testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		CountTable counts = testAnalysis.fillCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
 
 		initNames(u);
@@ -578,36 +577,6 @@ public class TestPropTree4 extends PropTreeTest{
 		Assert.assertTrue("Matching genus2 against jag1b; Expected " + IC3 + "; found " + maxICScore,softCompare(maxICScore,IC3));
 	}
 
-	@Test
-	public void testCalcICCS() throws SQLException {
-		t1.traverseOntologyTree(u);
-		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
-		HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);
-		testAnalysis.taxonProfiles= taxonProfiles;
-		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
-		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
-		assertFalse(taxonProfiles.isEmpty());
-		Assert.assertEquals(15,taxonProfiles.size()); //profiles before the flush includes all taxa
-		testAnalysis.flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
-		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
-		HashMap<Integer,Profile>geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
-		testAnalysis.geneProfiles= geneProfiles;
-		CountTable counts = new CountTable();
-		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
-		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
-		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
-		testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
-		testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
-		
-		initNames(u);
-
-		double iccsScore = testAnalysis.calcICCS(taxonProfiles.get(order1ID), geneProfiles.get(jag1bID), phenotypeScores);
-		System.out.println("ICCS Score = " +  iccsScore);
-
-		iccsScore = testAnalysis.calcICCS(taxonProfiles.get(order1ID), geneProfiles.get(apcID), phenotypeScores);
-		System.out.println("ICCS Score = " +  iccsScore);
-	}
 
 	@Test
 	public void testProfileMatchReport() throws SQLException{
@@ -623,264 +592,263 @@ public class TestPropTree4 extends PropTreeTest{
 		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
 		HashMap<Integer,Profile>geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
 		testAnalysis.geneProfiles= geneProfiles;
-		CountTable counts = new CountTable();
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
-		testAnalysis.fillCountTable(geneProfiles, counts, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		CountTable counts = testAnalysis.fillCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
 		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(taxonProfiles,geneProfiles,phenotypeScores,u);
 		
 		initNames(u);
 
 		// check genes against order1
-		ProfileScoreSet pSet = testAnalysis.matchOneProfilePair(order1ID,alfID,pScores,phenotypeScores);
+		ProfileScoreSet pSet = testAnalysis.matchOneProfilePair(order1ID,alfID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,apaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,apaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,apcID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,apcID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC4, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,cyp26b1ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,cyp26b1ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,edn1ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,edn1ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,fgf24ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,fgf24ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,furinaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,furinaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,henID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,henID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,jag1bID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,jag1bID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,lama5ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,lama5ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,lofID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,lofID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,rndID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,rndID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,sec23aID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,sec23aID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,sec24dID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,sec24dID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,shhaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,shhaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(order1ID,ugdhID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(order1ID,ugdhID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
 
 		// check genes against family1
-		pSet = testAnalysis.matchOneProfilePair(family1ID,jag1bID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,jag1bID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,apaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,apaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,apcID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,apcID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC1, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,cyp26b1ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,cyp26b1ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,edn1ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,edn1ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,fgf24ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,fgf24ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,furinaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,furinaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,henID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,henID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,jag1bID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,jag1bID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,lama5ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,lama5ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,lofID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,lofID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,rndID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,rndID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,sec23aID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,sec23aID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,sec24dID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,sec24dID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,shhaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,shhaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(family1ID,ugdhID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(family1ID,ugdhID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
 		
 		// check genes against genus1
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,jag1bID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,jag1bID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,apaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,apaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,apcID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,apcID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC1, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,cyp26b1ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,cyp26b1ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,edn1ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,edn1ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,fgf24ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,fgf24ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,furinaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,furinaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,henID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,henID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,jag1bID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,jag1bID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,lama5ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,lama5ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,lofID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,lofID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,rndID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,rndID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,sec23aID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,sec23aID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,sec24dID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,sec24dID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,shhaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,shhaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus1ID,ugdhID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus1ID,ugdhID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC12, pSet.getMaxICScore());
 
 		
 		// check genes against genus2
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,jag1bID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,jag1bID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,apaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,apaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,apcID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,apcID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC4, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,cyp26b1ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,cyp26b1ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,edn1ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,edn1ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,fgf24ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,fgf24ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,furinaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,furinaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,henID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,henID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,jag1bID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,jag1bID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,lama5ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,lama5ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,lofID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,lofID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,rndID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,rndID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,sec23aID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,sec23aID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,sec24dID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,sec24dID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,shhaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,shhaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus2ID,ugdhID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus2ID,ugdhID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
 		
 		// check genes against genus3
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,jag1bID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,jag1bID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,apaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,apaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC13, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,apcID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,apcID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC1, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,cyp26b1ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,cyp26b1ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC13, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,edn1ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,edn1ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,fgf24ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,fgf24ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC13, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,furinaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,furinaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,henID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,henID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC13, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,jag1bID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,jag1bID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC3, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,lama5ID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,lama5ID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC13, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,lofID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,lofID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC13, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,rndID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,rndID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC13, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,sec23aID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,sec23aID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC13, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,sec24dID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,sec24dID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC13, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,shhaID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,shhaID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC13, pSet.getMaxICScore());
 
-		pSet = testAnalysis.matchOneProfilePair(genus3ID,ugdhID,pScores,phenotypeScores);
+		pSet = testAnalysis.matchOneProfilePair(genus3ID,ugdhID,pScores,phenotypeScores, phenotypeParentCache, counts, u);
 		Assert.assertEquals(IC13, pSet.getMaxICScore());
 
 	}
@@ -961,16 +929,13 @@ public class TestPropTree4 extends PropTreeTest{
 
 		geneWriter.close();
 
-		CountTable phenotypeCountsForGenes = new CountTable();
-
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
 		/* Test introduction of phenotypeParentCache, which should map an attribute level EQ to all its parents via inheres_in_part_of entity parents and is_a quality parents (cross product) */
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 
-		testAnalysis.fillCountTable(testAnalysis.geneProfiles, phenotypeCountsForGenes,phenotypeParentCache, u, GENEPHENOTYPECOUNTQUERY, GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		CountTable phenotypeCountsToUse = testAnalysis.fillCountTable(testAnalysis.geneProfiles, testAnalysis.taxonProfiles,phenotypeParentCache, u, GENEPHENOTYPECOUNTQUERY, GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 
-		CountTable phenotypeCountsToUse = phenotypeCountsForGenes;
 
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 
@@ -985,7 +950,7 @@ public class TestPropTree4 extends PropTreeTest{
 		w5.close();
 		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(testAnalysis.taxonProfiles,testAnalysis.geneProfiles,phenotypeScores,u);
 		
-		testAnalysis.profileMatchReport(phenotypeScores,pScores,profileWriter,u);
+		testAnalysis.profileMatchReport(phenotypeScores,pScores,profileWriter,phenotypeParentCache, phenotypeCountsToUse, u);
 		profileWriter.close();
 		
 		taxonWriter.close();

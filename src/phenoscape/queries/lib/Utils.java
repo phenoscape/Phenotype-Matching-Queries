@@ -277,6 +277,7 @@ public class Utils {
 				if (entParentSet.isEmpty()){
 					throw new RuntimeException("empty parent set of " + getNodeName(entityID));
 				}
+				System.out.println(" >> Added parents to " + getNodeName(entityID));
 				result.put(entityID, entParentSet);
 			}
 		}

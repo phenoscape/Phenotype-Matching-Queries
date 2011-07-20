@@ -78,10 +78,8 @@ public class PhenotypeExpression {
 	public PhenotypeExpression(Integer q){
 		entity = VOIDENTITY;
 		quality = q.intValue();
-		int hc = HASHBASE;
-		hc = 31*HASHMULTIPLIER + entity;
-		hc = 31*HASHMULTIPLIER + quality;
-		hashCode = hc;
+		int hc = HASHBASE + quality;
+		hashCode = (int)(hc % Integer.MAX_VALUE);
 		entity2 = VOIDENTITY;
 		entity2Name = null;
 	}
@@ -90,9 +88,9 @@ public class PhenotypeExpression {
 		entity = VOIDENTITY;
 		quality = u.getQualityNodeID();
 		int hc = HASHBASE;
-		hc = 31*HASHMULTIPLIER + entity;
-		hc = 31*HASHMULTIPLIER + quality;
-		hashCode = hc;
+		hc = HASHMULTIPLIER*hc + entity;
+		hc = HASHMULTIPLIER*hc + quality;
+		hashCode = (int)(hc % Integer.MAX_VALUE);
 		qualityName = "Quality";
 		entity2 = VOIDENTITY;
 		entity2Name = null;
@@ -158,11 +156,19 @@ public class PhenotypeExpression {
 	}
 
 
-	public void fillNames(Utils u){
+	public void fillNames(Utils u) throws SQLException{
 		if (!isSimpleQuality()){
 			entityName = u.getNodeName(entity);
+			if (entityName == null){
+				u.cacheOneNode(entity);
+				entityName = u.getNodeName(entity);
+			}
 		}
 		qualityName = u.getNodeName(quality);
+		if (qualityName == null){
+			u.cacheOneNode(quality);
+			qualityName = u.getNodeName(quality);			
+		}
 	}
 
 	@Override
@@ -243,8 +249,5 @@ public class PhenotypeExpression {
 		}
 		return b.toString();
 	}
-
-
-
 
 }

@@ -55,6 +55,9 @@ public class CountTable {
 	}
 
 	public int getRawCount(PhenotypeExpression p){
+		if (!table.containsKey(p)){
+			throw new RuntimeException("Phenotype " + p + " had no count entry");
+		}
 		return table.get(p).intValue();
 	}
 

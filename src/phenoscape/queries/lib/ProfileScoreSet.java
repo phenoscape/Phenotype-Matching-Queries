@@ -1,6 +1,5 @@
 package phenoscape.queries.lib;
 
-import java.io.BufferedWriter;
 import java.io.Writer;
 import java.sql.SQLException;
 import java.util.HashSet;
@@ -85,12 +84,12 @@ public class ProfileScoreSet{
 	}
 	
 	public void writeScores(Utils u, Writer w){
-		u.writeOrDump(u.getNodeName(taxon) + "\t" + u.getNodeName(gene) + "\t" + taxonPhenotypes.size() + "\t" + genePhenotypes.size() + "\t" + maxICScore + "\t" + maxIC95 + "\t" + maxIC99 + "\t" + decile + "\t" +iccsScore,w);		
+		u.writeOrDump(u.getNodeName(taxon) + "\t" + u.getNodeName(gene) + "\t" + taxonPhenotypes.size() + "\t" + genePhenotypes.size() + "\t" + maxICScore + "\t" + maxIC95 + "\t" + maxIC99 + "\t" + decile + "\t" + iccsScore + "\t" + simJScore + "\t" + simICScore,w);		
 	}
 	
 	public void writeComplete(Utils u, Writer w) throws SQLException{
 		Set<PhenotypeExpression>used = new HashSet<PhenotypeExpression>();
-		u.writeOrDump(u.getNodeName(taxon) + "\t" + u.getNodeName(gene) + "\t\t\t" + maxICScore + "\t" + maxIC95 + "\t" + maxIC99 + "\t" + decile + "\t" + iccsScore,w);		
+		u.writeOrDump(u.getNodeName(taxon) + "\t" + u.getNodeName(gene) + "\t\t\t" + maxICScore + "\t" + maxIC95 + "\t" + maxIC99 + "\t" + decile + "\t" + iccsScore + "\t" + simJScore + "\t" + simICScore,w);		
 		for (PhenotypeExpression tph : taxonPhenotypes){
 			if (genePhenotypes.contains(tph))
 				u.writeOrDump("\t\t" + tph.getFullName(u) + "\t" + tph.getFullName(u), w);

@@ -51,7 +51,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -60,8 +59,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
@@ -72,6 +69,7 @@ import phenoscape.queries.lib.PhenotypeExpression;
 import phenoscape.queries.lib.PhenotypeScoreTable;
 import phenoscape.queries.lib.Profile;
 import phenoscape.queries.lib.ProfileScoreSet;
+import phenoscape.queries.lib.SimilarityCalculator;
 import phenoscape.queries.lib.TaxonPhenotypeLink;
 import phenoscape.queries.lib.Utils;
 import phenoscape.queries.lib.VariationTable;
@@ -102,7 +100,6 @@ public class PhenotypeProfileAnalysis {
 	public static final String RANDOMIZATIONREPORTSFOLDER = "../RandomizationReports";
 
 
-	private static final String SPATIALPOSTCOMPUIDPREFIX = "BSPO:";
 
 	static final String GENEPHENOTYPECOUNTQUERY =
 		"SELECT count(*) FROM distinct_gene_annotation  WHERE distinct_gene_annotation.phenotype_node_id IN " +
@@ -124,6 +121,10 @@ public class PhenotypeProfileAnalysis {
 
 	Map<Integer,Integer>childDist = new HashMap<Integer,Integer>();
 
+	//Map<Profile,Set<PhenotypeExpression>> taxonProfileParents = new HashMap<Profile,Set<PhenotypeExpression>>();
+	//Map<Profile,Set<PhenotypeExpression>> geneProfileParents = new HashMap<Profile,Set<PhenotypeExpression>>();
+	
+	
 
 	/**
 	 * This maps qualities to attributes
@@ -298,8 +299,6 @@ public class PhenotypeProfileAnalysis {
 
 		geneWriter.close();
 
-		CountTable phenotypeCountsForGenes = new CountTable();
-
 		logger.info("Building entity parents");
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
 		logger.info("Finished entity parents");
@@ -309,7 +308,7 @@ public class PhenotypeProfileAnalysis {
 		buildEQParents(phenotypeParentCache,entityParentCache,u);
 
 		logger.info("Filling count table");
-		fillCountTable(geneProfiles, phenotypeCountsForGenes,phenotypeParentCache, u, GENEPHENOTYPECOUNTQUERY, GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		CountTable phenotypeCountsForGenes = fillCountTable(geneProfiles, taxonProfiles,phenotypeParentCache, u, GENEPHENOTYPECOUNTQUERY, GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 
 		CountTable phenotypeCountsToUse = phenotypeCountsForGenes;
 
@@ -330,13 +329,14 @@ public class PhenotypeProfileAnalysis {
 		logger.info("Finished Writing maxIC for taxon/gene summary");		
 
 		logger.info("Calculating Profile Scores");
+		fillUnionSets(phenotypeParentCache);
 		List<PermutedProfileScore> pScores = calcPermutedProfileScores(taxonProfiles,geneProfiles,phenotypeScores,u);
 
 		for(PermutedProfileScore score : pScores){
 			score.writeDist(RANDOMIZATIONREPORTSFOLDER);
 		}
 		
-		profileMatchReport(phenotypeScores,pScores,w4,u);
+		profileMatchReport(phenotypeScores,pScores,w4,phenotypeParentCache,phenotypeCountsToUse,u);
 		w4.close();
 		
 		
@@ -363,15 +363,16 @@ public class PhenotypeProfileAnalysis {
 	 * @param phenotypeScores holds the IC scores for each pair of matchable phenotypes
 	 * @param w connected to the file to receive report, or null for console output
 	 * @param u just used for writing
+	 * @throws SQLException 
 	 */
-	void profileMatchReport(PhenotypeScoreTable phenotypeScores,List<PermutedProfileScore> pScores, Writer w, Utils u){
-		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t maxIC \t 95% \t 99%  \t decile \t iccs",w);
+	void profileMatchReport(PhenotypeScoreTable phenotypeScores,List<PermutedProfileScore> pScores, Writer w,Map<PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache,CountTable eaCounts, Utils u) throws SQLException{
+		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t maxIC \t 95% \t 99%  \t decile \t iccs \t simJ \t simIC",w);
 
 		long zeroCount = 0;
 		//u.writeOrDump("Sizes: Taxon profiles: " + taxonProfiles.keySet().size() + "; Gene profiles: " + geneProfiles.keySet().size(), null);
 		for(Integer currentTaxon : taxonProfiles.keySet()){
 			for(Integer currentGene : geneProfiles.keySet()){
-				ProfileScoreSet thisMatch = matchOneProfilePair(currentTaxon,currentGene,pScores,phenotypeScores);
+				ProfileScoreSet thisMatch = matchOneProfilePair(currentTaxon,currentGene,pScores,phenotypeScores,phenotypeParentCache,eaCounts,u);
 				if (thisMatch.isNonZero())
 					thisMatch.writeScores(u, w);
 				else
@@ -382,7 +383,7 @@ public class PhenotypeProfileAnalysis {
 
 	}
 	
-	ProfileScoreSet matchOneProfilePair(Integer taxon, Integer gene,List<PermutedProfileScore> pScores, PhenotypeScoreTable phenotypeScores){
+	ProfileScoreSet matchOneProfilePair(Integer taxon, Integer gene,List<PermutedProfileScore> pScores, PhenotypeScoreTable phenotypeScores,Map<PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, CountTable eaCounts, Utils u) throws SQLException{
 		final Profile taxonProfile = taxonProfiles.get(taxon);
 		final Profile geneProfile = geneProfiles.get(gene);
 		ProfileScoreSet result = new ProfileScoreSet(taxon, gene,taxonProfile.getAllEAPhenotypes(), geneProfile.getAllEAPhenotypes());
@@ -422,18 +423,23 @@ public class PhenotypeProfileAnalysis {
 			result.setDecile(10);
 		else result.setDecile(11);
 		
+		Set<PhenotypeExpression> taxonUnion = new HashSet<PhenotypeExpression>();
+		for(PhenotypeExpression e : taxonProfile.getAllEAPhenotypes()){
+			taxonUnion.addAll(phenotypeParentCache.get(e));
+		}
+		Set<PhenotypeExpression> geneUnion = new HashSet<PhenotypeExpression>();
+		for(PhenotypeExpression e : geneProfile.getAllEAPhenotypes()){
+			geneUnion.addAll(phenotypeParentCache.get(e));
+		}
 
-		//calculate ICCS score for this pair of profiles
-		double iccs = calcICCS(taxonProfile, geneProfile, phenotypeScores);
-		result.setICCSScore(iccs);
+		double icScore = SimilarityCalculator.maxIC(taxonUnion, geneUnion, eaCounts, u);
+		double iccsScore = SimilarityCalculator.iccs(taxonUnion,geneUnion,eaCounts,u);
+		double simJScore = SimilarityCalculator.simJ(taxonUnion,geneUnion,eaCounts,u);
+		double simICScore = SimilarityCalculator.simIC(taxonUnion, geneUnion, eaCounts, u);
+		result.setSimICScore(simICScore);
+		result.setICCSScore(iccsScore);
+		result.setSimJScore(simJScore);
 
-		//calculate simIC score for this pair of profiles
-		//double simICScore = calcSimIC(currentTaxonProfile, currentGeneProfile, phenotypeScores, phenotypeCountsToUse);
-		result.setSimICScore(-1.0);
-
-		//calculate simJ score for this pair of profiles
-		//double simJScore = calcSimJ(currentTaxonProfile, currentGeneProfile, phenotypeScores, phenotypeCountsToUse);
-		result.setSimJScore(-1.0);
 
 		return result;
 	}
@@ -561,86 +567,6 @@ public class PhenotypeProfileAnalysis {
 	}
 	
 	
-
-	/**
-	 * 
-	 * @param taxonProfile
-	 * @param geneProfile
-	 * @param phenotypeScores
-	 * @return
-	 */
-	double calcICCS(Profile taxonProfile, Profile geneProfile, PhenotypeScoreTable phenotypeScores){
-		List<Double> maxByTaxon = new ArrayList<Double>();
-		for (PhenotypeExpression  tPhenotype : taxonProfile.getAllEAPhenotypes()){
-			for (PhenotypeExpression  gPhenotype : geneProfile.getAllEAPhenotypes()){
-				double bestIC = 0.0;
-				for (Integer gEntity : geneProfile.getUsedEntities()){
-					if (phenotypeScores.hasScore(tPhenotype,gPhenotype)) {
-						if (phenotypeScores.getScore(tPhenotype,gPhenotype) > bestIC){
-							bestIC = phenotypeScores.getScore(tPhenotype,gPhenotype);
-						}
-					}
-				}
-				maxByTaxon.add(bestIC);
-			}
-		}
-		double sum =0;
-		for(Double s : maxByTaxon){
-			sum += s.doubleValue();
-		}
-		if (Double.isInfinite(sum))
-			return -1.0;
-		else
-			return sum/((double)maxByTaxon.size());
-
-	}
-
-	//	private double calcSimIC(Profile taxonProfile, Profile geneProfile, PhenotypeScoreTable phenotypeScores, CountTable phenotypeCounts){
-	//		double simICScore = 0;
-	//		double matchSum = 0;
-	//		double totalSum = 0;
-	//		for(Integer att : attributeSet){
-	//			for (Integer tEntity : taxonProfile.getUsedEntities()){
-	//				for (Integer gEntity : geneProfile.getUsedEntities()){
-	//					if(phenotypeScores.hasScore(tEntity, gEntity, att))
-	//						matchSum += phenotypeScores.getScore(tEntity, gEntity, att);
-	//				}
-	//			}
-	//			for (Integer tEntity : taxonProfile.getUsedEntities()){
-	//				totalSum += phenotypeCounts.getIC(tEntity, att);
-	//			}
-	//			for (Integer gEntity : geneProfile.getUsedEntities()){
-	//				totalSum += phenotypeCounts.getIC(gEntity,att);
-	//			}
-	//		}
-	//		if (totalSum == 0){
-	//			throw new RuntimeException("Unexpected value in simIC: matchSum = " + matchSum + "; totalSum = " + totalSum);
-	//		}
-	//		simICScore = matchSum/totalSum;
-	//		return simICScore;
-	//	}
-	//
-	//	private double calcSimJ(Profile taxonProfile, Profile geneProfile, PhenotypeScoreTable phenotypeScores, CountTable phenotypeCounts){
-	//		int matchCount = 0;
-	//		int totalCount = 0;
-	//		for(Integer att : attributeSet){
-	//			for (Integer tEntity : taxonProfile.getUsedEntities()){
-	//				for (Integer gEntity : geneProfile.getUsedEntities()){
-	//					if(phenotypeScores.hasScore(tEntity, gEntity, att))
-	//						matchCount++;
-	//				}
-	//			}
-	//			for (Integer tEntity : taxonProfile.getUsedEntities()){
-	//				if (phenotypeCounts.hasCount(tEntity, att))
-	//					totalCount++;
-	//			}
-	//			for (Integer gEntity : taxonProfile.getUsedEntities()){
-	//				if (phenotypeCounts.hasCount(gEntity, att))
-	//					totalCount++;
-	//			}
-	//		}
-	//		return ((double)matchCount)/((double)totalCount);	
-	//	}
 
 
 
@@ -1028,13 +954,14 @@ public class PhenotypeProfileAnalysis {
 	 * @param parents
 	 * @throws SQLException 
 	 */
-	void fillCountTable(Map<Integer,Profile> profiles, CountTable counts,Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, Utils u, String phenotypeQuery, String qualityQuery, int annotationCount) throws SQLException{
-		counts.setSum(annotationCount);
-		final PhenotypeExpression topEQ = PhenotypeExpression.getEQTop(u);
-		counts.addCount(topEQ, annotationCount);
+	CountTable fillCountTable(Map<Integer,Profile> countProfiles,Map<Integer,Profile> secondaryProfiles, Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, Utils u, String phenotypeQuery, String qualityQuery, int annotationCount) throws SQLException{
+		final CountTable result = new CountTable();
 		final PreparedStatement phenotypeStatement = u.getPreparedStatement(phenotypeQuery);
 		final PreparedStatement qualityStatement = u.getPreparedStatement(qualityQuery);
-		for(Profile currentProfile : profiles.values()){
+		final PhenotypeExpression topEQ = PhenotypeExpression.getEQTop(u);
+		result.addCount(topEQ, annotationCount);
+		result.setSum(annotationCount);
+		for(Profile currentProfile : countProfiles.values()){
 			Set <Integer> usedEntities = currentProfile.getUsedEntities();
 			Set <Integer> usedAttributes = currentProfile.getUsedAttributes();
 			for(Integer profileEntity : usedEntities){
@@ -1045,16 +972,18 @@ public class PhenotypeProfileAnalysis {
 						logger.error("The Phenotype " + curEQ + " seems to have no parents");
 					}
 					else {
-						//curEQ.fillNames(u);
-						//logger.info("Processing " + curEQ);
+						curEQ.fillNames(u);
+						System.out.println("Processing " + curEQ);
 						for(PhenotypeExpression phenotypeParent : allParents){
-							if (!counts.hasCount(phenotypeParent)){
+							if (!result.hasCount(phenotypeParent)){
 								if (phenotypeParent.isSimpleQuality()){
 									qualityStatement.setInt(1, phenotypeParent.getQuality());
 									ResultSet qResult = qualityStatement.executeQuery();
 									if(qResult.next()){
 										int count = qResult.getInt(1);
-										counts.addCount(phenotypeParent, count);
+										result.addCount(phenotypeParent, count);
+										phenotypeParent.fillNames(u);
+										//System.out.println(" ** Adding count to parent: " + phenotypeParent + "; count = " + count);
 									}
 									else {
 										throw new RuntimeException("count query failed for quality " + u.getNodeName(phenotypeParent.getQuality()));
@@ -1066,7 +995,9 @@ public class PhenotypeProfileAnalysis {
 									ResultSet eaResult = phenotypeStatement.executeQuery();
 									if(eaResult.next()){
 										int count = eaResult.getInt(1);
-										counts.addCount(phenotypeParent, count);
+										phenotypeParent.fillNames(u);
+										//System.out.println("  *** Adding count to parent: " + phenotypeParent + " adding count " + count);
+										result.addCount(phenotypeParent, count);
 									}
 									else {
 										throw new RuntimeException("count query failed for phenotype expression " + u.getNodeName(phenotypeParent.getEntity()) + " " + u.getNodeName(phenotypeParent.getQuality()));
@@ -1077,9 +1008,55 @@ public class PhenotypeProfileAnalysis {
 					}
 				}
 			}
-		}		
+		}
+		for(Profile currentProfile : secondaryProfiles.values()){
+			Set <Integer> usedEntities = currentProfile.getUsedEntities();
+			Set <Integer> usedAttributes = currentProfile.getUsedAttributes();
+			for(Integer profileEntity : usedEntities){
+				for (Integer curAttribute : usedAttributes){
+					PhenotypeExpression curEQ = new PhenotypeExpression(profileEntity,curAttribute);
+					Set<PhenotypeExpression> allParents = phenotypeParentCache.get(curEQ);
+					if (allParents == null){
+						logger.error("The Phenotype " + curEQ + " seems to have no parents");
+					}
+					else {
+						curEQ.fillNames(u);
+						System.out.println("Processing " + curEQ);
+						for(PhenotypeExpression phenotypeParent : allParents){
+							if (!result.hasCount(phenotypeParent)){
+								result.addCount(phenotypeParent,0);
+							}
+						}
+					}
+				}
+			}
+		}
+		return result;
 	}
 
+	/** 
+	 * This sets the unionset (all subsumers of all EA phenotypes) in each profile.  This is necessary for simIC and simJ statistics on profiles.
+	 */
+	void fillUnionSets(Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache){
+		for(Integer currentTaxon : taxonProfiles.keySet()){
+			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
+			Set <PhenotypeExpression> unionSet = new HashSet<PhenotypeExpression>();
+			for (PhenotypeExpression ea : currentTaxonProfile.getAllEAPhenotypes()){
+				Set<PhenotypeExpression> parents = phenotypeParentCache.get(ea);
+				unionSet.addAll(parents);
+			}
+			currentTaxonProfile.setUnionSet(unionSet);
+		}
+		for(Integer currentGene : geneProfiles.keySet()){
+			Profile currentGeneProfile = geneProfiles.get(currentGene);
+			Set <PhenotypeExpression> unionSet = new HashSet<PhenotypeExpression>();
+			for (PhenotypeExpression ea : currentGeneProfile.getAllEAPhenotypes()){
+				Set<PhenotypeExpression> parents = phenotypeParentCache.get(ea);
+				unionSet.addAll(parents);
+			}
+			currentGeneProfile.setUnionSet(unionSet);
+		}
+	}
 
 	/**
 	 * This is now correct - it calculates match scores of subsuming phenotypes where the quality is at the attribute level.
@@ -1095,6 +1072,7 @@ public class PhenotypeProfileAnalysis {
 		for(Integer currentTaxon : taxonProfiles.keySet()){
 			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
 			for (PhenotypeExpression tPhenotype : currentTaxonProfile.getAllEAPhenotypes()){
+				tPhenotype.fillNames(u);
 				Set<PhenotypeExpression> tParents = phenotypeParentCache.get(tPhenotype);
 				if (tParents == null){
 					throw new RuntimeException("parents of " + tPhenotype.getFullName(u) + " from " + u.getNodeName(currentTaxon) + " is null" );
@@ -1105,92 +1083,31 @@ public class PhenotypeProfileAnalysis {
 				for(Integer currentGene : geneProfiles.keySet()){
 					Profile currentGeneProfile = geneProfiles.get(currentGene);
 					for (PhenotypeExpression gPhenotype : currentGeneProfile.getAllEAPhenotypes()){
+						gPhenotype.fillNames(u);
 						Set<PhenotypeExpression> gParents = phenotypeParentCache.get(gPhenotype);
 
-						//u.writeOrDump("Checking taxon = " + u.getNodeName(currentTaxon) + " with " + u.getNodeName(curAtt) + " " + currentTaxonProfile.usesAttribute(curAtt) + " " + currentGeneProfile.usesAttribute(curAtt), null);
-						//u.writeOrDump("Processing taxon = " + u.getNodeName(currentTaxon) + " with " + u.getNodeName(curAtt), null);
 						if (!phenotypeScores.hasScore(tPhenotype,gPhenotype) && tPhenotype.getQuality() == gPhenotype.getQuality()){
-							Set<PhenotypeExpression>matches = new HashSet<PhenotypeExpression>();
-							matches.addAll(tParents);	// add the EQ parents of the EA level taxon phenotype
-							matches.retainAll(gParents);   // intersect the EQ parents of the gene phenotype, leaving intersection in matches
-
-							final Set<PhenotypeExpression> matchesCopy = new HashSet<PhenotypeExpression>();
-							matchesCopy.addAll(matches);
-							// filter out spatial postcompositions
-							for(PhenotypeExpression pe : matchesCopy){	
-								if (!pe.isSimpleQuality()){
-									if (u.getNodeUID(pe.getEntity()) == null){
-										u.cacheOneNode(pe.getEntity());
-									
-									}
-									final String eUID = u.getNodeUID(pe.getEntity()); 
-									//logger.info("Checking " + eUID);
-									if (eUID != null){
-										if (SPATIALPOSTCOMPUIDPREFIX.equals(eUID.substring(0,5))){
-											//logger.info("Supressing " + pe.getFullName(u) + " from intersection");
-											matches.remove(pe);
-										}
-									}
-									else {
-										logger.info("Found null entity: " + pe.getFullUID(u));
-									}
-								}
+					        logger.info("T Phenotype is " + tPhenotype.toString());
+					        for(PhenotypeExpression e : tParents){
+					        	//System.out.println("Parent is " + e);
+					        }
+					        logger.info("G Phenotype is " + gPhenotype.toString());
+					        for(PhenotypeExpression e : gParents){
+					        	e.fillNames(u);
+					        	//System.out.println("Parent is " + e);
+					        }
+							double icScore = SimilarityCalculator.maxIC(tParents,gParents,eaCounts,u);
+							PhenotypeExpression bestPhenotype = SimilarityCalculator.MICS(tParents,gParents,eaCounts,u);
+							if (icScore != eaCounts.getIC(bestPhenotype)){
+								throw new RuntimeException("IC value of bestPhenotype " + bestPhenotype + " not equal to icScore = " + icScore);
 							}
-							if (matches.isEmpty()){
-								u.writeOrDump("Taxon Parents", null);
-								for (PhenotypeExpression taxonP : tParents){
-									taxonP.fillNames(u);
-									u.writeOrDump(taxonP.getFullUID(u),null);
-								}
-								u.writeOrDump("Gene Parents", null);
-								for (PhenotypeExpression geneP : gParents){
-									geneP.fillNames(u);
-									u.writeOrDump(geneP.getFullUID(u),null);
-								}
-								throw new RuntimeException("Bad intersection");
-							}
-							int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
-							Set<PhenotypeExpression> bestEQSet = new HashSet<PhenotypeExpression>();
-							for(PhenotypeExpression eqM : matches){
-								if (eaCounts.hasCount(eqM)){    
-									int matchScore = eaCounts.getRawCount(eqM);
-									if (matchScore<bestMatch){
-										eqM.fillNames(u);
-										bestMatch = matchScore;
-										bestEQSet.clear();
-										bestEQSet.add(eqM);
-									}
-									else if (matchScore == bestMatch){
-										eqM.fillNames(u);
-										bestEQSet.add(eqM);
-									}
-									else if (matchScore < 0)
-										throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.getNodeName(eqM.getEntity()) + " " + u.getNodeName(eqM.getQuality()));
-								}
-								else {
-									throw new RuntimeException("eq has no score " + eqM.getFullName(u),null);
-								}
-							}
-							if (bestMatch<Double.MAX_VALUE && !bestEQSet.isEmpty()){
-								final SortedMap<String,PhenotypeExpression> sortedPhenotypes = new TreeMap<String,PhenotypeExpression>();
-								for (PhenotypeExpression eq : bestEQSet){
-									String eqName = eq.getFullName(u);
-									if (eqName == null){
-										eqName = eq.toString();
-									}
-									sortedPhenotypes.put(eqName,eq);
-								}
-								final String last = sortedPhenotypes.lastKey();
-								final PhenotypeExpression bestPhenotype = sortedPhenotypes.get(last);
-								phenotypeScores.addScore(tPhenotype,gPhenotype,eaCounts.getIC(bestPhenotype),bestPhenotype);
-							}
-							else{
-								u.writeOrDump("Intersection", null);
-								for (PhenotypeExpression shared : matches){
-									shared.fillNames(u);
-									u.writeOrDump(shared.getFullName(u),null);
-								}
-							}
+							double iccsScore = 0;
+							double simJScore = SimilarityCalculator.simJ(tParents,gParents,eaCounts,u);
+							double simICScore = SimilarityCalculator.simIC(tParents, gParents, eaCounts, u);
+							phenotypeScores.addScore(tPhenotype,gPhenotype,eaCounts.getIC(bestPhenotype),bestPhenotype);
+							phenotypeScores.setICCSScore(tPhenotype,gPhenotype,iccsScore);
+							phenotypeScores.setSimJScore(tPhenotype, gPhenotype, simJScore);
+							phenotypeScores.setSimICScore(tPhenotype, gPhenotype, simICScore);
 						}
 					}
 				}
@@ -1199,6 +1116,10 @@ public class PhenotypeProfileAnalysis {
 		return attOverlaps;
 	}
 
+	
+	
+	
+	
 	/**
 	 * 
 	 * @param phenotypeScores
@@ -1207,7 +1128,7 @@ public class PhenotypeProfileAnalysis {
 	 * @throws SQLException
 	 */
 	void writePhenotypeMatchSummary(PhenotypeScoreTable phenotypeScores,Utils u, Writer w) throws SQLException{
-		u.writeOrDump("Taxon\tGene\tTaxon Entity\tGeneEntity\tAttribute\tLowest Common Subsumer\tScore", w);
+		u.writeOrDump("Taxon\tGene\tTaxon Entity\tGeneEntity\tAttribute\tLowest Common Subsumer\tmaxIC\tICCS\tsimJ\tsimIC", w);
 		for(Integer currentTaxon : taxonProfiles.keySet()){
 			Profile currentTaxonProfile = taxonProfiles.get(currentTaxon);
 			for (PhenotypeExpression tPhenotype : currentTaxonProfile.getAllEAPhenotypes()){
@@ -1233,6 +1154,12 @@ public class PhenotypeProfileAnalysis {
 									lineBuilder.append(bestID);
 									lineBuilder.append("\t");
 									lineBuilder.append(phenotypeScores.getScore(tPhenotype, gPhenotype));
+									lineBuilder.append("\t");
+									lineBuilder.append(phenotypeScores.getICCSScore(tPhenotype, gPhenotype));
+									lineBuilder.append("\t");
+									lineBuilder.append(phenotypeScores.getSimJScore(tPhenotype, gPhenotype));
+									lineBuilder.append("\t");
+									lineBuilder.append(phenotypeScores.getSimICScore(tPhenotype, gPhenotype));
 									u.writeOrDump(lineBuilder.toString(),w);	
 								}
 							}
