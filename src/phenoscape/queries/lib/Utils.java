@@ -364,6 +364,18 @@ public class Utils {
 		return getCount(ASSERTEDGENEPHENOTYPECOUNTQUERY);	
 	}
 
+	private static final String ASSERTEDGENEENTITYCOUNTQUERY = "SELECT entity_node_id FROM distinct_gene_annotation";
+	public int countDistinctEntityPhenotypeAnnotations() throws SQLException {
+		Set<Integer> usedEntities = new HashSet<Integer>();
+		Statement s = getStatement();
+		ResultSet entities = s.executeQuery(ASSERTEDGENEENTITYCOUNTQUERY);
+		while(entities.next()){
+			int entityid = entities.getInt(1);
+			usedEntities.add(entityid);
+		}
+		return usedEntities.size();
+	}
+
 
 	private static final String QUALITYPARENTQUERY = 
 		"SELECT target.node_id FROM node AS quality " +
@@ -401,10 +413,7 @@ public class Utils {
 		else {
 			throw new RuntimeException("Count query failed");
 		}
-
 	}
-	
-
 	
 	/** PSQL support stuff   */
 	
@@ -493,6 +502,7 @@ public class Utils {
 	public PreparedStatement getPreparedStatement(String sqlStatement) throws SQLException{
 		return connection.prepareStatement(sqlStatement);
 	}
+
 
 
 

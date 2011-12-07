@@ -15,6 +15,8 @@ public class ProfileScoreSet{
 	private double iccsScore;
 	private double simICScore;
 	private double simJScore;
+	private double simGOSScore;
+	private double simNormGOSScore;
 	private Set<PhenotypeExpression> taxonPhenotypes;
 	private Set<PhenotypeExpression> genePhenotypes;
 	private int decile;
@@ -83,8 +85,50 @@ public class ProfileScoreSet{
 		return simJScore;
 	}
 	
+	public void setSimGOSScore(double score){
+		simGOSScore = score;
+	}
+
+	double getSimGOSScore(){
+		return simGOSScore;
+	}
+
+	public void setSimNormGOSScore(double score){
+		simNormGOSScore = score;
+	}
+
+	double getSimNormGOSScore(){
+		return simNormGOSScore;
+	}
+
 	public void writeScores(Utils u, Writer w){
-		u.writeOrDump(u.getNodeName(taxon) + "\t" + u.getNodeName(gene) + "\t" + taxonPhenotypes.size() + "\t" + genePhenotypes.size() + "\t" + maxICScore + "\t" + maxIC95 + "\t" + maxIC99 + "\t" + decile + "\t" + iccsScore + "\t" + simJScore + "\t" + simICScore,w);		
+		StringBuilder scores = new StringBuilder(400);
+		scores.append(u.getNodeName(taxon));
+		scores.append("\t");
+		scores.append(u.getNodeName(gene));
+		scores.append("\t");
+		scores.append(taxonPhenotypes.size());
+		scores.append("\t");
+		scores.append(genePhenotypes.size());
+		scores.append("\t");
+		scores.append(maxICScore);
+		scores.append("\t");
+		scores.append(maxIC95);
+		scores.append("\t");
+		scores.append(maxIC99);
+		scores.append("\t");
+		scores.append(decile);
+		scores.append("\t");
+		scores.append(iccsScore);
+		scores.append("\t");
+		scores.append(simJScore);
+		scores.append("\t");
+		scores.append(simICScore);
+		scores.append("\t");
+		scores.append(simGOSScore);
+		scores.append("\t");
+		scores.append(simNormGOSScore);
+		u.writeOrDump(scores.toString(),w);
 	}
 	
 	public void writeComplete(Utils u, Writer w) throws SQLException{

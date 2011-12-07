@@ -8,9 +8,10 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.commons.math.distribution.HypergeometricDistribution;
+import org.apache.commons.math.distribution.HypergeometricDistributionImpl;
 import org.apache.log4j.Logger;
 
-import phenoscape.queries.PhenotypeProfileAnalysis;
 
 public class SimilarityCalculator {
 
@@ -19,14 +20,32 @@ public class SimilarityCalculator {
 
 	static Logger logger = Logger.getLogger(SimilarityCalculator.class.getName());
 
+	final private Set<PhenotypeExpression>parents1;
+	final private Set<PhenotypeExpression>parents2;
+	private final Set<PhenotypeExpression>matchIntersection = new HashSet<PhenotypeExpression>();
+	private final Set<PhenotypeExpression>matchUnion = new HashSet<PhenotypeExpression>();
+	final private int annotationCount;
 	
-	static public double maxIC(Set<PhenotypeExpression> parents1, Set<PhenotypeExpression> parents2, CountTable eaCounts, Utils u) throws SQLException{
-		Set<PhenotypeExpression>matchIntersection = new HashSet<PhenotypeExpression>();
-		matchIntersection.addAll(parents1 );	// add the EQ parents of the EA level taxon phenotype
+	public SimilarityCalculator(Set<PhenotypeExpression> taxonPhenotypes, Set<PhenotypeExpression> genePhenotypes, long annotations, Utils u) throws SQLException{
+		if (annotations > Integer.MAX_VALUE){
+			throw new IllegalArgumentException("Annotation count too large for hypergeometric distribution: " + annotations);
+		}
+		parents1 = filterSpatialPostComps(taxonPhenotypes,u);
+		parents2 = filterSpatialPostComps(genePhenotypes,u);
+		matchIntersection.addAll(parents1);	// add the EQ parents of the EA level taxon phenotype
 		matchIntersection.retainAll(parents2);   // intersect the EQ parents of the gene phenotype, leaving intersection in matchIntersetcion
 				
-		matchIntersection = filterSpatialPostComps(matchIntersection, u);
+		matchUnion.addAll(parents1);
+		matchUnion.addAll(parents2);
+		annotationCount = (int)annotations;
 
+		for(PhenotypeExpression eqM : matchUnion){
+			eqM.fillNames(u);
+		}
+
+	}
+	
+	public double maxIC(Set<PhenotypeExpression> parents1, Set<PhenotypeExpression> parents2, CountTable eaCounts, Utils u) throws SQLException{
 		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
 		Set<PhenotypeExpression> bestEQSet = new HashSet<PhenotypeExpression>();
 		for(PhenotypeExpression eqM : matchIntersection){
@@ -62,13 +81,7 @@ public class SimilarityCalculator {
 		}
 	}
 	
-	static public PhenotypeExpression MICS(Set<PhenotypeExpression> parents1, Set<PhenotypeExpression> parents2, CountTable eaCounts, Utils u) throws SQLException{
-		Set<PhenotypeExpression>matchIntersection = new HashSet<PhenotypeExpression>();
-		matchIntersection.addAll(parents1);	// add the EQ parents of the EA level taxon phenotype
-		matchIntersection.retainAll(parents2);   // intersect the EQ parents of the gene phenotype, leaving intersection in matchIntersetcion
-		
-
-		matchIntersection = filterSpatialPostComps(matchIntersection,u);
+	public PhenotypeExpression MICS(Set<PhenotypeExpression> parents1, Set<PhenotypeExpression> parents2, CountTable eaCounts, Utils u) throws SQLException{
 		
 		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
 		Set<PhenotypeExpression> bestEQSet = new HashSet<PhenotypeExpression>();
@@ -123,7 +136,7 @@ public class SimilarityCalculator {
 	 * @return
 	 */
 	
-	static public double iccs(Set<PhenotypeExpression> parents1, Set<PhenotypeExpression> parents2, CountTable eaCounts, Utils u){
+	public double iccs(Set<PhenotypeExpression> parents1, Set<PhenotypeExpression> parents2, CountTable eaCounts, Utils u){
 		List<Double> maxByTaxon = new ArrayList<Double>();
 //		for (PhenotypeExpression  tPhenotype : parents1){
 //			for (PhenotypeExpression  gPhenotype : parents2){
@@ -142,7 +155,7 @@ public class SimilarityCalculator {
 		for(Double s : maxByTaxon){
 			sum += s.doubleValue();
 		}
-		if (Double.isInfinite(sum))
+		if (Double.isInfinite(sum) || true)
 			return -1.0;
 		else
 			return sum/((double)maxByTaxon.size());
@@ -152,32 +165,24 @@ public class SimilarityCalculator {
 
 	
 	
-	
-	static public double simJ(Set<PhenotypeExpression> parents1, Set<PhenotypeExpression> parents2, CountTable eaCounts, Utils u) throws SQLException{
-		Set<PhenotypeExpression>matchIntersection = new HashSet<PhenotypeExpression>();
-		matchIntersection.addAll(parents1);	// add the EQ parents of the EA level taxon phenotype
-		matchIntersection.retainAll(parents2);   // intersect the EQ parents of the gene phenotype, leaving intersection in matchIntersetcion
-		
-		Set<PhenotypeExpression>matchUnion = new HashSet<PhenotypeExpression>();  //The union is the set of all parents
-		matchUnion.addAll(parents1);
-		matchUnion.addAll(parents2);
-
-		for(PhenotypeExpression eqM : matchUnion){
-			eqM.fillNames(u);
-		}
-		
-		matchIntersection = filterSpatialPostComps(matchIntersection,u);
-		matchUnion = filterSpatialPostComps(matchUnion,u);
+	/**
+	 * 
+	 * @param u used to load names if errors are to be reported
+	 * @return simJ jacquard similarity metric for taxon and gene parents (induced by profiles or individual exhibitors)
+	 * @throws SQLException
+	 */
+	public double simJ(Utils u) throws SQLException{
 		if (matchIntersection.isEmpty()){
-			u.writeOrDump("Taxon Parents", null);
-			for (PhenotypeExpression taxonP : parents1 ){
+			logger.warn("No intersection between taxon and gene parents");
+			logger.info("Taxon Parents: ");
+			for (PhenotypeExpression taxonP : parents1){
 				taxonP.fillNames(u);
-				u.writeOrDump(taxonP.getFullUID(u),null);
+				logger.info(taxonP.getFullUID(u));
 			}
-			u.writeOrDump("Gene Parents", null);
+			logger.warn("Gene Parents: ");
 			for (PhenotypeExpression geneP : parents2){
 				geneP.fillNames(u);
-				u.writeOrDump(geneP.getFullUID(u),null);
+				logger.info(geneP.getFullUID(u));
 			}
 			throw new RuntimeException("Bad intersection");
 		}
@@ -185,32 +190,25 @@ public class SimilarityCalculator {
 
 	}
 	
-	static public double simIC(Set<PhenotypeExpression> parents1, Set<PhenotypeExpression> parents2, CountTable eaCounts, Utils u) throws SQLException{
-		Set<PhenotypeExpression>matchIntersection = new HashSet<PhenotypeExpression>();
-		matchIntersection.addAll(parents1);	// add the EQ parents of the EA level taxon phenotype
-		matchIntersection.retainAll(parents2);   // intersect the EQ parents of the gene phenotype, leaving intersection in matchIntersetcion
-		
-		Set<PhenotypeExpression>matchUnion = new HashSet<PhenotypeExpression>();  //The union is the set of all parents
-		matchUnion.addAll(parents1);
-		matchUnion.addAll(parents2);
-
-		for(PhenotypeExpression eqM : matchUnion){
-			eqM.fillNames(u);
-		}
-		
-		matchIntersection = filterSpatialPostComps(matchIntersection,u);
-		matchUnion = filterSpatialPostComps(matchUnion,u);
-
+	/**
+	 * 
+	 * @param eaCounts
+	 * @param u used to load names if errors are to be reported
+	 * @return simIC jacquard-like metric that uses sum of IC-values rather than simple counts from taxon and gene parents (induced by profiles or individual exhibitors)
+	 * @throws SQLException
+	 */
+	public double simIC(CountTable eaCounts, Utils u) throws SQLException{
 		if (matchIntersection.isEmpty()){
-			u.writeOrDump("Taxon Parents", null);
+			logger.warn("No intersection between taxon and gene parents");
+			logger.info("Taxon Parents: ");
 			for (PhenotypeExpression taxonP : parents1 ){
 				taxonP.fillNames(u);
-				u.writeOrDump(taxonP.getFullUID(u),null);
+				logger.info(taxonP.getFullUID(u));
 			}
-			u.writeOrDump("Gene Parents", null);
+			logger.info("Gene Parents: ");
 			for (PhenotypeExpression geneP : parents2){
 				geneP.fillNames(u);
-				u.writeOrDump(geneP.getFullUID(u),null);
+				logger.info(geneP.getFullUID(u));
 			}
 			throw new RuntimeException("Bad intersection");
 		}
@@ -224,9 +222,52 @@ public class SimilarityCalculator {
 				unionSum += eaCounts.getIC(e);
 		}
 		return intersectionSum/unionSum;
-
 	}
 
+	/**
+	 * simGOS metric suggested by T. Vision
+	 * @param xWeight
+	 * @return
+	 * @throws SQLException
+	 */
+	public double simGOS(double xWeight) throws SQLException {
+		final double cInt = (double)matchIntersection.size();
+		final double cUni = (double)matchUnion.size();
+		final double cTotal = cInt+cUni;
+		final double gos = -xWeight*Math.log((1-(cInt/cUni)) - (1-xWeight)*Math.log(cUni/cTotal));
+		return gos;
+	}
+
+	
+	/**
+	 * normalized version of simGOS metric suggested by T. Vision
+	 * @param xWeight
+	 * @return
+	 * @throws SQLException
+	 */
+	public double simNormGOS(double xWeight) throws SQLException {
+		double cInt = (double)matchIntersection.size();
+		double cUni = (double)matchUnion.size();
+		double cTotal = cInt+cUni;
+		double gos = -xWeight*Math.log((1-(cInt/cUni)) - (1-xWeight)*Math.log(cUni/cTotal));
+		double gosNorm = gos/(-Math.log(1/cTotal));
+		return gosNorm;
+	}
+
+	/**
+	 * 
+	 * @param x 
+	 * @return distribution probability that the number of shared parents is exactly the number observed (= size of intersection)
+	 */
+	public double simHypergeometric(){
+		int popSize = annotationCount;
+		int successes = parents1.size();    //taxon parent count
+		int sampleSize = parents2.size();   //gene parent count
+		HypergeometricDistribution hg = new HypergeometricDistributionImpl(popSize, successes, sampleSize);
+		return hg.probability(matchIntersection.size());    //maybe cumulativeProbablility() ?
+	}
+	
+	
 	
 	// filter out spatial postcompositions
 	private static Set<PhenotypeExpression> filterSpatialPostComps(Set<PhenotypeExpression> matchIntersection, Utils u) throws SQLException{
@@ -257,4 +298,5 @@ public class SimilarityCalculator {
 		return matchIntersection;
 
 	}
+
 }

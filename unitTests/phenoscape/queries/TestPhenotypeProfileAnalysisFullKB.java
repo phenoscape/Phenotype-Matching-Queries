@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import phenoscape.queries.lib.DistinctGeneAnnotationRecord;
 import phenoscape.queries.lib.Profile;
+import phenoscape.queries.lib.ProfileMap;
 import phenoscape.queries.lib.TaxonPhenotypeLink;
 import phenoscape.queries.lib.Utils;
 
@@ -107,7 +108,7 @@ public class TestPhenotypeProfileAnalysisFullKB {
 	@Test
 	public void testProcessTaxonVariation() throws SQLException {
 		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
-		HashMap<Integer,Profile>taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
+		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
 	}
 
 	@Test

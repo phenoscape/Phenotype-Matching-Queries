@@ -1,6 +1,5 @@
 package phenoscape.queries.lib;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -11,7 +10,7 @@ public class CountTable {
 	
 	private long sum;
 	
-	private Map<PhenotypeExpression,Integer>table = new HashMap<PhenotypeExpression,Integer>();  // entity -> (quality -> count)
+	private Map<PhenotypeExpression,Integer>table = new HashMap<PhenotypeExpression,Integer>();  // EQ -> count
 	
 
 	public void addCount(PhenotypeExpression p, int score){
