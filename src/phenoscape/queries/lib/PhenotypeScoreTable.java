@@ -87,6 +87,14 @@ public class PhenotypeScoreTable {
 		table.get(tPhenotype).get(gPhenotype).setSimNormGOSScore(score);
 	}
 	
+	public void setHypergeoScore(PhenotypeExpression tPhenotype,PhenotypeExpression gPhenotype, double score) {
+		 table.get(tPhenotype).get(gPhenotype).setHypergeoScore(score);
+	}
+	
+	public double getHypergeoScore(PhenotypeExpression tPhenotype, PhenotypeExpression gPhenotype, double score){
+		return table.get(tPhenotype).get(gPhenotype).getHypergeoScore();
+	}
+
 	
 	private static class Result {
 		double maxICScore;
@@ -95,6 +103,7 @@ public class PhenotypeScoreTable {
 		double simICScore;
 		double simGOSScore;
 		double simNormGOSScore;
+		double hypergeoScore;
 		PhenotypeExpression bestIC;
 
 		Result(Double sc, PhenotypeExpression bestPair){
@@ -102,6 +111,14 @@ public class PhenotypeScoreTable {
 			bestIC = bestPair;
 		}
 		
+		public double getHypergeoScore() {
+			return hypergeoScore;	
+		}
+
+		public void setHypergeoScore(double score) {
+			hypergeoScore = score;
+		}
+
 		double getMaxICScore(){
 			return maxICScore;
 		}
@@ -153,6 +170,8 @@ public class PhenotypeScoreTable {
 		}
 
 	}
+
+
 
 	
 }

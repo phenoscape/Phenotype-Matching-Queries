@@ -400,7 +400,7 @@ public class TestPhenotypeProfileAnalysis {
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
-		CountTable counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		CountTable <PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		for(PhenotypeExpression p : counts.getPhenotypes()){
 			p.fillNames(u);
 			System.out.println("Phenotype: " + p.getFullName(u) + " count: " + counts.getRawCount(p));

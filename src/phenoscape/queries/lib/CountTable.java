@@ -4,24 +4,24 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class CountTable {
+public class CountTable<E> {
 
 	final static double LOG2 = Math.log(2.0);
 	
 	private long sum;
 	
-	private Map<PhenotypeExpression,Integer>table = new HashMap<PhenotypeExpression,Integer>();  // EQ -> count
+	private Map<E,Integer>table = new HashMap<E,Integer>();  // EQ -> count
 	
 
-	public void addCount(PhenotypeExpression p, int score){
+	public void addCount(E p, int score){
 		table.put(p, score);
 	}
 
 	
-	public void addCount(Integer entity_id, Integer quality_id, int score){
-		PhenotypeExpression p = new PhenotypeExpression(entity_id,quality_id);
-		table.put(p, score);
-	}
+//	public void addCount(Integer entity_id, Integer quality_id, int score){
+//		PhenotypeExpression p = new PhenotypeExpression(entity_id,quality_id);
+//		table.put(p, score);
+//	}
 
 	public boolean isEmpty(){
 		return table.isEmpty();
@@ -33,50 +33,52 @@ public class CountTable {
 		return b.toString();
 	}
 	
-	public Set<PhenotypeExpression> getPhenotypes(){
+	
+	//this needs some checking...
+	public Set<E> getEntities(){
+		return table.keySet();
+	}
+	
+	public Set<E> getPhenotypes(){
 		return table.keySet();
 	}
 	
 
-	public  boolean hasCount(Integer entity, Integer quality){
-		PhenotypeExpression p = new PhenotypeExpression(entity,quality);
-		return table.containsKey(p);
-	}
+//	public  boolean hasCount(Integer entity, Integer quality){
+//		PhenotypeExpression p = new PhenotypeExpression(entity,quality);
+//		return table.containsKey(p);
+//	}
 
-	public boolean hasCount(PhenotypeExpression p){
+	public boolean hasCount(E p){
 		return table.containsKey(p);
 	}
 
 	
-	private int getRawCount(Integer entity, Integer quality){
-		PhenotypeExpression p = new PhenotypeExpression(entity,quality);
-		return table.get(p).intValue();
-	}
 
-	public int getRawCount(PhenotypeExpression p){
+	public int getRawCount(E p){
 		if (!table.containsKey(p)){
-			throw new RuntimeException("Phenotype " + p + " had no count entry");
+			throw new RuntimeException(p.getClass().toString() + ": " + p + " had no count entry");
 		}
 		return table.get(p).intValue();
 	}
 
 	
-	public double getFraction(PhenotypeExpression p){
+	public double getFraction(E p){
 		return ((double)getRawCount(p))/(double)sum;
 	}
 
-	private double getFraction(Integer entity, Integer quality){
-		PhenotypeExpression p = new PhenotypeExpression(entity,quality);
-		return ((double)getRawCount(p))/(double)sum;
-	}
+//	private double getFraction(Integer entity, Integer quality){
+//		PhenotypeExpression p = new PhenotypeExpression(entity,quality);
+//		return ((double)getRawCount(p))/(double)sum;
+//	}
 	
-	public double getIC(PhenotypeExpression p) {
+	public double getIC(E p) {
 		return -1*Math.log(getFraction(p))/LOG2;
 	}
 	
-	public  double getIC(Integer entity, Integer quality){
-		return -1*Math.log(getFraction(entity,quality))/LOG2;
-	}
+//	public  double getIC(Integer entity, Integer quality){
+//		return -1*Math.log(getFraction(entity,quality))/LOG2;
+//	}
 
 	public void setSum(long count){
 		sum = count;

@@ -405,7 +405,7 @@ public class TestPropTree3 extends PropTreeTest{
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
-		CountTable counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		CountTable<PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		for(PhenotypeExpression p : counts.getPhenotypes()){
 			p.fillNames(u);
 			final String fullName = p.getFullName(u);
@@ -517,12 +517,14 @@ public class TestPropTree3 extends PropTreeTest{
 		testAnalysis.geneProfiles= geneProfiles;
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		CountTable<Integer> entityCountsToUse = testAnalysis.fillEntityCountTable(testAnalysis.geneProfiles, testAnalysis.taxonProfiles, entityParentCache, u,testAnalysis.GENEENTITYCOUNTQUERY , u.countDistinctEntityPhenotypeAnnotations());
+
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
-		CountTable counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
+		CountTable<PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
 		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(taxonProfiles,geneProfiles,phenotypeScores,u);
-		testAnalysis.profileMatchReport(phenotypeScores, pScores, null, phenotypeParentCache, counts, u);
+		testAnalysis.profileMatchReport(phenotypeScores, pScores, null,entityParentCache, entityCountsToUse,phenotypeParentCache,  u);
 
 		initNames(u);
 
@@ -604,6 +606,8 @@ public class TestPropTree3 extends PropTreeTest{
 
 
 		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		CountTable<Integer> entityCountsToUse = testAnalysis.fillEntityCountTable(testAnalysis.geneProfiles, testAnalysis.taxonProfiles, entityParentCache, u,testAnalysis.GENEENTITYCOUNTQUERY , u.countDistinctEntityPhenotypeAnnotations());
+
 		/* Test introduction of phenotypeParentCache, which should map an attribute level EQ to all its parents via inheres_in_part_of entity parents and is_a quality parents (cross product) */
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
@@ -623,7 +627,7 @@ public class TestPropTree3 extends PropTreeTest{
 		w5.close();
 		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(testAnalysis.taxonProfiles,testAnalysis.geneProfiles,phenotypeScores,u);
 		
-		testAnalysis.profileMatchReport(phenotypeScores,pScores,profileWriter,phenotypeParentCache, phenotypeCountsToUse, u);
+		testAnalysis.profileMatchReport(phenotypeScores,pScores,profileWriter,entityParentCache, entityCountsToUse,phenotypeParentCache,  u);
 		profileWriter.close();
 		
 		taxonWriter.close();

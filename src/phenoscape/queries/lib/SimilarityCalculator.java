@@ -20,35 +20,81 @@ public class SimilarityCalculator {
 
 	static Logger logger = Logger.getLogger(SimilarityCalculator.class.getName());
 
-	final private Set<PhenotypeExpression>parents1;
-	final private Set<PhenotypeExpression>parents2;
-	private final Set<PhenotypeExpression>matchIntersection = new HashSet<PhenotypeExpression>();
-	private final Set<PhenotypeExpression>matchUnion = new HashSet<PhenotypeExpression>();
+	private Set<PhenotypeExpression>taxonPhenotypeParents = null;
+	private Set<PhenotypeExpression>genePhenotypeParents = null;
+	private final Set<PhenotypeExpression>phenotypeMatchIntersection = new HashSet<PhenotypeExpression>();
+	private final Set<PhenotypeExpression>phenotypeMatchUnion = new HashSet<PhenotypeExpression>();
+
+	//Entities are still just represented by their database ids
+	private Set<Integer>taxonEntityParents = null;
+	private Set<Integer>geneEntityParents = null;
+	private final Set<Integer>entityMatchIntersection = new HashSet<Integer>();
+	private final Set<Integer>entityMatchUnion = new HashSet<Integer>();
+	
+
 	final private int annotationCount;
 	
-	public SimilarityCalculator(Set<PhenotypeExpression> taxonPhenotypes, Set<PhenotypeExpression> genePhenotypes, long annotations, Utils u) throws SQLException{
+	
+	
+	//constructor is simplified - moving the initialization code to setters
+	public SimilarityCalculator(long annotations) throws SQLException{
 		if (annotations > Integer.MAX_VALUE){
 			throw new IllegalArgumentException("Annotation count too large for hypergeometric distribution: " + annotations);
 		}
-		parents1 = filterSpatialPostComps(taxonPhenotypes,u);
-		parents2 = filterSpatialPostComps(genePhenotypes,u);
-		matchIntersection.addAll(parents1);	// add the EQ parents of the EA level taxon phenotype
-		matchIntersection.retainAll(parents2);   // intersect the EQ parents of the gene phenotype, leaving intersection in matchIntersetcion
-				
-		matchUnion.addAll(parents1);
-		matchUnion.addAll(parents2);
 		annotationCount = (int)annotations;
 
-		for(PhenotypeExpression eqM : matchUnion){
-			eqM.fillNames(u);
-		}
-
 	}
+	
+	public void setTaxonPhenotypeParents(Set<PhenotypeExpression> tpp, Utils u) throws SQLException{
+		taxonPhenotypeParents = filterSpatialPostComps(tpp,u);
+		updatePhenotypeSets(u);
+	}
+	
+	public void setGenePhenotypeParents(Set<PhenotypeExpression> gpp, Utils u) throws SQLException{
+		genePhenotypeParents = filterSpatialPostComps(gpp,u);
+		updatePhenotypeSets(u);
+	}
+	
+	private void updatePhenotypeSets(Utils u) throws SQLException{
+		if (taxonPhenotypeParents != null && genePhenotypeParents != null){
+			phenotypeMatchIntersection.addAll(taxonPhenotypeParents);	// add the EQ parents of the EA level taxon phenotype
+			phenotypeMatchIntersection.retainAll(genePhenotypeParents);   // intersect the EQ parents of the gene phenotype, leaving intersection in matchIntersetcion
+			phenotypeMatchUnion.addAll(taxonPhenotypeParents);
+			phenotypeMatchUnion.addAll(genePhenotypeParents);
+			for(PhenotypeExpression eqM : phenotypeMatchUnion){
+				eqM.fillNames(u);
+			}
+
+		}
+	}
+	
+	public void setTaxonEntityParents(Set<Integer> tep, Utils u) throws SQLException{
+		taxonEntityParents = filterSpatialPostCompEntities(tep,u);
+		updateEntitySets(u);
+	}
+	
+	public void setGeneEntityParents(Set<Integer> gep, Utils u) throws SQLException{
+		geneEntityParents = filterSpatialPostCompEntities(gep,u);
+		updateEntitySets(u);
+	}
+	
+	private void updateEntitySets(Utils u) throws SQLException{
+		if (taxonEntityParents != null && geneEntityParents != null){
+			entityMatchIntersection.addAll(taxonEntityParents);	// add the EQ parents of the EA level taxon phenotype
+			entityMatchIntersection.retainAll(geneEntityParents);   // intersect the EQ parents of the gene phenotype, leaving intersection in matchIntersetcion
+			entityMatchUnion.addAll(taxonEntityParents);
+			entityMatchUnion.addAll(geneEntityParents);
+			for (Integer e : entityMatchUnion){
+				u.cacheOneNode(e);
+			}
+		}
+	}
+	
 	
 	public double maxIC(Set<PhenotypeExpression> parents1, Set<PhenotypeExpression> parents2, CountTable eaCounts, Utils u) throws SQLException{
 		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
 		Set<PhenotypeExpression> bestEQSet = new HashSet<PhenotypeExpression>();
-		for(PhenotypeExpression eqM : matchIntersection){
+		for(PhenotypeExpression eqM : phenotypeMatchIntersection){
 			if (eaCounts.hasCount(eqM)){    
 				int matchScore = eaCounts.getRawCount(eqM);
 				if (matchScore<bestMatch){
@@ -73,7 +119,7 @@ public class SimilarityCalculator {
 		}
 		else{
 			u.writeOrDump("Intersection", null);
-			for (PhenotypeExpression shared : matchIntersection){
+			for (PhenotypeExpression shared : phenotypeMatchIntersection){
 				shared.fillNames(u);
 				u.writeOrDump(shared.getFullName(u),null);
 			}
@@ -85,7 +131,7 @@ public class SimilarityCalculator {
 		
 		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
 		Set<PhenotypeExpression> bestEQSet = new HashSet<PhenotypeExpression>();
-		for(PhenotypeExpression eqM : matchIntersection){
+		for(PhenotypeExpression eqM : phenotypeMatchIntersection){
 			if (eaCounts.hasCount(eqM)){    
 				int matchScore = eaCounts.getRawCount(eqM);
 				if (matchScore<bestMatch){
@@ -120,7 +166,7 @@ public class SimilarityCalculator {
 		}
 		else{
 			u.writeOrDump("Intersection", null);
-			for (PhenotypeExpression shared : matchIntersection){
+			for (PhenotypeExpression shared : phenotypeMatchIntersection){
 				shared.fillNames(u);
 				u.writeOrDump(shared.getFullName(u),null);
 			}
@@ -172,21 +218,21 @@ public class SimilarityCalculator {
 	 * @throws SQLException
 	 */
 	public double simJ(Utils u) throws SQLException{
-		if (matchIntersection.isEmpty()){
+		if (phenotypeMatchIntersection.isEmpty()){
 			logger.warn("No intersection between taxon and gene parents");
 			logger.info("Taxon Parents: ");
-			for (PhenotypeExpression taxonP : parents1){
+			for (PhenotypeExpression taxonP : taxonPhenotypeParents){
 				taxonP.fillNames(u);
 				logger.info(taxonP.getFullUID(u));
 			}
 			logger.warn("Gene Parents: ");
-			for (PhenotypeExpression geneP : parents2){
+			for (PhenotypeExpression geneP : genePhenotypeParents){
 				geneP.fillNames(u);
 				logger.info(geneP.getFullUID(u));
 			}
 			throw new RuntimeException("Bad intersection");
 		}
-		return ((double)matchIntersection.size())/(double)matchUnion.size();
+		return ((double)phenotypeMatchIntersection.size())/(double)phenotypeMatchUnion.size();
 
 	}
 	
@@ -198,26 +244,26 @@ public class SimilarityCalculator {
 	 * @throws SQLException
 	 */
 	public double simIC(CountTable eaCounts, Utils u) throws SQLException{
-		if (matchIntersection.isEmpty()){
+		if (phenotypeMatchIntersection.isEmpty()){
 			logger.warn("No intersection between taxon and gene parents");
 			logger.info("Taxon Parents: ");
-			for (PhenotypeExpression taxonP : parents1 ){
+			for (PhenotypeExpression taxonP : taxonPhenotypeParents ){
 				taxonP.fillNames(u);
 				logger.info(taxonP.getFullUID(u));
 			}
 			logger.info("Gene Parents: ");
-			for (PhenotypeExpression geneP : parents2){
+			for (PhenotypeExpression geneP : genePhenotypeParents){
 				geneP.fillNames(u);
 				logger.info(geneP.getFullUID(u));
 			}
 			throw new RuntimeException("Bad intersection");
 		}
 		double intersectionSum = 0.0;
-		for(PhenotypeExpression e : matchIntersection){
+		for(PhenotypeExpression e : phenotypeMatchIntersection){
 			intersectionSum += eaCounts.getIC(e);
 		}
 		double unionSum = 0.0;
-		for(PhenotypeExpression e : matchUnion){
+		for(PhenotypeExpression e : phenotypeMatchUnion){
 			if (eaCounts.getRawCount(e) > 0)
 				unionSum += eaCounts.getIC(e);
 		}
@@ -231,8 +277,8 @@ public class SimilarityCalculator {
 	 * @throws SQLException
 	 */
 	public double simGOS(double xWeight) throws SQLException {
-		final double cInt = (double)matchIntersection.size();
-		final double cUni = (double)matchUnion.size();
+		final double cInt = (double)phenotypeMatchIntersection.size();
+		final double cUni = (double)phenotypeMatchUnion.size();
 		final double cTotal = cInt+cUni;
 		final double gos = -xWeight*Math.log((1-(cInt/cUni)) - (1-xWeight)*Math.log(cUni/cTotal));
 		return gos;
@@ -246,8 +292,8 @@ public class SimilarityCalculator {
 	 * @throws SQLException
 	 */
 	public double simNormGOS(double xWeight) throws SQLException {
-		double cInt = (double)matchIntersection.size();
-		double cUni = (double)matchUnion.size();
+		double cInt = (double)phenotypeMatchIntersection.size();
+		double cUni = (double)phenotypeMatchUnion.size();
 		double cTotal = cInt+cUni;
 		double gos = -xWeight*Math.log((1-(cInt/cUni)) - (1-xWeight)*Math.log(cUni/cTotal));
 		double gosNorm = gos/(-Math.log(1/cTotal));
@@ -259,12 +305,12 @@ public class SimilarityCalculator {
 	 * @param x 
 	 * @return distribution probability that the number of shared parents is exactly the number observed (= size of intersection)
 	 */
-	public double simHypergeometric(){
+	public double simHyperSS(){
 		int popSize = annotationCount;
-		int successes = parents1.size();    //taxon parent count
-		int sampleSize = parents2.size();   //gene parent count
+		int successes = taxonPhenotypeParents.size();    //taxon parent count
+		int sampleSize = genePhenotypeParents.size();   //gene parent count
 		HypergeometricDistribution hg = new HypergeometricDistributionImpl(popSize, successes, sampleSize);
-		return hg.probability(matchIntersection.size());    //maybe cumulativeProbablility() ?
+		return hg.probability(phenotypeMatchIntersection.size());    //maybe cumulativeProbablility() ?
 	}
 	
 	
@@ -296,7 +342,30 @@ public class SimilarityCalculator {
 			throw new RuntimeException("Bad intersection");
 		}
 		return matchIntersection;
-
 	}
 
+	// filter out spatial postcompositions
+	private static Set<Integer> filterSpatialPostCompEntities(Set<Integer> matchIntersection, Utils u) throws SQLException{
+		final Set<Integer> matchesCopy = new HashSet<Integer>();
+		matchesCopy.addAll(matchIntersection);
+		for(Integer e : matchesCopy){	
+			final String eUID = u.getNodeUID(e); 
+			//logger.info("Checking " + eUID);
+			if (eUID != null){
+				if (SPATIALPOSTCOMPUIDPREFIX.equals(eUID.substring(0,5))){
+					//logger.info("Supressing " + pe.getFullName(u) + " from intersection");
+					matchIntersection.remove(e);
+				}
+			}
+			else {
+				logger.info("Entity id had no UID: " + e);
+			}
+		}
+		if (matchIntersection.isEmpty()){
+			throw new RuntimeException("Bad intersection");
+		}
+		return matchIntersection;
+	}
+
+	
 }
