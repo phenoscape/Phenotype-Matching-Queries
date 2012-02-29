@@ -1,7 +1,8 @@
 package phenoscape.queries;
 
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 import java.io.StringWriter;
 import java.sql.PreparedStatement;
@@ -19,15 +20,14 @@ import org.junit.Before;
 import org.junit.Test;
 
 import phenoscape.queries.lib.DistinctGeneAnnotationRecord;
-import phenoscape.queries.lib.Profile;
 import phenoscape.queries.lib.ProfileMap;
 import phenoscape.queries.lib.TaxonPhenotypeLink;
 import phenoscape.queries.lib.Utils;
 
 public class TestPhenotypeProfileAnalysisFullKB {
 
-	private static final String OSTARIOCLUPEOMORPHAROOT = "TTO:253";	
-	private static final String FULLKBCONNECTION = "stagingconnection.properties"; 
+	//private static final String OSTARIOCLUPEOMORPHAROOT = "TTO:253";	
+	//private static final String FULLKBCONNECTION = "stagingconnection.properties"; 
 	private static final String ASPIDORASALBATERNODESTR = "TTO:1004787";
 	private static final String ASPIDORASROOT = "TTO:105426";
 
@@ -109,6 +109,7 @@ public class TestPhenotypeProfileAnalysisFullKB {
 	public void testProcessTaxonVariation() throws SQLException {
 		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
 		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badQualities);
+		assertFalse(taxonProfiles.isEmpty());
 	}
 
 	@Test

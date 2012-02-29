@@ -38,10 +38,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 import phenoscape.queries.lib.Match;
@@ -88,9 +86,9 @@ public class KBTestQuery {
 				final int qualityID = rs1.getInt(11);			//quality_id
 				final String qualityUID = rs1.getString(12);	//quality_uid
 				final String qualityLabel = rs1.getString(13);	//quality_label
-				final int relatedID = rs1.getInt(14);			//related_entity_node_id
-				final String relatedUID = rs1.getString(15);	//related_entity_uid
-				final String relatedLabel = rs1.getString(16);	//related_entity_label
+//				final int relatedID = rs1.getInt(14);			//related_entity_node_id
+//				final String relatedUID = rs1.getString(15);	//related_entity_uid
+//				final String relatedLabel = rs1.getString(16);	//related_entity_label
 				genePhenos.add(PhenoRec.makeGenePheno(geneID,
 						phenotypeID,
 						phenotypeUID,

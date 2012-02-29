@@ -1,11 +1,8 @@
 package phenoscape.queries;
 
-import static org.junit.Assert.*;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,7 +29,8 @@ public class TestTaxonomyTreeFullKB {
 	"JOIN taxon AS t ON (t.node_id = n.node_id) "+
 	"WHERE (n.uid = ?)";
 
-	TaxonomyTree t1;
+	private TaxonomyTree t1;
+	private TaxonomyTree t2;
 	
 	@Before
 	public void setUp() throws Exception {
@@ -51,6 +49,8 @@ public class TestTaxonomyTreeFullKB {
 		}
 		t1 = new TaxonomyTree(ASPIDORASROOT,u);
 		t1.traverseOntologyTree(u);
+		t2 = new TaxonomyTree(OSTARIOPHYSIROOT,u);
+		t2.traverseOntologyTree(u);
 	}
 
 	@Test
@@ -72,6 +72,8 @@ public class TestTaxonomyTreeFullKB {
 	public void testGetRootNodeID() {
 		Integer rootNode = t1.getRootNodeID();
 		Assert.assertEquals(aspidorasrootnode, rootNode.intValue());
+		rootNode = t2.getRootNodeID();
+		Assert.assertEquals(ostariophysirootnode, rootNode.intValue());
 	}
 
 	@Test

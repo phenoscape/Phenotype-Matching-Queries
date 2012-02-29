@@ -1,7 +1,5 @@
 package phenoscape.queries.lib;
 
-import static org.junit.Assert.*;
-
 import java.sql.SQLException;
 
 import org.junit.After;

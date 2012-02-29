@@ -1,6 +1,5 @@
 package phenoscape.queries.lib;
 
-import java.io.BufferedWriter;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.HashSet;

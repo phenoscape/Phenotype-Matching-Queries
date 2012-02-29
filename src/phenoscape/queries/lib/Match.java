@@ -1,7 +1,5 @@
 package phenoscape.queries.lib;
 
-import java.util.Formatter;
-import java.util.Locale;
 
 public class Match {
 	

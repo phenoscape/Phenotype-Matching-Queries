@@ -1,7 +1,5 @@
 package phenoscape.queries.lib;
 
-import static org.junit.Assert.*;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,6 +27,7 @@ public class TestPhenotypeExpression {
 	
 	@Test (expected = IllegalArgumentException.class) public void testBadEntityConstructor(){
 		PhenotypeExpression test = new PhenotypeExpression(-1006,70);
+		Assert.assertNotNull(test);		
 	}
 
 	@Test (expected = IllegalArgumentException.class) public void testBadQualityConstructor(){
@@ -99,9 +98,11 @@ public class TestPhenotypeExpression {
 		Assert.assertFalse(test4.hashCode() == test2.hashCode());
 		Assert.assertFalse(test4.hashCode() == test3.hashCode());
 		Assert.assertTrue(test1.hashCode() == test1.hashCode());
+		Assert.assertTrue(test1.hashCode() == test1b.hashCode());
 		Assert.assertTrue(test2.hashCode() == test2.hashCode());
 		Assert.assertTrue(test3.hashCode() == test3.hashCode());
 		Assert.assertTrue(test4.hashCode() == test4.hashCode());
+		Assert.assertTrue(test4.hashCode() == test4b.hashCode());
 	}
 
 	@Test

@@ -1,11 +1,8 @@
 package phenoscape.queries;
 
-import static org.junit.Assert.*;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 

@@ -7,7 +7,6 @@ enum ExhibitorType{
 
 
 public class PhenoRec {
-	final private ExhibitorType myType;
 	final private int exhibitorNode;
 	final private int phenoNode;
 	final private String phenoUID;
@@ -19,8 +18,7 @@ public class PhenoRec {
 
 
 
-	private PhenoRec(ExhibitorType mt, int node, int phenoNodeG, String pheno_uid, int phenoEntityNode, String entity_uid, int quality_node_id, String quality_uid){
-		myType = mt;
+	private PhenoRec(int node, int phenoNodeG, String pheno_uid, int phenoEntityNode, String entity_uid, int quality_node_id, String quality_uid){
 		exhibitorNode = node;
 		phenoNode = phenoNodeG;
 		phenoUID = pheno_uid;
@@ -32,11 +30,11 @@ public class PhenoRec {
 
 
 	public static PhenoRec makeGenePheno(int node, int phenoNode, String pheno_uid, int phenoEntityNode, String entity_uid, int quality_node_id, String quality_uid){
-		return new PhenoRec(ExhibitorType.GENE, node, phenoNode, pheno_uid, phenoEntityNode, entity_uid, quality_node_id, quality_uid);
+		return new PhenoRec(node, phenoNode, pheno_uid, phenoEntityNode, entity_uid, quality_node_id, quality_uid);
 	}
 
 	public static PhenoRec makeTaxonPheno(int node, int phenoNode, String pheno_uid, int phenoEntityNode, String entity_uid, int quality_node_id, String quality_uid){
-		return new PhenoRec(ExhibitorType.TAXON, node, phenoNode, pheno_uid, phenoEntityNode, entity_uid, quality_node_id, quality_uid);
+		return new PhenoRec(node, phenoNode, pheno_uid, phenoEntityNode, entity_uid, quality_node_id, quality_uid);
 	}
 
 

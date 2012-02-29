@@ -178,11 +178,19 @@ public class PhenotypeExpression {
 			b.append("Subsuming Quality: ");
 			b.append(quality);
 		}
+		else if (getEntity2() == VOIDENTITY){
+			b.append("Phenotype expression; E: ");
+			b.append(entityName);
+			b.append(" Q: ");
+			b.append(qualityName);
+		}
 		else{
 			b.append("Phenotype expression; E: ");
 			b.append(entityName);
 			b.append(" Q: ");
 			b.append(qualityName);
+			b.append(" E2: ");
+			b.append(entity2Name);
 		}
 		return b.toString();
 	}

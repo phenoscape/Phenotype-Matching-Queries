@@ -74,6 +74,7 @@ public class TestUtils {
 			fail("Couldn't retreive node id for 'shape'");
 		}
 		Set <Integer> shapeParents = u.collectQualityParents(shapeNodeID);
+		assertFalse(shapeParents.size() == 0);
 	}
 
 	

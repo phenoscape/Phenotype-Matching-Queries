@@ -110,7 +110,7 @@ public class TaxonomyTree {
 			if (!u.hasNodeName(childID)){
 				final String childUID = child.getUID();
 				final String childName = child.getLabel();
-				u.putNodeUIDName(childID,child.getUID(),child.getLabel());
+				u.putNodeUIDName(childID,childUID,childName);
 				if (child.getExtinct())
 					extinctCounter++;
 				final String rankLabel = child.getRank();
@@ -181,7 +181,7 @@ public class TaxonomyTree {
 			if (!u.hasNodeName(childID)){
 				final String childUID = child.getUID();
 				final String childName = child.getLabel();
-				u.putNodeUIDName(childID,child.getUID(),child.getLabel());
+				u.putNodeUIDName(childID,childUID,childName);
 				if (child.getExtinct())
 					extinctCounter++;
 				final String rankLabel = child.getRank();

@@ -13,22 +13,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 public class Utils {
 	
-	final private static String IDSTR = "id";
-	final private static String NAMESTR = "name";
-	final private static String GENESTR = "gene";
-	final private static String TAXONSTR = "taxon";
-	final private static String ENTITYSTR = "entity";
-	final private static String QUALITYSTR = "quality";
 	
-	final private static String pathStrRoot = StringConsts.KBBASEURL + "term/";
-	final private static String termRoot = pathStrRoot;
-	final private static String pathSuffix = "/path";
-
-
 	private static final String CONNECTION_PROPERTIES_FILENAME = "unitTestConnection.properties"; 
 	
 	
@@ -50,7 +38,6 @@ public class Utils {
 	final private Map<Integer,String> nodeUIDs = new HashMap<Integer, String>(40000);
 	
 	final private Map<Integer,Set<Integer>> parents = new HashMap<Integer,Set<Integer>>(30000);
-	final private Map<Integer,Set<Integer>> ancestors = new HashMap<Integer,Set<Integer>>(30000);
 	
 	final private Map<Integer,Integer> linkPhenotypeMap = new HashMap<Integer,Integer>();   //link_node_id -> phenotype_node_id
 
@@ -164,9 +151,9 @@ public class Utils {
 		// if getOneName fails, these will be assigned -1 and shouldn't affect anything (handles unit test cases with incomplete attribute sets)
 		int compositionNodeID = getOneName("composition");
 		int structureNodeID = getOneName("structure");
-		int closureNodeID = getOneName("closure");
-		int sizeNodeID = getOneName("size");
-		int shapeNodeID = getOneName("shape");
+		//int closureNodeID = getOneName("closure");
+		//int sizeNodeID = getOneName("size");
+		//int shapeNodeID = getOneName("shape");
 		//int closureStructureNodeID = getOneName("Closure+Structure");
 		//int shapeSizeNodeID = getOneName("Shape+Size");
 		
@@ -352,6 +339,39 @@ public class Utils {
 		
 	}
 
+	public void fillNames(Object e) throws SQLException{
+		if (e instanceof PhenotypeExpression)
+			((PhenotypeExpression) e).fillNames(this);
+		else if (e instanceof Integer)
+			cacheOneNode((Integer) e);
+		else
+			throw new IllegalArgumentException();
+	}
+	
+
+	public String stringForMessage(Object e){
+		if (e instanceof PhenotypeExpression){
+			PhenotypeExpression pe = (PhenotypeExpression)e;
+			return getNodeName(pe.getEntity()) + " " + getNodeName(pe.getQuality());
+		}
+		else if (e instanceof Integer){
+			return getNodeName((Integer)e);
+		}
+		else
+			throw new IllegalArgumentException();
+	}
+	
+	public String fullNameString(Object e) throws SQLException{
+		if (e instanceof PhenotypeExpression){
+			return ((PhenotypeExpression) e).getFullName(this);
+		}
+		else if (e instanceof Integer){
+			return getNodeName((Integer)e);
+		}
+		else
+			throw new IllegalArgumentException();
+		
+	}
 	
 	
 	private static final String ASSERTEDTAXONPHENOTYPECOUNTQUERY = "SELECT COUNT(*) FROM asserted_taxon_annotation";
@@ -457,7 +477,7 @@ public class Utils {
 	public boolean checkConnection(){
 		try{
 			Statement s = connection.createStatement();
-			ResultSet tResult = s.executeQuery(testQuery);
+			s.executeQuery(testQuery);
 		}
 		catch (SQLException e){
 			return false;

@@ -1,6 +1,5 @@
 package phenoscape.queries.lib;
 
-import static org.junit.Assert.*;
 import junit.framework.Assert;
 
 import org.junit.Before;

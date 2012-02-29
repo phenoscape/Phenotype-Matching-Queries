@@ -79,12 +79,12 @@ import phenoscape.queries.lib.VariationTable;
 
 public class PhenotypeProfileAnalysis {
 
-	private static final String TTOROOT = "TTO:0";
+	//private static final String TTOROOT = "TTO:0";
 	private static final String OSTARIOCLUPEOMORPHAROOT = "TTO:253";
-	private static final String ASPIDORASROOT = "TTO:105426";
-	private static final String CALLICHTHYIDAEROOT = "TTO:11200";
-	private static final String SILURIFORMESROOT = "TTO:1380";
-	private static final String TESTROOT = "TTO:0000015";
+	//private static final String ASPIDORASROOT = "TTO:105426";
+	//private static final String CALLICHTHYIDAEROOT = "TTO:11200";
+	//private static final String SILURIFORMESROOT = "TTO:1380";
+	//private static final String TESTROOT = "TTO:0000015";
 
 	private String ANALYSISROOT = OSTARIOCLUPEOMORPHAROOT;
 	private static final String CONNECTION_PROPERTIES_FILENAME = "connection.properties"; 
@@ -459,15 +459,12 @@ public class PhenotypeProfileAnalysis {
 		}
 
 		//double icScore = SimilarityCalculator.maxIC(taxonUnion, geneUnion, eaCounts, u);
-		SimilarityCalculator sc = new SimilarityCalculator(entityCountsToUse.getSum());
-		sc.setTaxonEntityParents(taxonEntityUnion,u);
-		sc.setGeneEntityParents(geneEntityUnion, u);
-		
-		sc.setTaxonPhenotypeParents(taxonPhenotypeUnion, u);
-		sc.setGenePhenotypeParents(genePhenotypeUnion, u);
+		SimilarityCalculator<Integer> sc = new SimilarityCalculator<Integer>(entityCountsToUse.getSum());
+		sc.setTaxonParents(taxonEntityUnion,u);
+		sc.setGeneParents(geneEntityUnion, u);
 		
 		
-		double iccsScore = sc.iccs(taxonPhenotypeUnion,genePhenotypeUnion,entityCountsToUse,u);
+		double iccsScore = sc.iccs(taxonEntityUnion,geneEntityUnion,entityCountsToUse,u);
 		double simJScore = sc.simJ(u);
 		double simICScore = sc.simIC(entityCountsToUse, u);
 		double simGOSScore = sc.simGOS(0.5);
@@ -532,43 +529,43 @@ public class PhenotypeProfileAnalysis {
 	}
 
 
-	private void showHistogram(double[] dist){
-		double bottom = dist[0];
-		double top = dist[DISTSIZE-1];
-		System.out.println("Bottom is " + bottom + "; top is " + top);
-		double binsize = (top-bottom)/10.0;
-		int[] hist = new int[10];
-		for(int i = 0;i<DISTSIZE;i++){
-			if (dist[i]<binsize+bottom)
-				hist[0]++;
-			else if (dist[i]<(2*binsize+bottom))
-				hist[1]++;
-			else if (dist[i]<(3*binsize+bottom))
-				hist[2]++;
-			else if (dist[i]<(4*binsize+bottom))
-				hist[3]++;
-			else if (dist[i]<(5*binsize+bottom))
-				hist[4]++;
-			else if (dist[i]<(6*binsize+bottom))
-				hist[5]++;
-			else if (dist[i]<(7*binsize+bottom))
-				hist[6]++;
-			else if (dist[i]<(8*binsize+bottom))
-				hist[7]++;
-			else if (dist[i]<(9*binsize+bottom))
-				hist[8]++;
-			else if (dist[i]<=top)
-				hist[9]++;
-		}
-		for (int i = 0; i< 10; i++){
-			double baseline = ((double)i)*binsize + bottom;
-			System.out.print(baseline + ":");
-			for (int j =0;j<hist[i];j++){
-				System.out.print('*');
-			}
-			System.out.println();
-		}
-	}
+//	private void showHistogram(double[] dist){
+//		double bottom = dist[0];
+//		double top = dist[DISTSIZE-1];
+//		System.out.println("Bottom is " + bottom + "; top is " + top);
+//		double binsize = (top-bottom)/10.0;
+//		int[] hist = new int[10];
+//		for(int i = 0;i<DISTSIZE;i++){
+//			if (dist[i]<binsize+bottom)
+//				hist[0]++;
+//			else if (dist[i]<(2*binsize+bottom))
+//				hist[1]++;
+//			else if (dist[i]<(3*binsize+bottom))
+//				hist[2]++;
+//			else if (dist[i]<(4*binsize+bottom))
+//				hist[3]++;
+//			else if (dist[i]<(5*binsize+bottom))
+//				hist[4]++;
+//			else if (dist[i]<(6*binsize+bottom))
+//				hist[5]++;
+//			else if (dist[i]<(7*binsize+bottom))
+//				hist[6]++;
+//			else if (dist[i]<(8*binsize+bottom))
+//				hist[7]++;
+//			else if (dist[i]<(9*binsize+bottom))
+//				hist[8]++;
+//			else if (dist[i]<=top)
+//				hist[9]++;
+//		}
+//		for (int i = 0; i< 10; i++){
+//			double baseline = ((double)i)*binsize + bottom;
+//			System.out.print(baseline + ":");
+//			for (int j =0;j<hist[i];j++){
+//				System.out.print('*');
+//			}
+//			System.out.println();
+//		}
+//	}
 
 
 	Set<PhenotypeExpression> generateProfile(List<PhenotypeExpression> allProfiles, Integer profileSize){
@@ -974,8 +971,8 @@ public class PhenotypeProfileAnalysis {
 	 * @param parents
 	 * @throws SQLException 
 	 */
-	CountTable fillPhenotypeCountTable(ProfileMap geneProfiles2,ProfileMap taxonProfiles2, Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, Utils u, String phenotypeQuery, String qualityQuery, int annotationCount) throws SQLException{
-		final CountTable result = new CountTable();
+	CountTable<PhenotypeExpression> fillPhenotypeCountTable(ProfileMap geneProfiles2,ProfileMap taxonProfiles2, Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, Utils u, String phenotypeQuery, String qualityQuery, int annotationCount) throws SQLException{
+		final CountTable<PhenotypeExpression> result = new CountTable<PhenotypeExpression>();
 		final PreparedStatement phenotypeStatement = u.getPreparedStatement(phenotypeQuery);
 		final PreparedStatement qualityStatement = u.getPreparedStatement(qualityQuery);
 		final PhenotypeExpression topEQ = PhenotypeExpression.getEQTop(u);
@@ -1149,7 +1146,7 @@ public class PhenotypeProfileAnalysis {
 	 * @return
 	 * @throws SQLException 
 	 */
-	int buildPhenotypeMatchCache(Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, PhenotypeScoreTable phenotypeScores, CountTable eaCounts, Utils u) throws SQLException{
+	int buildPhenotypeMatchCache(Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, PhenotypeScoreTable phenotypeScores, CountTable<PhenotypeExpression> eaCounts, Utils u) throws SQLException{
 		int attOverlaps = 0;
 		for(Integer currentTaxon : taxonProfiles.domainSet()){
 			Profile currentTaxonProfile = taxonProfiles.getProfile(currentTaxon);
@@ -1170,15 +1167,15 @@ public class PhenotypeProfileAnalysis {
 
 						if (!phenotypeScores.hasScore(tPhenotype,gPhenotype) && tPhenotype.getQuality() == gPhenotype.getQuality()){
 							logger.info("T Phenotype is " + tPhenotype.toString());
-							for(PhenotypeExpression e : tParents){
-								//System.out.println("Parent is " + e);
-							}
+//							for(PhenotypeExpression e : tParents){
+//								//System.out.println("Parent is " + e);
+//							}
 							logger.info("G Phenotype is " + gPhenotype.toString());
 							for(PhenotypeExpression e : gParents){
 								e.fillNames(u);
 								//System.out.println("Parent is " + e);
 							}
-							SimilarityCalculator sc = new SimilarityCalculator(eaCounts.getSum());
+							SimilarityCalculator<PhenotypeExpression> sc = new SimilarityCalculator<PhenotypeExpression>(eaCounts.getSum());
 							double icScore = sc.maxIC(tParents,gParents,eaCounts,u);
 							PhenotypeExpression bestPhenotype = sc.MICS(tParents,gParents,eaCounts,u);
 							if (icScore != eaCounts.getIC(bestPhenotype)){

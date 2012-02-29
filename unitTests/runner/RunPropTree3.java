@@ -6,7 +6,6 @@ import java.util.List;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
-import phenoscape.queries.TestPropTree1;
 import phenoscape.queries.TestPropTree3;
 
 public class RunPropTree3 {
