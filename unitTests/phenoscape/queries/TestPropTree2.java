@@ -580,7 +580,7 @@ public class TestPropTree2 extends PropTreeTest {
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		CountTable<PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
-		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(taxonProfiles,geneProfiles,phenotypeScores,u);
+		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(taxonProfiles,geneProfiles,phenotypeScores,entityCounts,u);
 		
 		// test distribution dumping, though this is temporary...
 //		for(PermutedProfileScore score : pScores){
@@ -936,7 +936,7 @@ public class TestPropTree2 extends PropTreeTest {
 
 		testAnalysis.writeTaxonGeneMaxICSummary(phenotypeScores,u,w5);
 		w5.close();
-		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(testAnalysis.taxonProfiles,testAnalysis.geneProfiles,phenotypeScores,u);
+		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(testAnalysis.taxonProfiles,testAnalysis.geneProfiles,phenotypeScores, entityCountsToUse, u);
 		
 		testAnalysis.profileMatchReport(phenotypeScores,pScores,profileWriter,entityParentCache, entityCountsToUse,phenotypeParentCache, u);
 		profileWriter.close();

@@ -19,7 +19,7 @@ public class PhenotypeExpression {
 	private final int HASHBASE = 47;
 	private final int HASHMULTIPLIER = 31;
 
-	private final int VOIDENTITY = -1;
+	public final static int VOIDENTITY = -1;
 	/**
 	 * Constructor for phenotypes pairing an entity and a quality
 	 * @param e

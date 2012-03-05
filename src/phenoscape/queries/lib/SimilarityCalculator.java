@@ -1,7 +1,10 @@
 package phenoscape.queries.lib;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -14,7 +17,7 @@ import org.apache.log4j.Logger;
 public class SimilarityCalculator<E> {
 
 	
-	private static final String SPATIALPOSTCOMPUIDPREFIX = "BSPO:";
+	public static final String SPATIALPOSTCOMPUIDPREFIX = "BSPO:";
 
 	static Logger logger = Logger.getLogger(SimilarityCalculator.class.getName());
 
@@ -64,7 +67,7 @@ public class SimilarityCalculator<E> {
 	
 	
 	
-	public double maxIC(Set<PhenotypeExpression> parents1, Set<PhenotypeExpression> parents2, CountTable<E> eaCounts, Utils u) throws SQLException{
+	public double maxIC(CountTable<E> eaCounts, Utils u) throws SQLException{
 		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
 		Set<E> bestItemSet = new HashSet<E>();
 		for(E eqM : matchIntersection){
@@ -100,7 +103,7 @@ public class SimilarityCalculator<E> {
 		}
 	}
 	
-	public E MICS(Set<PhenotypeExpression> parents1, Set<PhenotypeExpression> parents2, CountTable<E> eaCounts, Utils u) throws SQLException{
+	public E MICS(CountTable<E> eaCounts, Utils u) throws SQLException{
 		
 		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
 		Set<E> bestItemSet = new HashSet<E>();
@@ -191,20 +194,19 @@ public class SimilarityCalculator<E> {
 	 * @throws SQLException
 	 */
 	public double simJ(Utils u) throws SQLException{
-		if (matchIntersection.isEmpty()){
-			logger.warn("No intersection between taxon and gene parents");
-			logger.info("Taxon Parents: ");
-			for (E taxonP : taxonParents){
-				u.fillNames(taxonP);
-				logger.info(u.stringForMessage(taxonP));
-			}
-			logger.warn("Gene Parents: ");
-			for (E geneP : geneParents){
-				u.fillNames(geneP);
-				logger.info(u.stringForMessage(geneP));
-			}
-			throw new RuntimeException("Bad intersection");
-		}
+//		if (matchIntersection.isEmpty()){
+//			logger.warn("No intersection between taxon and gene parents");
+//			logger.info("Taxon Parents: ");
+//			for (E taxonP : taxonParents){
+//				u.fillNames(taxonP);
+//				logger.info(u.stringForMessage(taxonP));
+//			}
+//			logger.warn("Gene Parents: ");
+//			for (E geneP : geneParents){
+//				u.fillNames(geneP);
+//				logger.info(u.stringForMessage(geneP));
+//			}
+//		}
 		return ((double)matchIntersection.size())/(double)matchUnion.size();
 
 	}
@@ -218,18 +220,18 @@ public class SimilarityCalculator<E> {
 	 */
 	public double simIC(CountTable<E> eaCounts, Utils u) throws SQLException{
 		if (matchIntersection.isEmpty()){
-			logger.warn("No intersection between taxon and gene parents");
-			logger.info("Taxon Parents: ");
-			for (E taxonP : taxonParents ){
-				u.fillNames(taxonP);
-				logger.info(u.stringForMessage(taxonP));
-			}
-			logger.info("Gene Parents: ");
-			for (E geneP : geneParents){
-				u.fillNames(geneP);
-				logger.info(u.stringForMessage(geneP));
-			}
-			throw new RuntimeException("Bad intersection");
+//			logger.warn("No intersection between taxon and gene parents");
+//			logger.info("Taxon Parents: ");
+//			for (E taxonP : taxonParents ){
+//				u.fillNames(taxonP);
+//				logger.info(u.stringForMessage(taxonP));
+//			}
+//			logger.info("Gene Parents: ");
+//			for (E geneP : geneParents){
+//				u.fillNames(geneP);
+//				logger.info(u.stringForMessage(geneP));
+//			}
+			return 0;
 		}
 		double intersectionSum = 0.0;
 		for(E e : matchIntersection){
@@ -275,15 +277,58 @@ public class SimilarityCalculator<E> {
 
 	/**
 	 * 
+	 * @param geneEntityList 
+	 * @param taxonEntityList 
 	 * @param x 
 	 * @return distribution probability that the number of shared parents is exactly the number observed (= size of intersection)
 	 */
-	public double simHyperSS(){
+	public double simHyperSS(Collection<E> taxonEntities, Collection<E> geneEntities){
 		int popSize = annotationCount;
-		int successes = taxonParents.size();    //taxon parent count
-		int sampleSize = geneParents.size();   //gene parent count
-		HypergeometricDistribution hg = new HypergeometricDistributionImpl(popSize, successes, sampleSize);
-		return hg.probability(matchIntersection.size());    //maybe cumulativeProbablility() ?
+		if (taxonEntities.size() == 0){
+			logger.error("simHyperSS received an empty set of taxon entities");
+		}
+		if (geneEntities.size() == 0){
+			logger.error("simHyperSS received an empty set of gene entities");
+		}
+		final int successes = taxonEntities.size();    //taxon parent count
+		final int sampleSize = geneEntities.size();   //gene parent count
+		final HypergeometricDistribution hg = new HypergeometricDistributionImpl(popSize, successes, sampleSize);
+		final int intersectionSize = collectionIntersectionSize(taxonEntities,geneEntities);
+		final double result = hg.probability(intersectionSize);    //maybe cumulativeProbablility() ?
+		//System.out.println("population: " + popSize + "; te: " + successes + "; ge: " + sampleSize + "; intersection: " + intersectionSize + "; stat: " + result);
+		return result;
+	}
+	
+	/**
+	 * 
+	 * @param list1
+	 * @param list2
+	 * @return
+	 */
+	public int collectionIntersectionSize(Collection<E>c1,Collection<E>c2){
+		int result = 0;
+		Set<E> overlap = new HashSet<E>();  //will hold a list non-duplicated members
+		overlap.addAll(c1);
+		overlap.addAll(c2);
+		for (E item : overlap){
+			final int count1 = countOccurrences(c1,item);
+			final int count2 = countOccurrences(c2,item);
+			if (count1<= count2)
+				result += count1;
+			else
+				result += count2;
+		}
+		return result;
+	}
+	
+	
+	public int countOccurrences(Collection<E> c1, E item){
+		int result = 0;
+		for (E entry : c1){
+			if (entry.equals(item))
+				result++;
+		}
+		return result;
 	}
 	
 	
@@ -328,9 +373,6 @@ public class SimilarityCalculator<E> {
 				}
 			}
 		}	
-		if (matchIntersection.isEmpty()){
-			throw new RuntimeException("Bad intersection");
-		}
 		return matchIntersection;
 	}
 

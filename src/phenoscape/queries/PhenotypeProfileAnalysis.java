@@ -119,7 +119,7 @@ public class PhenotypeProfileAnalysis {
 		"SELECT COUNT(*) FROM distinct_gene_annotation WHERE distinct_gene_annotation.phenotype_node_id IN "+
 		"(SELECT phenotype.node_id from phenotype " +
 		"JOIN link phenotype_inheres_in_part_of ON (phenotype_inheres_in_part_of.node_id = phenotype.node_id AND phenotype_inheres_in_part_of.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:inheres_in_part_of')) " +
-		"WHERE phenotype_inheres_in_part_of.object_id =  ? ";
+		"WHERE phenotype_inheres_in_part_of.object_id =  ?)";
 
 	ProfileMap taxonProfiles;  //taxon_node_id -> Phenotype profile for taxon
 	ProfileMap geneProfiles;  //gene_node_id -> Phenotype profile for gene
@@ -167,7 +167,7 @@ public class PhenotypeProfileAnalysis {
 
 	Random rand = new Random();
 
-	static Logger logger = Logger.getLogger(PhenotypeProfileAnalysis.class.getName());
+	static final Logger logger = Logger.getLogger(PhenotypeProfileAnalysis.class.getName());
 
 	public PhenotypeProfileAnalysis(Utils u) throws SQLException{
 	}
@@ -338,7 +338,7 @@ public class PhenotypeProfileAnalysis {
 
 		logger.info("Calculating Profile Scores");
 		fillUnionSets(phenotypeParentCache);
-		List<PermutedProfileScore> pScores = calcPermutedProfileScores(taxonProfiles,geneProfiles,phenotypeScores,u);
+		List<PermutedProfileScore> pScores = calcPermutedProfileScores(taxonProfiles,geneProfiles,phenotypeScores,entityCountsToUse, u);
 
 		for(PermutedProfileScore score : pScores){
 			score.writeDist(RANDOMIZATIONREPORTSFOLDER);
@@ -374,7 +374,7 @@ public class PhenotypeProfileAnalysis {
 	 * @throws SQLException 
 	 */
 	void profileMatchReport(PhenotypeScoreTable phenotypeScores,List<PermutedProfileScore> pScores, Writer w,Map<Integer, Set<Integer>> entityParentCache,CountTable<Integer> entityCountsToUse,Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, Utils u) throws SQLException{
-		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t maxIC \t 95% \t 99%  \t decile \t iccs \t simJ \t simIC \t simGOS \t simNormGOS",w);
+		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t HyperSS \t 95% \t 99%  \t decile \t maxIC \t iccs \t simJ \t simIC \t simGOS \t simNormGOS",w);
 
 		long zeroCount = 0;
 		//u.writeOrDump("Sizes: Taxon profiles: " + taxonProfiles.keySet().size() + "; Gene profiles: " + geneProfiles.keySet().size(), null);
@@ -406,48 +406,24 @@ public class PhenotypeProfileAnalysis {
 				geneProfile.getAllEAPhenotypes().size(),
 				pScores);
 		// calculate maxIC
-		double maxIC = calcMaxIC(taxonProfile.getAllEAPhenotypes(), geneProfile.getAllEAPhenotypes(),phenotypeScores);
-		result.setMaxICScore(maxIC);
+		//double maxIC = calcMaxIC(taxonProfile.getAllEAPhenotypes(), geneProfile.getAllEAPhenotypes(),phenotypeScores);
+		result.setMaxICScore(-1);
 
-		// install critical values
-		result.setMaxIC95(pScore.cutoff095);
-		result.setMaxIC99(pScore.cutoff099);
-
-		// testing p-value distribution
-		if (maxIC<pScore.cutoff010)
-			result.setDecile(0);
-		else if (maxIC<pScore.cutoff020)
-			result.setDecile(1);
-		else if (maxIC<pScore.cutoff030)
-			result.setDecile(2);
-		else if (maxIC<pScore.cutoff040)
-			result.setDecile(3);
-		else if (maxIC<pScore.cutoff050)
-			result.setDecile(4);
-		else if (maxIC<pScore.cutoff060)
-			result.setDecile(5);
-		else if (maxIC<pScore.cutoff070)
-			result.setDecile(6);
-		else if (maxIC<pScore.cutoff080)
-			result.setDecile(7);
-		else if (maxIC<pScore.cutoff090)
-			result.setDecile(8);
-		else if (maxIC<pScore.cutoff095)
-			result.setDecile(9);
-		else if (maxIC<pScore.cutoff099)
-			result.setDecile(10);
-		else result.setDecile(11);
 
 		Set<Integer> taxonEntityUnion = new HashSet<Integer>();
 		for(Integer e : taxonProfile.getUsedEntities()){
 			taxonEntityUnion.addAll(entityParentCache.get(e));
 		}
 		
+		final List<Integer>taxonEntityList = buildEntityList(taxonProfile,u);
+		
 		Set<Integer> geneEntityUnion = new HashSet<Integer>();
 		for(Integer e : geneProfile.getUsedEntities()){
 			geneEntityUnion.addAll(entityParentCache.get(e));
 		}
 
+		final List<Integer>geneEntityList = buildEntityList(geneProfile,u);
+		
 		Set<PhenotypeExpression> taxonPhenotypeUnion = new HashSet<PhenotypeExpression>();
 		for(PhenotypeExpression p : taxonProfile.getAllEAPhenotypes()){
 			taxonPhenotypeUnion.addAll(phenotypeParentCache.get(p));
@@ -458,10 +434,10 @@ public class PhenotypeProfileAnalysis {
 			genePhenotypeUnion.addAll(phenotypeParentCache.get(p));
 		}
 
-		//double icScore = SimilarityCalculator.maxIC(taxonUnion, geneUnion, eaCounts, u);
 		SimilarityCalculator<Integer> sc = new SimilarityCalculator<Integer>(entityCountsToUse.getSum());
 		sc.setTaxonParents(taxonEntityUnion,u);
 		sc.setGeneParents(geneEntityUnion, u);
+		
 		
 		
 		double iccsScore = sc.iccs(taxonEntityUnion,geneEntityUnion,entityCountsToUse,u);
@@ -469,14 +445,47 @@ public class PhenotypeProfileAnalysis {
 		double simICScore = sc.simIC(entityCountsToUse, u);
 		double simGOSScore = sc.simGOS(0.5);
 		double simNormGOSScore = sc.simNormGOS(0.5);
+		double hyperSSScore = sc.simHyperSS(taxonEntityList,geneEntityList);
 		result.setSimICScore(simICScore);
 		result.setICCSScore(iccsScore);
 		result.setSimJScore(simJScore);
 		result.setSimGOSScore(simGOSScore);
 		result.setSimNormGOSScore(simNormGOSScore);
+		result.setHyperSSScore(hyperSSScore);
+
+		// install critical values
+		result.setcutOff95(pScore.cutoff095);
+		result.setcutOff99(pScore.cutoff099);
+
+		// testing p-value distribution
+		if (hyperSSScore>pScore.cutoff010)
+			result.setDecile(0);
+		else if (hyperSSScore>pScore.cutoff020)
+			result.setDecile(1);
+		else if (hyperSSScore>pScore.cutoff030)
+			result.setDecile(2);
+		else if (hyperSSScore>pScore.cutoff040)
+			result.setDecile(3);
+		else if (hyperSSScore>pScore.cutoff050)
+			result.setDecile(4);
+		else if (hyperSSScore>pScore.cutoff060)
+			result.setDecile(5);
+		else if (hyperSSScore>pScore.cutoff070)
+			result.setDecile(6);
+		else if (hyperSSScore>pScore.cutoff080)
+			result.setDecile(7);
+		else if (hyperSSScore>pScore.cutoff090)
+			result.setDecile(8);
+		else if (hyperSSScore>pScore.cutoff095)
+			result.setDecile(9);
+		else if (hyperSSScore>pScore.cutoff099)
+			result.setDecile(10);
+		else result.setDecile(11);
 
 		return result;
 	}
+	
+	
 
 	PermutedProfileScore matchProfileSizes(int taxonSize, int geneSize,List<PermutedProfileScore> scores){
 		for(PermutedProfileScore pps : scores){
@@ -490,8 +499,8 @@ public class PhenotypeProfileAnalysis {
 
 
 	final static int DISTSIZE = 1000;
-	protected List<PermutedProfileScore> calcPermutedProfileScores(ProfileMap taxonProfiles2,ProfileMap geneProfiles2,PhenotypeScoreTable phenotypeScores, Utils u){
-		logger.info("Starting generation of permuted profile scores");
+	protected List<PermutedProfileScore> calcPermutedProfileScores(ProfileMap taxonProfiles2,ProfileMap geneProfiles2,PhenotypeScoreTable phenotypeScores, CountTable<Integer> entityCountsToUse, Utils u) throws SQLException{
+		System.out.println("Starting generation of permuted profile scores");
 		List<PermutedProfileScore> result = new ArrayList<PermutedProfileScore>();
 		List<PhenotypeExpression> allTaxonPhenotypes = new ArrayList<PhenotypeExpression>();
 		HashSet<Integer>taxonProfileSizes = new HashSet<Integer>();
@@ -507,18 +516,21 @@ public class PhenotypeProfileAnalysis {
 			allGenePhenotypes.addAll(eaPhenotypes);
 			geneProfileSizes.add(eaPhenotypes.size());
 		}
-		logger.info("taxon profile sizes: " + u.listIntegerMembers(taxonProfileSizes));
-		logger.info("gene profile sizes: " +  u.listIntegerMembers(geneProfileSizes));
-		logger.info("Number of phenotypes in appended taxon profile: " + allTaxonPhenotypes.size());
-		logger.info("Number of phenotypes in appended gene profile: " + allGenePhenotypes.size());
+		System.out.println("taxon profile sizes: " + u.listIntegerMembers(taxonProfileSizes));
+		System.out.println("gene profile sizes: " +  u.listIntegerMembers(geneProfileSizes));
+		System.out.println("Number of phenotypes in appended taxon profile: " + allTaxonPhenotypes.size());
+		System.out.println("Number of phenotypes in appended gene profile: " + allGenePhenotypes.size());
 		for(Integer taxonSize : taxonProfileSizes){
 			for (Integer geneSize : geneProfileSizes){
-				logger.info("Permuting taxon profile of size: " + taxonSize + " against gene profile of size: " + geneSize);
+				System.out.println("Permuting taxon profile of size: " + taxonSize + " against gene profile of size: " + geneSize);
 				final double[] dist = new double[DISTSIZE]; 
 				for (int i = 0; i<DISTSIZE;i++){
-					Set<PhenotypeExpression> generatedTaxonProfile = generateProfile(allTaxonPhenotypes,taxonSize);
-					Set<PhenotypeExpression> generatedGeneProfile = generateProfile(allGenePhenotypes,geneSize);
-					dist[i]=calcMaxIC(generatedTaxonProfile,generatedGeneProfile,phenotypeScores);
+					//Set<PhenotypeExpression> generatedTaxonProfile = generateProfile(allTaxonPhenotypes,taxonSize);
+					//Set<PhenotypeExpression> generatedGeneProfile = generateProfile(allGenePhenotypes,geneSize);
+					final List<Integer>taxonEntityList = buildEntityListFromProfiles(allTaxonPhenotypes,taxonSize,u);
+                    final List<Integer>geneEntityList = buildEntityListFromProfiles(allGenePhenotypes,geneSize,u);
+            		SimilarityCalculator<Integer> sc = new SimilarityCalculator<Integer>(entityCountsToUse.getSum());
+            		dist[i] = sc.simHyperSS(taxonEntityList,geneEntityList);
 				}
 				PermutedProfileScore p = new PermutedProfileScore(dist,taxonSize,geneSize);
 				result.add(p);
@@ -529,43 +541,6 @@ public class PhenotypeProfileAnalysis {
 	}
 
 
-//	private void showHistogram(double[] dist){
-//		double bottom = dist[0];
-//		double top = dist[DISTSIZE-1];
-//		System.out.println("Bottom is " + bottom + "; top is " + top);
-//		double binsize = (top-bottom)/10.0;
-//		int[] hist = new int[10];
-//		for(int i = 0;i<DISTSIZE;i++){
-//			if (dist[i]<binsize+bottom)
-//				hist[0]++;
-//			else if (dist[i]<(2*binsize+bottom))
-//				hist[1]++;
-//			else if (dist[i]<(3*binsize+bottom))
-//				hist[2]++;
-//			else if (dist[i]<(4*binsize+bottom))
-//				hist[3]++;
-//			else if (dist[i]<(5*binsize+bottom))
-//				hist[4]++;
-//			else if (dist[i]<(6*binsize+bottom))
-//				hist[5]++;
-//			else if (dist[i]<(7*binsize+bottom))
-//				hist[6]++;
-//			else if (dist[i]<(8*binsize+bottom))
-//				hist[7]++;
-//			else if (dist[i]<(9*binsize+bottom))
-//				hist[8]++;
-//			else if (dist[i]<=top)
-//				hist[9]++;
-//		}
-//		for (int i = 0; i< 10; i++){
-//			double baseline = ((double)i)*binsize + bottom;
-//			System.out.print(baseline + ":");
-//			for (int j =0;j<hist[i];j++){
-//				System.out.print('*');
-//			}
-//			System.out.println();
-//		}
-//	}
 
 
 	Set<PhenotypeExpression> generateProfile(List<PhenotypeExpression> allProfiles, Integer profileSize){
@@ -573,8 +548,72 @@ public class PhenotypeProfileAnalysis {
 		final Set<PhenotypeExpression>result = new HashSet<PhenotypeExpression>();
 		while(result.size()<profileSize){
 			int index = rand.nextInt(profilesCount);
-			PhenotypeExpression e = allProfiles.get(index);
-			result.add(e);
+			final PhenotypeExpression e = allProfiles.get(index);
+			if (!e.isSimpleQuality())
+				result.add(e);
+		}
+		return result;
+	}
+	
+	List<Integer> buildEntityListFromProfiles(List<PhenotypeExpression> allProfiles, Integer profileSize, Utils u){
+		final int profilesCount = allProfiles.size();
+		final List<Integer>result = new ArrayList<Integer>();
+		while(result.size()<profileSize){
+			int index = rand.nextInt(profilesCount);
+			final PhenotypeExpression pe = allProfiles.get(index);
+			if (!pe.isSimpleQuality()){
+				Integer e = pe.getEntity();
+				String eUID = u.getNodeUID(e); 
+				if (eUID != null){
+					if (!SimilarityCalculator.SPATIALPOSTCOMPUIDPREFIX.equals(eUID.substring(0,5))){
+						result.add(e);
+					}
+				}
+				if (pe.getEntity2() != PhenotypeExpression.VOIDENTITY){
+					Integer e2 = pe.getEntity();
+					String e2UID = u.getNodeUID(e); 
+					if (e2UID != null && result.size()<profileSize){
+						if (!SimilarityCalculator.SPATIALPOSTCOMPUIDPREFIX.equals(e2UID.substring(0,5))){
+							result.add(e);
+						}
+					}
+				}
+			}
+		}
+		if (result.size() == profileSize){
+			return result;
+		}
+		else{
+			throw new RuntimeException("buildEntityListFromProfiles failed; wanted: " + profileSize + "; got: " + result.size());
+		}
+		
+	}
+
+	List<Integer> buildEntityList(Profile profile, Utils u){
+		return buildEntityListfromListofPhenotypes(profile.getAllEAPhenotypes(),u);
+	}
+	
+	List<Integer> buildEntityListfromListofPhenotypes(Collection<PhenotypeExpression> pel, Utils u){
+		final List<Integer> result = new ArrayList<Integer>();
+		for(PhenotypeExpression p : pel){
+			if (!p.isSimpleQuality()){
+				Integer e = p.getEntity();
+				String eUID = u.getNodeUID(e); 
+				if (eUID != null){
+					if (!SimilarityCalculator.SPATIALPOSTCOMPUIDPREFIX.equals(eUID.substring(0,5))){
+						result.add(p.getEntity());
+					}
+				}
+				if (p.getEntity2() != PhenotypeExpression.VOIDENTITY){
+					e = p.getEntity();
+					eUID = u.getNodeUID(e); 
+					if (eUID != null){
+						if (!SimilarityCalculator.SPATIALPOSTCOMPUIDPREFIX.equals(eUID.substring(0,5))){
+							result.add(e);
+						}
+					}
+				}
+			}
 		}
 		return result;
 	}
@@ -723,7 +762,7 @@ public class PhenotypeProfileAnalysis {
 	 */
 	int countEAAnnotations(ProfileMap taxonProfiles2, Utils u){
 		int result = 0;
-		System.out.println("Number of profiles = " + taxonProfiles2.domainSize());
+		//System.out.println("Number of profiles = " + taxonProfiles2.domainSize());
 		for (Integer exhibitor : taxonProfiles2.domainSet()){
 			Profile curProfile = taxonProfiles2.getProfile(exhibitor);
 			for (Integer ent : curProfile.getUsedEntities()){
@@ -990,7 +1029,7 @@ public class PhenotypeProfileAnalysis {
 					}
 					else {
 						curEQ.fillNames(u);
-						System.out.println("Processing " + curEQ);
+						//System.out.println("Processing " + curEQ);
 						for(PhenotypeExpression phenotypeParent : allParents){
 							if (!result.hasCount(phenotypeParent)){
 								if (phenotypeParent.isSimpleQuality()){
@@ -1038,7 +1077,7 @@ public class PhenotypeProfileAnalysis {
 					}
 					else {
 						curEQ.fillNames(u);
-						System.out.println("Processing " + curEQ);
+						//System.out.println("Processing " + curEQ);
 						for(PhenotypeExpression phenotypeParent : allParents){
 							if (!result.hasCount(phenotypeParent)){
 								result.addCount(phenotypeParent,0);
@@ -1073,7 +1112,7 @@ public class PhenotypeProfileAnalysis {
 					logger.error("The Entity " + entityName + " seems to have no parents");
 				}
 				else {
-					System.out.println("Processing " + entityName);
+					//System.out.println("Processing " + entityName);
 					for(Integer entityParent : allParents){
 						if (!result.hasCount(entityParent)){
 							entityStatement.setInt(1, entityParent);
@@ -1098,7 +1137,7 @@ public class PhenotypeProfileAnalysis {
 					logger.error("The entity " + entity + " seems to have no parents");
 				}
 				else {
-					System.out.println("Processing " + entity);
+					//System.out.println("Processing " + entity);
 					for(Integer phenotypeParent : allParents){
 						if (!result.hasCount(phenotypeParent)){
 							result.addCount(phenotypeParent,0);
@@ -1159,25 +1198,29 @@ public class PhenotypeProfileAnalysis {
 				if (tParents.isEmpty()){
 					throw new RuntimeException("parents of " + tPhenotype.getFullName(u) + " is empty" );
 				}
+				//System.out.println("Taxon Phenotype: " + u.stringForMessage(tPhenotype) + " (" + tPhenotype.hashCode() + ") set: " + tParents.hashCode());
 				for(Integer currentGene : geneProfiles.domainSet()){
 					Profile currentGeneProfile = geneProfiles.getProfile(currentGene);
 					for (PhenotypeExpression gPhenotype : currentGeneProfile.getAllEAPhenotypes()){
 						gPhenotype.fillNames(u);
 						Set<PhenotypeExpression> gParents = phenotypeParentCache.get(gPhenotype);
+						//System.out.println("Gene Phenotype: " + u.stringForMessage(gPhenotype) + " (" + gPhenotype.hashCode() + ") set: " + gParents.hashCode());
 
 						if (!phenotypeScores.hasScore(tPhenotype,gPhenotype) && tPhenotype.getQuality() == gPhenotype.getQuality()){
-							logger.info("T Phenotype is " + tPhenotype.toString());
+							//logger.info("T Phenotype is " + tPhenotype.toString());
 //							for(PhenotypeExpression e : tParents){
 //								//System.out.println("Parent is " + e);
 //							}
-							logger.info("G Phenotype is " + gPhenotype.toString());
+							//logger.info("G Phenotype is " + gPhenotype.toString());
 							for(PhenotypeExpression e : gParents){
 								e.fillNames(u);
 								//System.out.println("Parent is " + e);
 							}
 							SimilarityCalculator<PhenotypeExpression> sc = new SimilarityCalculator<PhenotypeExpression>(eaCounts.getSum());
-							double icScore = sc.maxIC(tParents,gParents,eaCounts,u);
-							PhenotypeExpression bestPhenotype = sc.MICS(tParents,gParents,eaCounts,u);
+							sc.setTaxonParents(tParents, u);
+							sc.setGeneParents(gParents, u);
+							double icScore = sc.maxIC(eaCounts,u);
+							PhenotypeExpression bestPhenotype = sc.MICS(eaCounts,u);
 							if (icScore != eaCounts.getIC(bestPhenotype)){
 								throw new RuntimeException("IC value of bestPhenotype " + bestPhenotype + " not equal to icScore = " + icScore);
 							}
@@ -1186,14 +1229,14 @@ public class PhenotypeProfileAnalysis {
 							double simICScore = sc.simIC(eaCounts, u);
 							double simGOSScore = sc.simGOS(0.5);
 							double simNormGOSScore = sc.simNormGOS(0.5);
-							double hypergeoProb = sc.simHyperSS();
+							//double hypergeoProb = sc.simHyperSS();
 							phenotypeScores.addScore(tPhenotype,gPhenotype,eaCounts.getIC(bestPhenotype),bestPhenotype);
 							phenotypeScores.setICCSScore(tPhenotype,gPhenotype,iccsScore);
 							phenotypeScores.setSimJScore(tPhenotype, gPhenotype, simJScore);
 							phenotypeScores.setSimICScore(tPhenotype, gPhenotype, simICScore);
 							phenotypeScores.setGOSScore(tPhenotype, gPhenotype, simGOSScore);
 							phenotypeScores.setNormGOSScore(tPhenotype, gPhenotype, simNormGOSScore);
-							phenotypeScores.setHypergeoScore(tPhenotype, gPhenotype,hypergeoProb);
+							//phenotypeScores.setHypergeoScore(tPhenotype, gPhenotype,hypergeoProb);
 						}
 					}
 				}

@@ -17,7 +17,7 @@ import java.util.Set;
 public class Utils {
 	
 	
-	private static final String CONNECTION_PROPERTIES_FILENAME = "unitTestConnection.properties"; 
+	private static final String CONNECTION_PROPERTIES_FILENAME = "unitTestConnection1.properties"; 
 	
 	
 	//These are rather unfortunate, but KB-DEV currently (11-15-2010) uses an unreleased PATO with 
@@ -264,7 +264,6 @@ public class Utils {
 				if (entParentSet.isEmpty()){
 					throw new RuntimeException("empty parent set of " + getNodeName(entityID));
 				}
-				System.out.println(" >> Added parents to " + getNodeName(entityID));
 				result.put(entityID, entParentSet);
 			}
 		}
@@ -457,7 +456,9 @@ public class Utils {
 		final String host = properties.getProperty("host");
 		final String db = properties.getProperty("db");
 		final String user = properties.getProperty("user");
-		final String password = properties.getProperty("pw");
+		final String password = "29upLift61"; //properties.getProperty("pw");
+		String connectionStr = host + " " + db + " " + user + " " + password;
+		//System.err.println("connectStr is " + connectionStr);
 		connection = DriverManager.getConnection(String.format("jdbc:postgresql://%s/%s",host,db),user,password);
 		return "Host: " + host + " db: " + db;
 		

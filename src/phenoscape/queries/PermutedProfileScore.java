@@ -26,19 +26,19 @@ public class PermutedProfileScore {
 		taxonSize = taxaCount;
 		geneSize = geneCount;
 		dist=distribution;
-		Arrays.sort(dist);
+		Arrays.sort(dist);  // this puts values in ascending order, opposite of what we what with HyperSS
 		final int distsize = dist.length;
-		cutoff010 = dist[(int)(0.1*distsize)];
-		cutoff020 = dist[(int)(0.2*distsize)];
-		cutoff030 = dist[(int)(0.3*distsize)];
-		cutoff040 = dist[(int)(0.4*distsize)];
+		cutoff010 = dist[(int)(0.9*distsize)];
+		cutoff020 = dist[(int)(0.8*distsize)];
+		cutoff030 = dist[(int)(0.7*distsize)];
+		cutoff040 = dist[(int)(0.6*distsize)];
 		cutoff050 = dist[(int)(0.5*distsize)];
-		cutoff060 = dist[(int)(0.6*distsize)];
-		cutoff070 = dist[(int)(0.7*distsize)];
-		cutoff080 = dist[(int)(0.8*distsize)];
-		cutoff090 = dist[(int)(0.9*distsize)];
-		cutoff095 = dist[(int)(0.95*distsize)];
-		cutoff099 = dist[(int)(0.99*distsize)];
+		cutoff060 = dist[(int)(0.4*distsize)];
+		cutoff070 = dist[(int)(0.3*distsize)];
+		cutoff080 = dist[(int)(0.2*distsize)];
+		cutoff090 = dist[(int)(0.1*distsize)];
+		cutoff095 = dist[(int)(0.05*distsize)];
+		cutoff099 = dist[(int)(0.01*distsize)];
 	}
 	
 	boolean matchSize(int tSize, int gSize){
