@@ -402,7 +402,9 @@ public class TestPropTree5 extends PropTreeTest{
 		assertFalse(taxonProfiles.isEmpty());
 		Assert.assertEquals(15,taxonProfiles.domainSize()); //profiles before the flush includes all taxa
 		testAnalysis.flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		assertTrue(phenotypeParentCache.size()>0);
@@ -414,9 +416,15 @@ public class TestPropTree5 extends PropTreeTest{
 	
 	@Test
 	public void testCountGeneEntities() throws SQLException {
-		Assert.assertEquals(5,u.countDistinctEntityPhenotypeAnnotations());
+		Assert.assertEquals(5,u.countDistinctGeneEntityPhenotypeAnnotations());
 	}
 
+	@Test
+	public void testCountTaxonEntities() throws SQLException {
+		Assert.assertEquals(6,u.countDistinctTaxonEntityPhenotypeAnnotations());
+	}
+
+	
 	@Test
 	public void testFillCountTable() throws SQLException {
 		t1.traverseOntologyTree(u);
@@ -425,7 +433,9 @@ public class TestPropTree5 extends PropTreeTest{
 		CountTableCheck countTableCheck = new CountTableCheck(u);  //captures expected values
 		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
 		ProfileMap geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		CountTable <PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
@@ -459,7 +469,9 @@ public class TestPropTree5 extends PropTreeTest{
 		ProfileMap geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
 		testAnalysis.geneProfiles= geneProfiles;
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		CountTable<PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
@@ -481,7 +493,9 @@ public class TestPropTree5 extends PropTreeTest{
 		ProfileMap geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
 		testAnalysis.geneProfiles= geneProfiles;
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		CountTable<PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
@@ -504,7 +518,9 @@ public class TestPropTree5 extends PropTreeTest{
 		ProfileMap geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
 		testAnalysis.geneProfiles= geneProfiles;
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
 
 		
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
@@ -597,264 +613,275 @@ public class TestPropTree5 extends PropTreeTest{
 		ProfileMap geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
 		testAnalysis.geneProfiles= geneProfiles;
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
-		CountTable<Integer> entityCounts = testAnalysis.fillEntityCountTable(testAnalysis.geneProfiles, testAnalysis.taxonProfiles, entityParentCache, u,PhenotypeProfileAnalysis.GENEENTITYCOUNTQUERY , u.countDistinctEntityPhenotypeAnnotations());		
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
+		CountTable<Integer> geneEntityCounts = testAnalysis.fillGeneEntityCountTable(testAnalysis.geneProfiles,  entityParentCache, u,PhenotypeProfileAnalysis.GENEENTITYCOUNTQUERY , u.countDistinctGeneEntityPhenotypeAnnotations());		
+		CountTable<Integer> taxonEntityCounts = testAnalysis.fillTaxonEntityCountTable(testAnalysis.taxonProfiles,  entityParentCache, u,PhenotypeProfileAnalysis.TAXONENTITYCOUNTQUERY , u.countDistinctGeneEntityPhenotypeAnnotations());		
+		CountTable<Integer> sumTable = geneEntityCounts.addTable(taxonEntityCounts);
 
+//		for (Integer i : sumTable.getEntities()){
+//			u.cacheOneNode(i);
+//			System.out.println(u.getNodeName(i) +  ": " + sumTable.getRawCount(i));
+//		}
+		
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		CountTable<PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
-		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(taxonProfiles,geneProfiles,phenotypeScores, entityCounts, u);
+		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(taxonProfiles,geneProfiles, entityParentCache, entityChildCache, phenotypeScores, taxonEntityCounts, geneEntityCounts, u);
 		
 		initNames(u);
 		
 		// check genes against order1
-		ProfileScoreSet pSet = testAnalysis.matchOneProfilePair(order1ID,alfID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,apaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,apcID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,edn1ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,fgf24ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,furinaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,henID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,lama5ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,lofID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,rndID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,sec23aID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,sec24dID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,shhaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(order1ID,ugdhID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-
-		// check genes against family1
-		pSet = testAnalysis.matchOneProfilePair(family1ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(family1ID,apaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(family1ID,apcID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(family1ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(family1ID,edn1ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(family1ID,fgf24ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(family1ID,furinaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(family1ID,henID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-		pSet = testAnalysis.matchOneProfilePair(family1ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
-		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,lama5ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		ProfileScoreSet pSet = testAnalysis.matchOneProfilePair(order1ID,alfID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(pSet != null);
+//		System.out.println("HyperScore: " + pSet.getHyperSSScore());
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,apaID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,apcID,pScores,phenotypeScores,entityParentCache, entityChildCache, sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache, entityChildCache, sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,edn1ID,pScores,phenotypeScores,entityParentCache, entityChildCache, sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,fgf24ID,pScores,phenotypeScores,entityParentCache,entityChildCache, sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,furinaID,pScores,phenotypeScores,entityParentCache, entityChildCache, sumTable, phenotypeParentCache,u);
+//		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,henID,pScores,phenotypeScores,entityParentCache,entityChildCache, sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityChildCache, sumTable, phenotypeParentCache,u);
+//		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,lama5ID,pScores,phenotypeScores,entityParentCache,entityChildCache, sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,lofID,pScores,phenotypeScores,entityParentCache, entityChildCache, sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,rndID,pScores,phenotypeScores,entityParentCache, entityChildCache, sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,sec23aID,pScores,phenotypeScores,entityParentCache, entityChildCache, sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,sec24dID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,shhaID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(order1ID,ugdhID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//
+//		// check genes against family1
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
+//		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,apaID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,apcID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
+//		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,lofID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,edn1ID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
+//		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,fgf24ID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,rndID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,furinaID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
+//		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,henID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,sec23aID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
+		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
+
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,lama5ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,sec24dID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,lofID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,shhaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,rndID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,ugdhID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,sec23aID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,sec24dID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,shhaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
+//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
+//
+//		pSet = testAnalysis.matchOneProfilePair(family1ID,ugdhID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
 //		
 //		// check genes against genus1
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,jag1bID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,apaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,apaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,apcID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,apcID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,edn1ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,edn1ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,fgf24ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,fgf24ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,furinaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,furinaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,henID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,henID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,jag1bID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,lama5ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,lama5ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,lofID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,lofID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,rndID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,rndID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,sec23aID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,sec23aID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,sec24dID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,sec24dID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,shhaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,shhaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,ugdhID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus1ID,ugdhID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
 //		
 //		// check genes against genus2
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,jag1bID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,apaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,apaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,apcID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,apcID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,edn1ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,edn1ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,fgf24ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,fgf24ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,furinaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,furinaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,henID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,henID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,jag1bID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,lama5ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,lama5ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,lofID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,lofID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,rndID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,rndID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,sec23aID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,sec23aID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,sec24dID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,sec24dID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,shhaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,shhaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,ugdhID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus2ID,ugdhID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
 //		
 //		// check genes against genus3
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,jag1bID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,apaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,apaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,apcID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,apcID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,edn1ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,edn1ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,fgf24ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,fgf24ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,furinaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,furinaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,henID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,henID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,jag1bID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,lama5ID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,lama5ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,lofID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,lofID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,rndID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,rndID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,sec23aID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,sec23aID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,sec24dID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,sec24dID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,shhaID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,shhaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 //
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,ugdhID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+//		pSet = testAnalysis.matchOneProfilePair(genus3ID,ugdhID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
 //		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 	}
 
@@ -935,9 +962,12 @@ public class TestPropTree5 extends PropTreeTest{
 
 		geneWriter.close();
 
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
-		CountTable<Integer> entityCounts = testAnalysis.fillEntityCountTable(testAnalysis.geneProfiles, testAnalysis.taxonProfiles, entityParentCache, u,PhenotypeProfileAnalysis.GENEENTITYCOUNTQUERY , u.countDistinctEntityPhenotypeAnnotations());		
-
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
+		CountTable<Integer> geneEntityCounts = testAnalysis.fillGeneEntityCountTable(testAnalysis.geneProfiles,  entityParentCache, u,PhenotypeProfileAnalysis.GENEENTITYCOUNTQUERY , u.countDistinctGeneEntityPhenotypeAnnotations());		
+		CountTable<Integer> taxonEntityCounts = testAnalysis.fillTaxonEntityCountTable(testAnalysis.taxonProfiles,  entityParentCache, u,PhenotypeProfileAnalysis.GENEENTITYCOUNTQUERY , u.countDistinctGeneEntityPhenotypeAnnotations());		
+		CountTable<Integer> sumTable = geneEntityCounts.addTable(taxonEntityCounts);
 		/* Test introduction of phenotypeParentCache, which should map an attribute level EQ to all its parents via inheres_in_part_of entity parents and is_a quality parents (cross product) */
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
@@ -955,14 +985,14 @@ public class TestPropTree5 extends PropTreeTest{
 
 		testAnalysis.writeTaxonGeneMaxICSummary(phenotypeScores,u,w5);
 		w5.close();
-		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(testAnalysis.taxonProfiles,testAnalysis.geneProfiles,phenotypeScores, entityCounts, u);
+		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(testAnalysis.taxonProfiles,testAnalysis.geneProfiles,entityParentCache, entityChildCache, phenotypeScores, taxonEntityCounts, geneEntityCounts, u);
 		
 		
 		for(PermutedProfileScore score : pScores){
 			score.writeDist(RANDOMIZATIONREPORTSFOLDER);
 		}
 
-		testAnalysis.profileMatchReport(phenotypeScores,pScores,profileWriter,entityParentCache,entityCounts, phenotypeParentCache, u);
+		testAnalysis.profileMatchReport(phenotypeScores,pScores,profileWriter,entityParentCache,entityChildCache,sumTable, phenotypeParentCache, u);
 		profileWriter.close();
 		
 		

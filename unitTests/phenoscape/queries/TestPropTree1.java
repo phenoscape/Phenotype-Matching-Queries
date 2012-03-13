@@ -405,7 +405,9 @@ public class TestPropTree1 extends PropTreeTest{
 		assertFalse(taxonProfiles.isEmpty());
 		Assert.assertEquals(15,taxonProfiles.domainSize()); //profiles before the flush includes all taxa
 		testAnalysis.flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		//		for(PhenotypeExpression pe : phenotypeParentCache.keySet()){
@@ -427,7 +429,9 @@ public class TestPropTree1 extends PropTreeTest{
 		CountTableCheck countTableCheck = new CountTableCheck(u);
 		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
 		ProfileMap geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		CountTable<PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
@@ -458,7 +462,9 @@ public class TestPropTree1 extends PropTreeTest{
 		ProfileMap geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
 		testAnalysis.geneProfiles= geneProfiles;
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		CountTable <PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
@@ -480,7 +486,9 @@ public class TestPropTree1 extends PropTreeTest{
 		ProfileMap geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
 		testAnalysis.geneProfiles= geneProfiles;
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		CountTable <PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
@@ -504,7 +512,9 @@ public class TestPropTree1 extends PropTreeTest{
 		ProfileMap geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
 		testAnalysis.geneProfiles= geneProfiles;
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		CountTable<PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
@@ -596,14 +606,18 @@ public class TestPropTree1 extends PropTreeTest{
 		ProfileMap geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
 		testAnalysis.geneProfiles= geneProfiles;
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
-		CountTable<Integer> entityCounts = testAnalysis.fillEntityCountTable(testAnalysis.geneProfiles, testAnalysis.taxonProfiles, entityParentCache, u,PhenotypeProfileAnalysis.GENEENTITYCOUNTQUERY , u.countDistinctEntityPhenotypeAnnotations());		
-		
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
+		CountTable<Integer> geneEntityCounts = testAnalysis.fillGeneEntityCountTable(testAnalysis.geneProfiles, entityParentCache, u,PhenotypeProfileAnalysis.GENEENTITYCOUNTQUERY , u.countDistinctGeneEntityPhenotypeAnnotations());		
+		CountTable<Integer> taxonEntityCounts = testAnalysis.fillTaxonEntityCountTable(testAnalysis.geneProfiles, entityParentCache, u,PhenotypeProfileAnalysis.TAXONENTITYCOUNTQUERY , u.countDistinctGeneEntityPhenotypeAnnotations());
+		CountTable<Integer> sumTable = geneEntityCounts.addTable(taxonEntityCounts);
+
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		CountTable<PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
-		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(taxonProfiles,geneProfiles,phenotypeScores,entityCounts,u);
+		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(taxonProfiles,geneProfiles,entityParentCache, entityChildCache, phenotypeScores,taxonEntityCounts, geneEntityCounts,u);
 		
 		// test distribution dumping, though this is temporary...
 //		for(PermutedProfileScore score : pScores){
@@ -613,7 +627,7 @@ public class TestPropTree1 extends PropTreeTest{
 		initNames(u);
 
 		// check genes against order1
-		ProfileScoreSet pSet = testAnalysis.matchOneProfilePair(order1ID,alfID,pScores,phenotypeScores,entityParentCache,entityCounts, phenotypeParentCache,u);
+		ProfileScoreSet pSet = testAnalysis.matchOneProfilePair(order1ID,alfID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
 //		pSet = testAnalysis.matchOneProfilePair(order1ID,apaID,pScores,phenotypeScores);
@@ -937,9 +951,13 @@ public class TestPropTree1 extends PropTreeTest{
 
 		geneWriter.close();
 
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
-		CountTable<Integer> entityCountsToUse = testAnalysis.fillEntityCountTable(testAnalysis.geneProfiles, testAnalysis.taxonProfiles, entityParentCache, u,PhenotypeProfileAnalysis.GENEENTITYCOUNTQUERY , u.countDistinctEntityPhenotypeAnnotations());
-		
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
+		CountTable<Integer> geneEntityCounts = testAnalysis.fillGeneEntityCountTable(testAnalysis.geneProfiles,  entityParentCache, u,PhenotypeProfileAnalysis.GENEENTITYCOUNTQUERY , u.countDistinctGeneEntityPhenotypeAnnotations());
+		CountTable<Integer> taxonEntityCounts = testAnalysis.fillTaxonEntityCountTable(testAnalysis.geneProfiles, entityParentCache, u,PhenotypeProfileAnalysis.TAXONENTITYCOUNTQUERY , u.countDistinctGeneEntityPhenotypeAnnotations());
+		CountTable<Integer> sumTable = geneEntityCounts.addTable(taxonEntityCounts);
+
 		
 		/* Test introduction of phenotypeParentCache, which should map an attribute level EQ to all its parents via inheres_in_part_of entity parents and is_a quality parents (cross product) */
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
@@ -958,9 +976,10 @@ public class TestPropTree1 extends PropTreeTest{
 
 		testAnalysis.writeTaxonGeneMaxICSummary(phenotypeScores,u,w5);
 		w5.close();
-		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(testAnalysis.taxonProfiles,testAnalysis.geneProfiles,phenotypeScores,entityCountsToUse,u);
 		
-		testAnalysis.profileMatchReport(phenotypeScores,pScores,profileWriter,entityParentCache, entityCountsToUse,phenotypeParentCache, u);
+		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(testAnalysis.taxonProfiles,testAnalysis.geneProfiles,entityParentCache, entityChildCache, phenotypeScores,taxonEntityCounts, geneEntityCounts,u);
+
+		testAnalysis.profileMatchReport(phenotypeScores,pScores,profileWriter,entityParentCache, entityChildCache, sumTable,phenotypeParentCache, u);
 		profileWriter.close();
 		
 		taxonWriter.close();

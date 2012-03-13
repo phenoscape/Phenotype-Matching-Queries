@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,10 +40,13 @@ public class TestUtils {
 	
 	
 	final String opercleLookup = "SELECT node.node_id FROM node WHERE node.label = 'opercle'";
+	final String headLookup = "SELECT node.node_id FROM node WHERE node.label = 'head'";
 
 	@Test
 	public void testSetupEntityParents() throws SQLException{
-		Map<Integer,Set<Integer>> entParents = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entParents = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entChildren = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entParents,entChildren);
 		assertNotNull(entParents);
 		assertFalse(entParents.isEmpty());
 		System.out.println("Entity parents size = " + entParents.size());
@@ -53,11 +57,48 @@ public class TestUtils {
 		if (rs.next())
 			opercleNodeID = rs.getInt(1);
 		else{
-			fail("Couldn't retreive node id for 'scale'");
+			fail("Couldn't retreive node id for 'opercle'");
 		}
 		Set <Integer> opercleParents = entParents.get(opercleNodeID);
 		assertNotNull(opercleParents);
 		assertFalse(opercleParents.isEmpty());
+		System.out.println("Opercle parents = " + u.listIntegerMembers(opercleParents));
+		for(Integer i : opercleParents){
+			u.cacheOneNode(i);
+			System.out.println("Parent: " + u.getNodeName(i));
+		}
+		Set <Integer> opercleChildren = entChildren.get(opercleNodeID);
+		assertNotNull(opercleChildren);
+		assertFalse(opercleChildren.isEmpty());
+		System.out.println("Opercle Children = " + u.listIntegerMembers(opercleChildren));
+		for(Integer i : opercleChildren){
+			u.cacheOneNode(i);
+			System.out.println("Child: " + u.getNodeName(i));
+		}
+		s = u.getStatement();
+		int headNodeID = -1;
+		rs = s.executeQuery(headLookup);
+		if (rs.next())
+			headNodeID = rs.getInt(1);
+		else{
+			fail("Couldn't retreive node id for 'dermal bone'");
+		}
+		Set <Integer> headParents = entParents.get(headNodeID);
+//		assertNotNull(headParents);
+//		assertFalse(headParents.isEmpty());
+//		System.out.println("Dermal Bone parents = " + u.listIntegerMembers(headParents));
+//		for(Integer i : headParents){
+//			u.cacheOneNode(i);
+//			System.out.println("Parent: " + u.getNodeName(i));
+//		}
+		Set <Integer> headChildren = entChildren.get(headNodeID);
+		assertNotNull(headChildren);
+		assertFalse(headChildren.isEmpty());
+		System.out.println("Dermal Bone Children = " + u.listIntegerMembers(headChildren));
+		for(Integer i : headChildren){
+			u.cacheOneNode(i);
+			System.out.println("Child: " + u.getNodeName(i));
+		}
 
 	}
 	

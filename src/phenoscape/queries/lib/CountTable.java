@@ -93,6 +93,30 @@ public class CountTable<E> {
 	}
 
 
+	public CountTable<E> addTable(CountTable<E> table2) {
+		CountTable<E> result = new CountTable<E>();
+		int count=0;
+		for (E item : getEntities()){
+			if (table2.hasCount(item)){
+				result.addCount(item, table2.getRawCount(item) + getRawCount(item));
+				count++;
+			}
+			else{
+				result.addCount(item,getRawCount(item));
+				count++;
+			}
+		}
+		for (E item : table2.getEntities()){
+			if (!result.hasCount(item)){
+				result.addCount(item,table2.getRawCount(item));
+				count++;
+			}
+		}
+		result.setSum(count);
+		return result;
+	}
+
+
 	
 
 }

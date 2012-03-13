@@ -376,7 +376,9 @@ public class TestPhenotypeProfileAnalysis {
 		assertFalse(taxonProfiles.isEmpty());
 		Assert.assertEquals(15,taxonProfiles.domainSize()); //profiles before the flush includes all taxa
 		testAnalysis.flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 //		for(PhenotypeExpression pe : phenotypeParentCache.keySet()){
@@ -397,7 +399,9 @@ public class TestPhenotypeProfileAnalysis {
 		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);
 		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
 		ProfileMap geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		CountTable <PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
@@ -423,7 +427,9 @@ public class TestPhenotypeProfileAnalysis {
 		ProfileMap geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
 		testAnalysis.geneProfiles= geneProfiles;
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		CountTable <PhenotypeExpression>counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
@@ -451,7 +457,9 @@ public class TestPhenotypeProfileAnalysis {
 		ProfileMap geneProfiles = testAnalysis.processGeneExpression(geneVariation, u, null);
 		testAnalysis.geneProfiles= geneProfiles;
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
-		Map <Integer,Set<Integer>> entityParentCache = u.setupEntityParents();
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		CountTable <PhenotypeExpression>counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());

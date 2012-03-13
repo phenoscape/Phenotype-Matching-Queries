@@ -282,19 +282,19 @@ public class SimilarityCalculator<E> {
 	 * @param x 
 	 * @return distribution probability that the number of shared parents is exactly the number observed (= size of intersection)
 	 */
-	public double simHyperSS(Collection<E> taxonEntities, Collection<E> geneEntities){
+	public double simHyperSS(int taxonCount,int geneCount, int entIntersectionScore){
 		int popSize = annotationCount;
-		if (taxonEntities.size() == 0){
-			logger.error("simHyperSS received an empty set of taxon entities");
+		if (taxonCount == 0){
+			throw new RuntimeException("simHyperSS received an empty set of taxon entities");
 		}
-		if (geneEntities.size() == 0){
+		if (geneCount == 0){
 			logger.error("simHyperSS received an empty set of gene entities");
 		}
-		final int successes = taxonEntities.size();    //taxon parent count
-		final int sampleSize = geneEntities.size();   //gene parent count
+		final int successes = taxonCount;    //taxon parent count
+		final int sampleSize = geneCount;   //gene parent count
 		final HypergeometricDistribution hg = new HypergeometricDistributionImpl(popSize, successes, sampleSize);
-		final int intersectionSize = collectionIntersectionSize(taxonEntities,geneEntities);
-		final double result = hg.probability(intersectionSize);    //maybe cumulativeProbablility() ?
+		//final int intersectionSize = collectionIntersectionSize(taxonEntities,geneEntities);
+		final double result = hg.probability(entIntersectionScore);    //maybe cumulativeProbablility() ?
 		//System.out.println("population: " + popSize + "; te: " + successes + "; ge: " + sampleSize + "; intersection: " + intersectionSize + "; stat: " + result);
 		return result;
 	}

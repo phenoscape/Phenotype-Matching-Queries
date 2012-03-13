@@ -17,7 +17,7 @@ import java.util.Set;
 public class Utils {
 	
 	
-	private static final String CONNECTION_PROPERTIES_FILENAME = "unitTestConnection1.properties"; 
+	private static final String CONNECTION_PROPERTIES_FILENAME = "unitTestconnection.properties"; 
 	
 	
 	//These are rather unfortunate, but KB-DEV currently (11-15-2010) uses an unreleased PATO with 
@@ -244,15 +244,14 @@ public class Utils {
 		"SELECT target.node_id FROM node AS pheno " +
 		"JOIN link ON (pheno.node_id=link.node_id AND link.predicate_id = (SELECT node_id FROM node WHERE uid = 'OBO_REL:inheres_in_part_of')) " + 
 		"JOIN node AS target ON (target.node_id = link.object_id) WHERE pheno.node_id = ? ";
-	public Map<Integer,Set<Integer>> setupEntityParents() throws SQLException{
-		Map<Integer,Set<Integer>> result = new HashMap<Integer,Set<Integer>>();
+	public void setupEntityParents(Map<Integer,Set<Integer>> parents, Map<Integer,Set<Integer>> children) throws SQLException{
 		final Statement s1 = getStatement();
 		final PreparedStatement entityParentsStatement = getPreparedStatement(ENTITYPARENTQUERY);
 		ResultSet entResults = s1.executeQuery(PHENOTYPEENTITYQUERY);
 		while(entResults.next()){
 			int phenoID = entResults.getInt(1);
 			int entityID = entResults.getInt(2);
-			if (!result.containsKey(entityID)){
+			if (!parents.containsKey(entityID)){
 				cacheOneNode(entityID);
 				Set<Integer> entParentSet = new HashSet<Integer>();
 				entityParentsStatement.setInt(1,phenoID);
@@ -264,10 +263,20 @@ public class Utils {
 				if (entParentSet.isEmpty()){
 					throw new RuntimeException("empty parent set of " + getNodeName(entityID));
 				}
-				result.put(entityID, entParentSet);
+				parents.put(entityID, entParentSet);
+			}
+			for(Integer parent : parents.get(entityID)){
+				Set<Integer>childSet;
+				if (!children.containsKey(parent)){
+					childSet = new HashSet<Integer>();
+					children.put(parent, childSet);
+				}
+				else{
+					childSet = children.get(parent);
+				}
+				childSet.add(entityID);
 			}
 		}
-		return result;
 	}
 	
 	private final static String NAMEQUERY = "select node.node_id FROM node WHERE node.label = ?";
@@ -384,7 +393,7 @@ public class Utils {
 	}
 
 	private static final String ASSERTEDGENEENTITYCOUNTQUERY = "SELECT entity_node_id FROM distinct_gene_annotation";
-	public int countDistinctEntityPhenotypeAnnotations() throws SQLException {
+	public int countDistinctGeneEntityPhenotypeAnnotations() throws SQLException {
 		Set<Integer> usedEntities = new HashSet<Integer>();
 		Statement s = getStatement();
 		ResultSet entities = s.executeQuery(ASSERTEDGENEENTITYCOUNTQUERY);
@@ -395,6 +404,20 @@ public class Utils {
 		return usedEntities.size();
 	}
 
+	private static final String ASSERTEDTAXONENTITYCOUNTQUERY = 
+			"select distinct p.entity_node_id from asserted_taxon_annotation as ata " +
+			"left join phenotype as p on (ata.phenotype_node_id = p.node_id)";
+	public int countDistinctTaxonEntityPhenotypeAnnotations() throws SQLException {
+		Set<Integer> usedEntities = new HashSet<Integer>();
+		Statement s = getStatement();
+		ResultSet entities = s.executeQuery(ASSERTEDTAXONENTITYCOUNTQUERY);
+		while(entities.next()){
+			int entityid = entities.getInt(1);
+			usedEntities.add(entityid);
+		}
+		return usedEntities.size();
+	}
+	
 
 	private static final String QUALITYPARENTQUERY = 
 		"SELECT target.node_id FROM node AS quality " +

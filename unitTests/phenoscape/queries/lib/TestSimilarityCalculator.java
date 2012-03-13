@@ -72,6 +72,37 @@ public class TestSimilarityCalculator {
 		System.out.println("taxon Entities = {2,3} gene Entities = {1};");  //swapping
 		System.out.println("IntersectionSize = " + result);
 
+		testTaxonEntities.clear();
+		testGeneEntities.clear();
+		testTaxonEntities.add(1);
+		testTaxonEntities.add(1);
+		testTaxonEntities.add(2);
+		testTaxonEntities.add(3);
+		testTaxonEntities.add(4);
+		testTaxonEntities.add(1);
+		System.out.println("taxon Entities = {1,1,2,3,4,1}, Gene entities = {}");
+		result = testEntityCalculator.collectionIntersectionSize(testTaxonEntities, testGeneEntities);
+		System.out.println("IntersectionSize = " + result);
+
+		
+		testGeneEntities.add(17);
+		System.out.println("taxon Entities = {1,1,2,3,4,1}, Gene entities = {17}");
+		result = testEntityCalculator.collectionIntersectionSize(testTaxonEntities, testGeneEntities);
+		System.out.println("IntersectionSize = " + result);
+
+		testGeneEntities.add(1);
+		System.out.println("taxon Entities = {1,1,2,3,4,1}, Gene entities = {17,1}");
+		result = testEntityCalculator.collectionIntersectionSize(testTaxonEntities, testGeneEntities);
+		System.out.println("IntersectionSize = " + result);
+
+		System.out.println("taxon Entities = {17,1}, Gene entities = {1,1,2,3,4,1}");
+		result = testEntityCalculator.collectionIntersectionSize(testGeneEntities, testTaxonEntities);
+		System.out.println("IntersectionSize = " + result);
+
+		testGeneEntities.add(1);
+		System.out.println("taxon Entities = {1,1,2,3,4,1}, Gene entities = {17,1,1}");
+		result = testEntityCalculator.collectionIntersectionSize(testTaxonEntities, testGeneEntities);
+		System.out.println("IntersectionSize = " + result);
 		
 		
 	}
@@ -83,19 +114,19 @@ public class TestSimilarityCalculator {
 		testTaxonEntities.add(1);
 		testGeneEntities.add(1);
 		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		double result = testEntityCalculator.simHyperSS(testTaxonEntities, testGeneEntities);
+		double result = testEntityCalculator.simHyperSS(testTaxonEntities.size(), testGeneEntities.size(),0);
 		System.out.println("Pop size = 2933; taxon Entities = {1}; gene Entities = {1}");
 		System.out.println("HyperSS result = " + result);
 
 		testTaxonEntities.add(1);
 		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testTaxonEntities, testGeneEntities);
+		result = testEntityCalculator.simHyperSS(testTaxonEntities.size(), testGeneEntities.size(),0);
 		System.out.println("Pop size = 2933; taxon Entities = {1,1}; gene Entities = {1}");
 		System.out.println("HyperSS result = " + result);
 
 		testTaxonEntities.clear();
 		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testTaxonEntities, testGeneEntities);
+		result = testEntityCalculator.simHyperSS(testTaxonEntities.size(), testGeneEntities.size(),0);
 		System.out.println("Pop size = 2933; taxon Entities = {}; gene Entities = {1}");
 		System.out.println("HyperSS result = " + result);
 
@@ -105,18 +136,18 @@ public class TestSimilarityCalculator {
 		testGeneEntities.clear();
 		testGeneEntities.add(2);
 		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testTaxonEntities, testGeneEntities);
+		result = testEntityCalculator.simHyperSS(testTaxonEntities.size(), testGeneEntities.size(),0);
 		System.out.println("Pop size = 2933; taxon Entities = {1}; gene Entities = {2}");
 		System.out.println("HyperSS result = " + result);
 		
 		testGeneEntities.add(3);
 		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testTaxonEntities, testGeneEntities);
+		result = testEntityCalculator.simHyperSS(testTaxonEntities.size(), testGeneEntities.size(),0);
 		System.out.println("Pop size = 2933;  taxon Entities = {1} gene Entities = {2,3};");  //swapping
 		System.out.println("HyperSS result = " + result);
 
 		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities, testTaxonEntities);
+		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
 		System.out.println("Pop size = 2933;  taxon Entities = {2,3} gene Entities = {1};");  //swapping
 		System.out.println("HyperSS result = " + result);
 
@@ -134,25 +165,25 @@ public class TestSimilarityCalculator {
 		testGeneEntities.add(9);
 		testGeneEntities.add(10);
 		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities, testTaxonEntities);
+		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
 		System.out.println("Pop size = 2933;  taxon Entities = {1} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
 		System.out.println("HyperSS result = " + result);
 
 		testTaxonEntities.add(2);
 		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities, testTaxonEntities);
+		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
 		System.out.println("Pop size = 2933;  taxon Entities = {1,2} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
 		System.out.println("HyperSS result = " + result);
 
 		testTaxonEntities.add(3);
 		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities, testTaxonEntities);
+		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
 		System.out.println("Pop size = 2933;  taxon Entities = {1,2,3} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
 		System.out.println("HyperSS result = " + result);
 
 		testTaxonEntities.add(4);
 		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities, testTaxonEntities);
+		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
 		System.out.println("Pop size = 2933;  taxon Entities = {1,2,3,4} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
 		System.out.println("HyperSS result = " + result);
 
@@ -161,25 +192,25 @@ public class TestSimilarityCalculator {
 		testTaxonEntities.add(11);
 		
 		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities, testTaxonEntities);
+		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
 		System.out.println("Pop size = 2933;  taxon Entities = {11} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
 		System.out.println("HyperSS result = " + result + "\n");
 
 		testTaxonEntities.add(12);
 		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities, testTaxonEntities);
+		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
 		System.out.println("Pop size = 2933;  taxon Entities = {11,12} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
 		System.out.println("HyperSS result = " + result + "\n");
 
 		testTaxonEntities.add(13);
 		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities, testTaxonEntities);
+		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
 		System.out.println("Pop size = 2933;  taxon Entities = {11,12,13} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
 		System.out.println("HyperSS result = " + result + "\n");
 
 		testTaxonEntities.add(14);
 		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities, testTaxonEntities);
+		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
 		System.out.println("Pop size = 2933;  taxon Entities = {11,12,13,14} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
 		System.out.println("HyperSS result = " + result + "\n");
 

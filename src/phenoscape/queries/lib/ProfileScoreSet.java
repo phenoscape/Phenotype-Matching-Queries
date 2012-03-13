@@ -128,17 +128,17 @@ public class ProfileScoreSet{
 		scores.append("\t");
 		scores.append(decile);
 		scores.append("\t");
-		scores.append(maxICScore);
-		scores.append("\t");
-		scores.append(iccsScore);
-		scores.append("\t");
-		scores.append(simJScore);
-		scores.append("\t");
-		scores.append(simICScore);
-		scores.append("\t");
-		scores.append(simGOSScore);
-		scores.append("\t");
-		scores.append(simNormGOSScore);
+//		scores.append(maxICScore);
+//		scores.append("\t");
+//		scores.append(iccsScore);
+//		scores.append("\t");
+//		scores.append(simJScore);
+//		scores.append("\t");
+//		scores.append(simICScore);
+//		scores.append("\t");
+//		scores.append(simGOSScore);
+//		scores.append("\t");
+//		scores.append(simNormGOSScore);
 		u.writeOrDump(scores.toString(),w);
 	}
 	
