@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nexml xmlns="http://www.nexml.org/2009" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:phen="http://www.bioontologies.org/obd/schema/pheno" generator="Phenex 1.1.2" version="0.9">
+  <meta xmlns:ter="http://purl.org/dc/terms/" xsi:type="LiteralMeta" property="ter:creator"/>
+  <meta xmlns:ter="http://purl.org/dc/terms/" xsi:type="LiteralMeta" property="ter:references"/>
+  <meta xmlns:ter="http://purl.org/dc/terms/" xsi:type="LiteralMeta" property="ter:description"/>
+  <otus id="0808cccc-ab83-4842-ab94-5cda0f0a5e01">
+    <otu id="3c4d210d-2ab6-4506-9a06-28db87c0cb9d" label="" about="#3c4d210d-2ab6-4506-9a06-28db87c0cb9d">
+      <meta xmlns:ns="http://www.nexml.org/2009" xmlns:ter="http://rs.tdwg.org/dwc/terms/" xsi:type="ns:ResourceMeta" rel="ter:taxonID" href="http://purl.obolibrary.org/obo/TTO_1025074"/>
+    </otu>
+    <otu id="c0e800bd-4313-4110-a884-8a40f0ccda58" label="" about="#c0e800bd-4313-4110-a884-8a40f0ccda58">
+      <meta xmlns:ns="http://www.nexml.org/2009" xmlns:ter="http://rs.tdwg.org/dwc/terms/" xsi:type="ns:ResourceMeta" rel="ter:taxonID" href="http://purl.obolibrary.org/obo/TTO_1005793"/>
+    </otu>
+    <otu id="acf1834d-16ea-46a3-b2bd-56879731072b" label="" about="#acf1834d-16ea-46a3-b2bd-56879731072b">
+      <meta xmlns:ns="http://www.nexml.org/2009" xmlns:ter="http://rs.tdwg.org/dwc/terms/" xsi:type="ns:ResourceMeta" rel="ter:taxonID" href="http://purl.obolibrary.org/obo/TTO_1025069"/>
+    </otu>
+    <otu id="ed770fa7-92cc-4cca-910b-aec1ce6b919e" label="" about="#ed770fa7-92cc-4cca-910b-aec1ce6b919e">
+      <meta xmlns:ns="http://www.nexml.org/2009" xmlns:ter="http://rs.tdwg.org/dwc/terms/" xsi:type="ns:ResourceMeta" rel="ter:taxonID" href="http://purl.obolibrary.org/obo/TTO_1067305"/>
+    </otu>
+    <otu id="93f4df6d-5b88-409a-8bd8-b2cc69f2971c" label="" about="#93f4df6d-5b88-409a-8bd8-b2cc69f2971c">
+      <meta xmlns:ns="http://www.nexml.org/2009" xmlns:ter="http://rs.tdwg.org/dwc/terms/" xsi:type="ns:ResourceMeta" rel="ter:taxonID" href="http://purl.obolibrary.org/obo/TTO_1005730"/>
+    </otu>
+    <otu id="dd8883a4-8dba-4513-9203-df8f8c761719" label="" about="#dd8883a4-8dba-4513-9203-df8f8c761719">
+      <meta xmlns:ns="http://www.nexml.org/2009" xmlns:ter="http://rs.tdwg.org/dwc/terms/" xsi:type="ns:ResourceMeta" rel="ter:taxonID" href="http://purl.obolibrary.org/obo/TTO_1068997"/>
+    </otu>
+    <otu id="4b65ecb6-1cc8-442a-845a-70c27fab6c8d" label="" about="#4b65ecb6-1cc8-442a-845a-70c27fab6c8d">
+      <meta xmlns:ns="http://www.nexml.org/2009" xmlns:ter="http://rs.tdwg.org/dwc/terms/" xsi:type="ns:ResourceMeta" rel="ter:taxonID" href="http://purl.obolibrary.org/obo/TTO_104093"/>
+    </otu>
+  </otus>
+  <characters xmlns:ns="http://www.nexml.org/2009" id="e0102e2c-0b70-42cf-8fa7-1477d27c41d8" xsi:type="ns:StandardCells" otus="0808cccc-ab83-4842-ab94-5cda0f0a5e01">
+    <format>
+      <states id="a43c3943-31d2-41cd-8d38-6ba1be69d64c">
+        <state id="e9cb274e-c89e-4e70-a325-fa3284d6589b" label="short" symbol="short" about="#e9cb274e-c89e-4e70-a325-fa3284d6589b">
+          <meta xmlns:voc="http://vocab.phenoscape.org/" xsi:type="ns:LiteralMeta" property="voc:describesPhenotype">
+            <phen:phenotype>
+              <phen:phenotype_character>
+                <phen:bearer>
+                  <phen:typeref about="TAO:0000356"/>
+                </phen:bearer>
+                <phen:quality>
+                  <phen:typeref about="PATO:0000574"/>
+                </phen:quality>
+              </phen:phenotype_character>
+            </phen:phenotype>
+          </meta>
+        </state>
+        <state id="9c1c1439-9756-47eb-af8e-f89192e18f7a" label="long" symbol="long" about="#9c1c1439-9756-47eb-af8e-f89192e18f7a">
+          <meta xmlns:voc="http://vocab.phenoscape.org/" xsi:type="ns:LiteralMeta" property="voc:describesPhenotype">
+            <phen:phenotype>
+              <phen:phenotype_character>
+                <phen:bearer>
+                  <phen:typeref about="TAO:0000356"/>
+                </phen:bearer>
+                <phen:quality>
+                  <phen:typeref about="PATO:0000573"/>
+                </phen:quality>
+              </phen:phenotype_character>
+            </phen:phenotype>
+          </meta>
+        </state>
+      </states>
+      <states id="7fa8ed0e-27a7-48d3-afc4-c73a98edbfbf">
+        <state id="11bc1473-8be7-49cf-9d18-57b2bdd85e99" label="Free from isthmus" symbol="0" about="#11bc1473-8be7-49cf-9d18-57b2bdd85e99">
+          <meta xmlns:voc="http://vocab.phenoscape.org/" xsi:type="ns:LiteralMeta" property="voc:describesPhenotype">
+            <phen:phenotype>
+              <phen:phenotype_character>
+                <phen:bearer>
+                  <phen:typeref about="TAO:0002057"/>
+                </phen:bearer>
+                <phen:quality>
+                  <phen:typeref about="PATO:0000141"/>
+                </phen:quality>
+              </phen:phenotype_character>
+            </phen:phenotype>
+          </meta>
+        </state>
+        <state id="3b87bd20-0b6a-43a6-9fd5-1d40d42d9075" label="Attached to isthmus" symbol="1" about="#3b87bd20-0b6a-43a6-9fd5-1d40d42d9075">
+          <meta xmlns:voc="http://vocab.phenoscape.org/" xsi:type="ns:LiteralMeta" property="voc:describesPhenotype">
+            <phen:phenotype>
+              <phen:phenotype_character>
+                <phen:bearer>
+                  <phen:typeref about="TAO:0002057"/>
+                </phen:bearer>
+                <phen:quality>
+                  <phen:typeref about="PATO:0000141"/>
+                  <phen:related_entity>
+                    <phen:typeref about="TAO:0000368"/>
+                  </phen:related_entity>
+                </phen:quality>
+              </phen:phenotype_character>
+            </phen:phenotype>
+          </meta>
+        </state>
+      </states>
+      <states id="1f115785-ebf3-4458-9c80-fb3c6a127ce7">
+        <state id="f1788a11-02e1-4316-890e-91b601e5e50c" label="12-20" symbol="2" about="#f1788a11-02e1-4316-890e-91b601e5e50c">
+          <meta xmlns:voc="http://vocab.phenoscape.org/" xsi:type="ns:LiteralMeta" property="voc:describesPhenotype">
+            <phen:phenotype>
+              <phen:phenotype_character>
+                <phen:description>12-20</phen:description>
+                <phen:bearer>
+                  <phen:typeref about="TAO:0001421"/>
+                </phen:bearer>
+                <phen:quality>
+                  <phen:typeref about="PATO:0000070"/>
+                </phen:quality>
+              </phen:phenotype_character>
+            </phen:phenotype>
+          </meta>
+        </state>
+        <state id="b7790766-2cc6-42a4-bb86-7739b4ac3528" label="5-10" symbol="1" about="#b7790766-2cc6-42a4-bb86-7739b4ac3528">
+          <meta xmlns:voc="http://vocab.phenoscape.org/" xsi:type="ns:LiteralMeta" property="voc:describesPhenotype">
+            <phen:phenotype>
+              <phen:phenotype_character>
+                <phen:description>5-10</phen:description>
+                <phen:bearer>
+                  <phen:typeref about="TAO:0001421"/>
+                </phen:bearer>
+                <phen:quality>
+                  <phen:typeref about="PATO:0000070"/>
+                </phen:quality>
+              </phen:phenotype_character>
+            </phen:phenotype>
+          </meta>
+        </state>
+        <state id="62297a95-8c29-4802-8150-f04f3ee7ea60" label="0" symbol="0" about="#62297a95-8c29-4802-8150-f04f3ee7ea60">
+          <meta xmlns:voc="http://vocab.phenoscape.org/" xsi:type="ns:LiteralMeta" property="voc:describesPhenotype">
+            <phen:phenotype>
+              <phen:phenotype_character>
+                <phen:bearer>
+                  <phen:typeref about="TAO:0001421"/>
+                </phen:bearer>
+                <phen:quality>
+                  <phen:typeref about="PATO:0000462"/>
+                </phen:quality>
+              </phen:phenotype_character>
+            </phen:phenotype>
+          </meta>
+        </state>
+      </states>
+      <char id="8445daf7-ea9f-495e-9969-caa2312cbc82" label="Gill raker length" states="a43c3943-31d2-41cd-8d38-6ba1be69d64c"/>
+      <char id="86ea8880-855a-4d89-af2d-6c7262af47c3" label="Gill opening" states="7fa8ed0e-27a7-48d3-afc4-c73a98edbfbf"/>
+      <char id="378e51e7-7a84-4323-8428-74268fc0863b" label="anal fin lepidotrichium" states="1f115785-ebf3-4458-9c80-fb3c6a127ce7"/>
+    </format>
+    <matrix>
+      <row id="3fe751e9-2aaa-48e8-bec7-271e2347a5c4" otu="3c4d210d-2ab6-4506-9a06-28db87c0cb9d">
+        <cell char="8445daf7-ea9f-495e-9969-caa2312cbc82" state="9c1c1439-9756-47eb-af8e-f89192e18f7a"/>
+        <cell char="86ea8880-855a-4d89-af2d-6c7262af47c3" state="3b87bd20-0b6a-43a6-9fd5-1d40d42d9075"/>
+        <cell char="378e51e7-7a84-4323-8428-74268fc0863b" state="f1788a11-02e1-4316-890e-91b601e5e50c"/>
+      </row>
+      <row id="e05e5231-5e68-4ea3-9274-b2acf2c4f84c" otu="c0e800bd-4313-4110-a884-8a40f0ccda58">
+        <cell char="8445daf7-ea9f-495e-9969-caa2312cbc82" state="e9cb274e-c89e-4e70-a325-fa3284d6589b"/>
+        <cell char="86ea8880-855a-4d89-af2d-6c7262af47c3" state="3b87bd20-0b6a-43a6-9fd5-1d40d42d9075"/>
+        <cell char="378e51e7-7a84-4323-8428-74268fc0863b" state="b7790766-2cc6-42a4-bb86-7739b4ac3528"/>
+      </row>
+      <row id="3716e4fa-a906-4a83-b543-0e8fa9500ca1" otu="acf1834d-16ea-46a3-b2bd-56879731072b">
+        <cell char="86ea8880-855a-4d89-af2d-6c7262af47c3" state="3b87bd20-0b6a-43a6-9fd5-1d40d42d9075"/>
+        <cell char="378e51e7-7a84-4323-8428-74268fc0863b" state="62297a95-8c29-4802-8150-f04f3ee7ea60"/>
+      </row>
+      <row id="3e02f900-7293-4a04-8583-ee3c78fb250a" otu="ed770fa7-92cc-4cca-910b-aec1ce6b919e">
+        <cell char="86ea8880-855a-4d89-af2d-6c7262af47c3" state="3b87bd20-0b6a-43a6-9fd5-1d40d42d9075"/>
+        <cell char="378e51e7-7a84-4323-8428-74268fc0863b" state="62297a95-8c29-4802-8150-f04f3ee7ea60"/>
+      </row>
+      <row id="1f33efc9-4124-4acb-824f-2c8faed28857" otu="93f4df6d-5b88-409a-8bd8-b2cc69f2971c">
+        <cell char="8445daf7-ea9f-495e-9969-caa2312cbc82" state="e9cb274e-c89e-4e70-a325-fa3284d6589b"/>
+        <cell char="86ea8880-855a-4d89-af2d-6c7262af47c3" state="3b87bd20-0b6a-43a6-9fd5-1d40d42d9075"/>
+      </row>
+      <row id="ec75c384-22f9-4233-b64d-1a06bc7400b9" otu="dd8883a4-8dba-4513-9203-df8f8c761719">
+        <cell char="8445daf7-ea9f-495e-9969-caa2312cbc82" state="9c1c1439-9756-47eb-af8e-f89192e18f7a"/>
+        <cell char="86ea8880-855a-4d89-af2d-6c7262af47c3" state="3b87bd20-0b6a-43a6-9fd5-1d40d42d9075"/>
+      </row>
+      <row id="11b568ae-fb12-4c81-a518-a68e55c53be0" otu="4b65ecb6-1cc8-442a-845a-70c27fab6c8d">
+        <cell char="86ea8880-855a-4d89-af2d-6c7262af47c3" state="11bc1473-8be7-49cf-9d18-57b2bdd85e99"/>
+        <cell char="378e51e7-7a84-4323-8428-74268fc0863b" state="f1788a11-02e1-4316-890e-91b601e5e50c"/>
+      </row>
+    </matrix>
+  </characters>
+</nexml>
