@@ -9,7 +9,11 @@ public class AnnotationPair {
 	private final int HASHBASE = 47;
 	private final int HASHMULTIPLIER = 31;
 
-	
+	/**
+	 * 
+	 * @param b bearer of this annotation; a taxon or a gene
+	 * @param p phenotype; an EQ
+	 */
 	public AnnotationPair(final int b, final int p){
 		if (b <= 0)
 			throw new IllegalArgumentException("Negative or zero bearer id passed to AnnotationPair constructor");

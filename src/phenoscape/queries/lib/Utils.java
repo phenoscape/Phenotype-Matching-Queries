@@ -151,11 +151,11 @@ public class Utils {
 		// if getOneName fails, these will be assigned -1 and shouldn't affect anything (handles unit test cases with incomplete attribute sets)
 		int compositionNodeID = getOneName("composition");
 		int structureNodeID = getOneName("structure");
-		//int closureNodeID = getOneName("closure");
-		//int sizeNodeID = getOneName("size");
-		//int shapeNodeID = getOneName("shape");
-		//int closureStructureNodeID = getOneName("Closure+Structure");
-		//int shapeSizeNodeID = getOneName("Shape+Size");
+		int closureNodeID = getOneName("closure");
+		int sizeNodeID = getOneName("size");
+		int shapeNodeID = getOneName("shape");
+		int closureStructureNodeID = getOneName("Closure+Structure");
+		int shapeSizeNodeID = getOneName("Shape+Size");
 		
 		
 		ResultSet attributeResults = s1.executeQuery(ATTRIBUTEQUERY);
@@ -165,19 +165,33 @@ public class Utils {
 		while(attributeResults.next()){
 			final int quality_id = attributeResults.getInt(1);
 			final int attribute_id = attributeResults.getInt(2);
-			if (attribute_id == structureNodeID && attMap.containsKey(quality_id) && attMap.get(quality_id).intValue()==compositionNodeID){
-				// do nothing
+			if (attribute_id == closureStructureNodeID || attribute_id == shapeSizeNodeID){
+				//do nothing
 			}
-			//else if ((attribute_id == closureStructureNodeID) || attribute_id == shapeSizeNodeID) {
-				// do nothing
-			//}
 			else {
-				attMap.put(quality_id,attribute_id);				
+				if (attMap.containsKey(quality_id)){
+					if (attMap.get(quality_id) == compositionNodeID && attribute_id == structureNodeID){
+						//do nothing
+					}
+					else{  // report and let it pass
+						System.out.println("Collision: " + quality_id + " old entry =" + attMap.get(quality_id) + " new entry =" + attribute_id);
+						attMap.put(quality_id,attribute_id);						
+					}
+				}
+				else{
+					attMap.put(quality_id,attribute_id);
+				}
 			}
-			if (!hasNodeUID(attribute_id))
+			if (!hasNodeUID(attribute_id)){
 				putNodeUIDName(attribute_id,attributeResults.getString(3),attributeResults.getString(4));
+			}
 		}		
 		
+		int count = 0;
+		for(Integer q : attMap.keySet())
+			if (attMap.get(q) == compositionNodeID)
+				count++;
+		System.out.println("Map has " + count + " qualities mapping to composition");
 		return attMap;
 	}
 

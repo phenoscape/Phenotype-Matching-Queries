@@ -44,7 +44,7 @@ import phenoscape.queries.lib.TaxonPhenotypeLink;
 import phenoscape.queries.lib.Utils;
 import phenoscape.queries.lib.VariationTable;
 
-public class TestPropTree5 extends PropTreeTest{
+public class TestPropSymTree extends PropTreeTest{
 
 
 	PhenotypeProfileAnalysis testAnalysis;
@@ -899,12 +899,12 @@ public class TestPropTree5 extends PropTreeTest{
 	}
 
 	
-	private static final String TAXONREPORTFILENAME =  "../../SmallKBTests/PropTree5/TaxonVariationReport.txt";
-	private static final String GENEREPORTFILENAME =  "../../SmallKBTests/PropTree5/GeneVariationReport.txt";
-	private static final String PHENOTYPEMATCHREPORTFILENAME = "../../SmallKBTests/PropTree5/PhenotypeMatchReport.txt";
-	private static final String PROFILEMATCHREPORTFILENAME = "../../SmallKBTests/PropTree5/ProfileMatchReport.txt";
-	private static final String TAXONGENEMAXICSCOREFILENAME = "../../SmallKBTests/PropTree5/MaxICReport.txt";
-	private static final String RANDOMIZATIONREPORTSFOLDER = "../../SmallKBTests/PropTree5/RandomizationReports";
+	private static final String TAXONREPORTFILENAME =  "../../SmallKBTests/proptree_symmetrictest/TaxonVariationReport.txt";
+	private static final String GENEREPORTFILENAME =  "../../SmallKBTests/proptree_symmetrictest/GeneVariationReport.txt";
+	private static final String PHENOTYPEMATCHREPORTFILENAME = "../../SmallKBTests/proptree_symmetrictest/PhenotypeMatchReport.txt";
+	private static final String PROFILEMATCHREPORTFILENAME = "../../SmallKBTests/proptree_symmetrictest/ProfileMatchReport.txt";
+	private static final String TAXONGENEMAXICSCOREFILENAME = "../../SmallKBTests/proptree_symmetrictest/MaxICReport.txt";
+	private static final String RANDOMIZATIONREPORTSFOLDER = "../../SmallKBTests/proptree_symmetrictest/RandomizationReports";
 
 	
 
@@ -926,7 +926,7 @@ public class TestPropTree5 extends PropTreeTest{
 		dateFormatter = DateFormat.getDateInstance(DateFormat.DEFAULT);
 		today = new Date();
 		DateFormat timeFormatter = DateFormat.getTimeInstance(DateFormat.DEFAULT);
-		String timeStamp = dateFormatter.format(today) + " " + timeFormatter.format(today) + " on PropTree5";		
+		String timeStamp = dateFormatter.format(today) + " " + timeFormatter.format(today) + " on proptree_symmetrictest";		
 		taxonWriter = new BufferedWriter(new FileWriter(outFile1));
 		geneWriter = new BufferedWriter(new FileWriter(outFile2));
 		phenoWriter = new BufferedWriter(new FileWriter(outFile3));

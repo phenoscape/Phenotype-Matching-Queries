@@ -299,6 +299,33 @@ public class SimilarityCalculator<E> {
 		return result;
 	}
 	
+	
+	/**
+	 * 
+	 * @param list1
+	 * @param list2
+	 * @return
+	 */
+	public Collection<E> collectionIntersection(Collection<E>c1,Collection<E>c2){
+		Collection<E> result = new ArrayList<E>();
+		Set<E> overlap = new HashSet<E>();  //will hold a list non-duplicated members
+		overlap.addAll(c1);
+		overlap.addAll(c2);
+		for (E item : overlap){
+			final int count1 = countOccurrences(c1,item);
+			final int count2 = countOccurrences(c2,item);
+			int theCount;
+			if (count1 <= count2)
+				theCount = count1;
+			else
+				theCount = count2;
+			for(int i=0;i<theCount;i++)
+				result.add(item);
+		}
+		return result;
+	}
+	
+
 	/**
 	 * 
 	 * @param list1
@@ -320,6 +347,20 @@ public class SimilarityCalculator<E> {
 		}
 		return result;
 	}
+	
+	/**
+	 * 
+	 * @param list1
+	 * @param list2
+	 * @return
+	 */
+	public Collection<E> collectionUnion(Collection<E>c1,Collection<E>c2){
+		Collection<E> result = new ArrayList<E>();
+		result.addAll(c1);
+		result.addAll(c2);
+		return result;
+	}
+
 	
 	
 	public int countOccurrences(Collection<E> c1, E item){
