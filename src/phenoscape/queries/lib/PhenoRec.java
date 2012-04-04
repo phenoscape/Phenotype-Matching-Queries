@@ -88,7 +88,6 @@ public class PhenoRec {
 			if (getPhenoEntityID() == parentId.intValue())
 				return true;
 			if (u.getNodeUID(getPhenoEntityID()) == null){
-			//	System.err.println("Null UID found in   " + getPhenoEntityID());
 				return false;
 			}
 			else if (u.getNodeUID(parentId.intValue()) == null){
@@ -102,10 +101,8 @@ public class PhenoRec {
 				return true;
 			if (u.getNodeUID(other.getPhenoEntityID()) == null){
 				return false;
-			//	System.err.println("Null UID found in   " + other.getPhenoEntityID());
 			}
 			else if (u.getNodeUID(parentId.intValue()) == null){
-				//System.err.println("Null UID found in   " + parentId.intValue());
 			}
 			else if (u.getNodeUID(other.getPhenoEntityID()).equals(u.getNodeUID(parentId.intValue())))
 				return true;

@@ -20,6 +20,11 @@ public class PhenotypeExpression {
 	private final int HASHMULTIPLIER = 31;
 
 	public final static int VOIDENTITY = -1;
+	
+	private static final String BADENTITYMSG = "Negative or zero entity id passed to EQPair constructor";
+	private static final String BADQUALITYMSG = "Negative or zero quality id passed to EQPair constructor";
+	private static final String BADENTITY2MSG = "Negative or zero entity2 id passed to EQPair constructor";
+	
 	/**
 	 * Constructor for phenotypes pairing an entity and a quality
 	 * @param e
@@ -27,9 +32,9 @@ public class PhenotypeExpression {
 	 */
 	public PhenotypeExpression(Integer e, Integer q){
 		if (e.intValue()<= 0)
-			throw new IllegalArgumentException("Negative or zero entity id passed to EQPair constructor");
+			throw new IllegalArgumentException(BADENTITYMSG);
 		if (q.intValue()<= 0)
-			throw new IllegalArgumentException("Negative or zero quality id passed to EQPair constructor");
+			throw new IllegalArgumentException(BADQUALITYMSG);
 		entity = e.intValue();
 		quality = q.intValue();
 		int hc = HASHBASE;
@@ -52,12 +57,13 @@ public class PhenotypeExpression {
 	 * @param e2
 	 */
 	public PhenotypeExpression(Integer e, Integer q, Integer e2){
+		
 		if (e.intValue()<= 0)
-			throw new IllegalArgumentException("Negative or zero entity id passed to EQPair constructor");
+			throw new IllegalArgumentException(BADENTITYMSG);
 		if (q.intValue()<= 0)
-			throw new IllegalArgumentException("Negative or zero quality id passed to EQPair constructor");
+			throw new IllegalArgumentException(BADQUALITYMSG);
 		if (e2.intValue()<= 0)
-			throw new IllegalArgumentException("Negative or zero entity2 id passed to EQPair constructor");
+			throw new IllegalArgumentException(BADENTITY2MSG);
 		entity = e.intValue();
 		quality = q.intValue();
 		entity2 = e2.intValue();
@@ -198,19 +204,13 @@ public class PhenotypeExpression {
 	public String getFullName(Utils u) throws SQLException{
 		final StringBuilder b =  new StringBuilder(200);
 		if (qualityName == null || !qualityName.equals(u.getNodeName(quality))) {
-			if (!u.checkConnection()){
-				u.closeKB();
-				u.retryKB();
-			}
+			checkConnection(u);
 			u.cacheOneNode(quality);
 			qualityName = u.getNodeName(quality);
 		}
 		if (!isSimpleQuality()){
 			if (entityName == null || !entityName.equals(u.getNodeName(entity))) {
-				if (!u.checkConnection()){
-					u.closeKB();
-					u.retryKB();
-				}
+				checkConnection(u);
 				u.cacheOneNode(entity);
 				entityName = u.getNodeName(entity);
 			}
@@ -230,20 +230,14 @@ public class PhenotypeExpression {
 		final StringBuilder b =  new StringBuilder(200);
 		String qualityUID = u.getNodeUID(quality);
 		if (qualityUID == null) {
-			if (!u.checkConnection()){
-				u.closeKB();
-				u.retryKB();
-			}
+			checkConnection(u);
 			u.cacheOneNode(quality);
 			qualityUID = u.getNodeUID(quality);
 		}
 		if (!isSimpleQuality()){
 			String entityUID = u.getNodeUID(entity);
 			if (entityUID == null) {
-				if (!u.checkConnection()){
-					u.closeKB();
-					u.retryKB();
-				}
+				checkConnection(u);
 				u.cacheOneNode(entity);
 				entityUID = u.getNodeUID(entity);
 			}
@@ -258,4 +252,11 @@ public class PhenotypeExpression {
 		return b.toString();
 	}
 
+	private void checkConnection(Utils u) throws SQLException{
+		if (!u.checkConnection()){
+			u.closeKB();
+			u.retryKB();
+		}
+	}
+	
 }

@@ -10,6 +10,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
+
 import phenoscape.queries.lib.Utils;
 
 public class TaxonomyTree {
@@ -31,6 +33,7 @@ public class TaxonomyTree {
 	private final Map<Integer,Set<Integer>> taxonomyTable = new HashMap<Integer,Set<Integer>>(40000);  //This holds the taxonomy <parent, children> using node_ids
 	private final Set<Integer> allTaxa;
 
+	static final Logger logger = Logger.getLogger(TaxonomyTree.class);
 
 	public TaxonomyTree(String rootUID,Utils u) throws SQLException {
 		this(getRootFromKB(u,rootUID),u);
@@ -150,7 +153,9 @@ public class TaxonomyTree {
 			return new TaxonomicNode(r);
 		}
 		else{
-			throw new RuntimeException("Failed to find a node with UID " + rootUID + " to root the taxonomy");
+			final String message = "Failed to find a node with UID " + rootUID + " to root the taxonomy";
+			logger.fatal(message);
+			throw new RuntimeException(message);
 		}
 	}
 

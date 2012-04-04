@@ -4,14 +4,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
+
+import phenoscape.queries.TaxonomyTree;
+
 public class CountTable<E> {
 
 	final static double LOG2 = Math.log(2.0);
 	
 	private long sum;
 	
-	private Map<E,Integer>table = new HashMap<E,Integer>();  // EQ -> count
+	private final Map<E,Integer>table = new HashMap<E,Integer>();  // EQ -> count
 	
+	static final Logger logger = Logger.getLogger(TaxonomyTree.class);
 
 	public void addCount(E p, int score){
 		table.put(p, score);
@@ -57,7 +62,9 @@ public class CountTable<E> {
 
 	public int getRawCount(E p){
 		if (!table.containsKey(p)){
-			throw new RuntimeException(p.getClass().toString() + ": " + p + " had no count entry");
+			final String message = p.getClass().toString() + ": " + p + " had no count entry";
+			logger.fatal(message);
+			throw new RuntimeException(message);
 		}
 		return table.get(p).intValue();
 	}
