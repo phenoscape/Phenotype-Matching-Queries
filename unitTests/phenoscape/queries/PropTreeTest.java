@@ -1,6 +1,8 @@
 package phenoscape.queries;
 
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 
 import phenoscape.queries.lib.Utils;
 import junit.framework.Assert;
@@ -77,6 +79,8 @@ public abstract class PropTreeTest {
 	int shhaID;
 	int ugdhID;
 	
+	final Set<Integer>geneIDs = new HashSet<Integer>();
+	
 	int opercleID;
 	int dorsalRegionOfCerebellumID;
 	int eyeID;
@@ -110,60 +114,79 @@ public abstract class PropTreeTest {
 		
 		alfID = u.getIDFromName("alf");
 		Assert.assertFalse("failed to lookup gene alf",alfID==-1);
+		geneIDs.add(alfID);
 
 		apaID = u.getIDFromName("apa");
 		Assert.assertFalse("failed to lookup gene apa",apaID==-1);
+		geneIDs.add(apaID);
 		
 		apcID = u.getIDFromName("apc");
 		Assert.assertFalse("failed to lookup gene apc",apcID==-1);
+		geneIDs.add(apcID);
 		
 		brpf1ID = u.getIDFromName("brpf1");
 		Assert.assertFalse("failed to lookup gene apc",apcID==-1);
+		geneIDs.add(brpf1ID);
 		
 		cyp26b1ID = u.getIDFromName("cyp26b1");
 		Assert.assertFalse("failed to lookup gene cyp26b1",cyp26b1ID==-1);
+		geneIDs.add(cyp26b1ID);
 		
 		edn1ID = u.getIDFromName("edn1");
 		Assert.assertFalse("failed to lookup gene edn1",edn1ID==-1);
+		geneIDs.add(edn1ID);
 		
 		fgf8aID = u.getIDFromName("fgf8a");
 		Assert.assertFalse("failed to lookup gene fgf8a",fgf8aID==-1);
+		geneIDs.add(fgf8aID);
 
 		fgf24ID = u.getIDFromName("fgf24");
 		Assert.assertFalse("failed to lookup gene fgf24",fgf24ID==-1);
+		geneIDs.add(fgf24ID);
 		
 		furinaID = u.getIDFromName("furina");
 		Assert.assertFalse("failed to lookup gene furina",furinaID==-1);
+		geneIDs.add(furinaID);
 		
 		henID = u.getIDFromName("hen");
 		Assert.assertFalse("failed to lookup gene hen",henID==-1);
+		geneIDs.add(henID);
 		
 		jag1bID = u.getIDFromName("jag1b");
 		Assert.assertFalse("failed to lookup gene jag1b",jag1bID==-1);
+		geneIDs.add(jag1bID);
 		
 		lama5ID = u.getIDFromName("lama5");
 		Assert.assertFalse("failed to lookup gene lama5",lama5ID==-1);
+		geneIDs.add(lama5ID);
 		
 		lofID = u.getIDFromName("lof");
 		Assert.assertFalse("failed to lookup gene lof",lofID==-1);
+		geneIDs.add(lofID);
 		
 		macf1ID = u.getIDFromName("macf1");
 		Assert.assertFalse("failed to lookup gene macf1",macf1ID==-1);
+		geneIDs.add(macf1ID);
 		
 		rndID = u.getIDFromName("rnd");
 		Assert.assertFalse("failed to lookup gene rnd",rndID==-1);
+		geneIDs.add(rndID);
 		
 		sec23aID = u.getIDFromName("sec23a");
 		Assert.assertFalse("failed to lookup gene sec23a",sec23aID==-1);
+		geneIDs.add(sec23aID);
 		
 		sec24dID = u.getIDFromName("sec24d");
 		Assert.assertFalse("failed to lookup gene sec24d",sec24dID==-1);
+		geneIDs.add(sec24dID);
 		
 		shhaID = u.getIDFromName("shha");
 		Assert.assertFalse("failed to lookup gene shha",shhaID==-1);
+		geneIDs.add(shhaID);
 		
 		ugdhID = u.getIDFromName("ugdh");
 		Assert.assertFalse("failed to lookup gene ugdh",ugdhID==-1);
+		geneIDs.add(ugdhID);
 
 
 		opercleID = u.getIDFromName("opercle");

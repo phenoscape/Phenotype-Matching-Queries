@@ -354,7 +354,7 @@ public class TestPropTree4 extends PropTreeTest{
 	@Test
 	public void testGetAllGeneAnnotationsFromKB() throws SQLException {
 		Collection<DistinctGeneAnnotationRecord> annotations = testAnalysis.getAllGeneAnnotationsFromKB(u);
-		Assert.assertEquals("Number of gene phenotype annotations",23,annotations.size());
+		Assert.assertEquals("Number of gene phenotype annotations",24,annotations.size());
 	}
 
 	@Test

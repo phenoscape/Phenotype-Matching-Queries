@@ -173,9 +173,12 @@ public class Utils {
 					if (attMap.get(quality_id) == compositionNodeID && attribute_id == structureNodeID){
 						//do nothing
 					}
-					else{  // report and let it pass
+					else if(attMap.get(quality_id) != attribute_id){  // report and let it pass
 						System.out.println("Collision: " + quality_id + " old entry =" + attMap.get(quality_id) + " new entry =" + attribute_id);
 						attMap.put(quality_id,attribute_id);						
+					}
+					else {
+						//do nothing
 					}
 				}
 				else{
@@ -191,7 +194,6 @@ public class Utils {
 		for(Integer q : attMap.keySet())
 			if (attMap.get(q) == compositionNodeID)
 				count++;
-		System.out.println("Map has " + count + " qualities mapping to composition");
 		return attMap;
 	}
 

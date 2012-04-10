@@ -339,7 +339,14 @@ public class TestPropTree5 extends PropTreeTest{
 	@Test
 	public void testGetAllGeneAnnotationsFromKB() throws SQLException {
 		Collection<DistinctGeneAnnotationRecord> annotations = testAnalysis.getAllGeneAnnotationsFromKB(u);
-		Assert.assertEquals("Number of gene phenotype annotations",23,annotations.size());
+		Assert.assertEquals("Number of gene phenotype annotations",24,annotations.size());
+		initNames(u);
+		for (DistinctGeneAnnotationRecord dgar : annotations){
+			System.out.println("Trying dgar: " + dgar.getGeneLabel());
+			Assert.assertNotNull(dgar);
+			Assert.assertTrue("Bad id: " + dgar.getGeneLabel(),geneIDs.contains(dgar.getGeneID()));
+		}
+		
 	}
 
 	@Test
