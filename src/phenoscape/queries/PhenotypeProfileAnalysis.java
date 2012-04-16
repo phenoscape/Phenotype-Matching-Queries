@@ -288,7 +288,14 @@ public class PhenotypeProfileAnalysis {
 			logger.info("Setting up Attribute table");
 		qualityNodeID = u.getQualityNodeID();   //set to the root of PATO
 		attributeMap = u.setupAttributes();
-
+		
+		int qCount = 0;
+		for(Integer q_id : attributeMap.keySet()){
+			if (attributeMap.get(q_id).intValue() == qualityNodeID)
+				qCount++;
+		}
+		System.out.println("qCount = " + qCount);
+		
 		PhenotypeExpression.getEQTop(u);   //just to initialize early.
 
 		attributeSet.addAll(attributeMap.values());		
@@ -341,13 +348,15 @@ public class PhenotypeProfileAnalysis {
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
 
 		traverseTaxonomy(t, t.getRootNodeID(), taxonProfiles, taxonVariation, u);
+		flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
 		t.report(u, taxonWriter);
 		taxonVariation.variationReport(u,taxonWriter);	
 		u.writeOrDump("\nList of qualities that were placed under quality as an attribute by default\n", taxonWriter);
 		for(Integer bad_id : badTaxonQualities.keySet()){
 			u.writeOrDump(u.getNodeName(bad_id) + " " + badTaxonQualities.get(bad_id), taxonWriter);
 		}
-		flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
+		taxonWriter.close();
+		logger.info("Finished writing taxon profiles");
 		if (taxonProfiles.isEmpty()){
 			logger.fatal("No taxa in Profile Set");
 			throw new RuntimeException("No taxa in Profile Set");
@@ -795,34 +804,34 @@ public class PhenotypeProfileAnalysis {
 
 
 	/**
-	 * 
-	 * @param t 
+	 * Creates profile objects for each taxon and installs into taxonProfiles 
+	 * @param allLinks
 	 * @param u
 	 * @param reportWriter
 	 * @throws SQLException
 	 */
 	ProfileMap loadTaxonProfiles(Map<Integer, Set<TaxonPhenotypeLink>> allLinks, Utils u, Map<Integer,Integer> attMap,int nodeIDofQuality, Map<Integer,Integer> badQualities) throws SQLException{	
 		ProfileMap taxonProfiles = new ProfileMap();
-		Set<Integer> taxonSet = allLinks.keySet();
+		final Set<Integer> taxonSet = allLinks.keySet();
 		for (Integer taxonID : taxonSet){
 			Profile myProfile = new Profile();
 			for(TaxonPhenotypeLink link : allLinks.get(taxonID)){
 				u.putNodeUIDName(link.getPhenotypeNodeID(), link.getPhenotypeUID(),link.getPhenotypeLabel());
 				if (attMap.containsKey(link.getQualityNodeID())){
 					final int attribute_id = attMap.get(link.getQualityNodeID());
-					myProfile.addPhenotype(link.getEntityNodeID(),attribute_id, link.getPhenotypeNodeID());
+					myProfile.addPhenotype(link.getEntityNodeID(),attribute_id, link.getPhenotypeNodeID(), link.getRelatedEntityNodeID());
 				}
 				else{
 					final int linkQualityID = link.getQualityNodeID();
-					myProfile.addPhenotype(link.getEntityNodeID(),nodeIDofQuality, link.getPhenotypeNodeID());
+					myProfile.addPhenotype(link.getEntityNodeID(),nodeIDofQuality, link.getPhenotypeNodeID(),link.getRelatedEntityNodeID());
 					if (badQualities.containsKey(linkQualityID)){
 						badQualities.put(linkQualityID, badQualities.get(linkQualityID).intValue()+1);
-						myProfile.addPhenotype(link.getEntityNodeID(),qualityNodeID,link.getPhenotypeNodeID());
+						myProfile.addPhenotype(link.getEntityNodeID(),qualityNodeID,link.getPhenotypeNodeID(),link.getRelatedEntityNodeID());
 					}
 					else {
 						badQualities.put(linkQualityID, 1);
 						u.putNodeUIDName(linkQualityID, link.getQualityUID(), link.getQualityLabel());
-						myProfile.addPhenotype(link.getEntityNodeID(),qualityNodeID,link.getPhenotypeNodeID());
+						myProfile.addPhenotype(link.getEntityNodeID(),qualityNodeID,link.getPhenotypeNodeID(),link.getRelatedEntityNodeID());
 					}
 				}
 				u.putNodeUIDName(link.getEntityNodeID(), link.getEntityUID(),link.getEntityLabel());
@@ -949,8 +958,8 @@ public class PhenotypeProfileAnalysis {
 			}
 			for(Integer ent : usedEntities){
 				for(Integer att : usedAttributes){
-					Set <Integer>unionSet = new HashSet<Integer>();
-					Set <Integer>intersectionSet = new HashSet<Integer>();
+					Set <PhenotypeExpression>unionSet = new HashSet<PhenotypeExpression>();
+					Set <PhenotypeExpression>intersectionSet = new HashSet<PhenotypeExpression>();
 					for (Profile childProfile : childProfiles){
 						if (!childProfile.isEmpty() && childProfile.hasPhenotypeSet(ent, att)){
 							unionSet.addAll(childProfile.getPhenotypeSet(ent,att));

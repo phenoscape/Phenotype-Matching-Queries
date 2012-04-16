@@ -7,52 +7,51 @@ import java.util.Set;
 
 public class Profile {
 	
-	private Map<Integer,Map<Integer,Set<Integer>>> eqtable = new HashMap<Integer,Map<Integer,Set<Integer>>>();  //entities, attributes phenotypes
+	//private Map<Integer,Map<Integer,Set<Integer>>> eqtable = new HashMap<Integer,Map<Integer,Set<Integer>>>();  //entities, attributes phenotypes
+	private Map<Integer,Map<Integer,Set<PhenotypeExpression>>> eqtable = new HashMap<Integer,Map<Integer,Set<PhenotypeExpression>>>();  //entities, attributes phenotypes
 	private Set<PhenotypeExpression> eaSet = null;
 	private Set<PhenotypeExpression> unionSet = null;
 
 	
 	//The next five methods can alter the eqtable; 
-	public void addPhenotype(Integer entity_node_id, Integer attribute_node_id, Integer phenotype_node_id){
+	public void addPhenotype(Integer entity_node_id, Integer attribute_node_id, Integer phenotype_node_id, int related_entity_id){
 		if (eqtable.containsKey(entity_node_id)){
-			Map<Integer,Set<Integer>> entity_entry = eqtable.get(entity_node_id);
+			Map<Integer,Set<PhenotypeExpression>> entity_entry = eqtable.get(entity_node_id);
 			if (entity_entry.containsKey(attribute_node_id)){
-				Set<Integer> phenotypeSet = entity_entry.get(attribute_node_id);
-				phenotypeSet.add(phenotype_node_id);
+				Set<PhenotypeExpression> phenotypeSet = entity_entry.get(attribute_node_id);
+				if (related_entity_id == 0){   //0 == SQL null here
+					final PhenotypeExpression phenoexp = new PhenotypeExpression(entity_node_id,attribute_node_id,related_entity_id);
+					phenotypeSet.add(phenoexp);					
+				}
+				else{
+					final PhenotypeExpression phenoexp = new PhenotypeExpression(entity_node_id,attribute_node_id);
+					phenotypeSet.add(phenoexp);
+				}
 			}
 			else {
-				Set<Integer> phenotypeSet = new HashSet<Integer>();
-				phenotypeSet.add(phenotype_node_id);
+				Set<PhenotypeExpression> phenotypeSet = new HashSet<PhenotypeExpression>();
+				if (related_entity_id == 0){   //0 == SQL null here
+					final PhenotypeExpression phenoexp = new PhenotypeExpression(entity_node_id,attribute_node_id,related_entity_id);
+					phenotypeSet.add(phenoexp);					
+				}
+				else{
+					final PhenotypeExpression phenoexp = new PhenotypeExpression(entity_node_id,attribute_node_id);
+					phenotypeSet.add(phenoexp);
+				}
 				entity_entry.put(attribute_node_id,phenotypeSet);
 			}
 		}
 		else {
-			Map<Integer,Set<Integer>> entity_entry = new HashMap<Integer,Set<Integer>>();
-			Set<Integer> phenotypeSet = new HashSet<Integer>();
-			phenotypeSet.add(phenotype_node_id);
-			entity_entry.put(attribute_node_id,phenotypeSet);
-			eqtable.put(entity_node_id, entity_entry);
-		}
-		eaSet = null;  //delete because it's invalid
-	}
-	
-	public void addAlltoPhenotypeSet(Integer entity_node_id, Integer attribute_node_id,Set<Integer> toAdd){
-		if (eqtable.containsKey(entity_node_id)){
-			Map<Integer,Set<Integer>> entity_entry = eqtable.get(entity_node_id);
-			if (entity_entry.containsKey(attribute_node_id)){
-				Set<Integer> phenotypeSet = entity_entry.get(attribute_node_id);
-				phenotypeSet.addAll(toAdd);
+			Map<Integer,Set<PhenotypeExpression>> entity_entry = new HashMap<Integer,Set<PhenotypeExpression>>();
+			Set<PhenotypeExpression> phenotypeSet = new HashSet<PhenotypeExpression>();
+			if (related_entity_id == 0){   //0 == SQL null here
+				final PhenotypeExpression phenoexp = new PhenotypeExpression(entity_node_id,attribute_node_id,related_entity_id);
+				phenotypeSet.add(phenoexp);					
 			}
-			else {
-				Set<Integer> phenotypeSet = new HashSet<Integer>();
-				phenotypeSet.addAll(toAdd);
-				entity_entry.put(attribute_node_id,phenotypeSet);
+			else{
+				final PhenotypeExpression phenoexp = new PhenotypeExpression(entity_node_id,attribute_node_id);
+				phenotypeSet.add(phenoexp);
 			}
-		}
-		else {
-			Map<Integer,Set<Integer>> entity_entry = new HashMap<Integer,Set<Integer>>();
-			Set<Integer> phenotypeSet = new HashSet<Integer>();
-			phenotypeSet.addAll(toAdd);
 			entity_entry.put(attribute_node_id,phenotypeSet);
 			eqtable.put(entity_node_id, entity_entry);
 		}
@@ -62,7 +61,7 @@ public class Profile {
 	
 	public void clearPhenotypeSet(Integer entity, Integer att) {
 		if (eqtable.containsKey(entity)){
-			Map<Integer,Set<Integer>> entityValue = eqtable.get(entity);
+			Map<Integer,Set<PhenotypeExpression>> entityValue = eqtable.get(entity);
 			if (entityValue.containsKey(att)){
 				entityValue.remove(att);
 			}
@@ -76,9 +75,9 @@ public class Profile {
 	
 	public void removeAllEmpties(){
 		for (Integer ent : eqtable.keySet()){
-			Map<Integer,Set<Integer>> entityValue = eqtable.get(ent);
+			Map<Integer,Set<PhenotypeExpression>> entityValue = eqtable.get(ent);
 			for (Integer att : entityValue.keySet()){
-				Set<Integer> attSet = entityValue.get(att);
+				Set<PhenotypeExpression> attSet = entityValue.get(att);
 				if (attSet.isEmpty())
 					entityValue.remove(ent);
 			}
@@ -86,23 +85,23 @@ public class Profile {
 		eaSet = null;  //This may not be strictly necessary
 	}
 
-	public void setPhenotypeSet(Integer ent, Integer att, Set<Integer> newSet) {
+	public void setPhenotypeSet(Integer ent, Integer att, Set<PhenotypeExpression> newSet) {
 		if (eqtable.containsKey(ent)){
-			Map<Integer,Set<Integer>> entity_entry = eqtable.get(ent);
+			Map<Integer,Set<PhenotypeExpression>> entity_entry = eqtable.get(ent);
 			if (entity_entry.containsKey(att)){
-				Set<Integer> phenotypeSet = entity_entry.get(att);
+				Set<PhenotypeExpression> phenotypeSet = entity_entry.get(att);
 				phenotypeSet.clear();
 				phenotypeSet.addAll(newSet);
 			}
 			else {
-				Set<Integer> phenotypeSet = new HashSet<Integer>();
+				Set<PhenotypeExpression> phenotypeSet = new HashSet<PhenotypeExpression>();
 				phenotypeSet.addAll(newSet);
 				entity_entry.put(att,phenotypeSet);
 			}
 		}
 		else {
-			Map<Integer,Set<Integer>> entity_entry = new HashMap<Integer,Set<Integer>>();
-			Set<Integer> phenotypeSet = new HashSet<Integer>();
+			Map<Integer,Set<PhenotypeExpression>> entity_entry = new HashMap<Integer,Set<PhenotypeExpression>>();
+			Set<PhenotypeExpression> phenotypeSet = new HashSet<PhenotypeExpression>();
 			phenotypeSet.addAll(newSet);
 			entity_entry.put(att,phenotypeSet);
 			eqtable.put(ent, entity_entry);
@@ -144,7 +143,7 @@ public class Profile {
 			return false;
 	}
 	
-	public Set<Integer> getPhenotypeSet (Integer entity, Integer attribute){
+	public Set<PhenotypeExpression> getPhenotypeSet (Integer entity, Integer attribute){
 		return eqtable.get(entity).get(attribute);
 	}
 	
@@ -154,14 +153,14 @@ public class Profile {
 	
 	public Set<Integer> getUsedAttributes(){
 		Set<Integer>result = new HashSet<Integer>();
-		for (Map<Integer,Set<Integer>> entity_value : eqtable.values()){
+		for (Map<Integer,Set<PhenotypeExpression>> entity_value : eqtable.values()){
 			result.addAll(entity_value.keySet());
 		}
 		return result;
 	}
 
 	public boolean usesAttribute(Integer att){
-		for (Map<Integer,Set<Integer>> entity_value : eqtable.values()){
+		for (Map<Integer,Set<PhenotypeExpression>> entity_value : eqtable.values()){
 			if (entity_value.containsKey(att))
 				return true;
 		}
@@ -169,22 +168,23 @@ public class Profile {
 	}
 
 	
-	public Set<Integer> getAllEQPhenotypes(){
-		Set<Integer> result = new HashSet<Integer>();
+	public Set<PhenotypeExpression> getAllEQPhenotypes(){
+		Set<PhenotypeExpression> result = new HashSet<PhenotypeExpression>();
 		for (Integer curEnt : getUsedEntities()){ 
-			Map<Integer,Set<Integer>> entValue = eqtable.get(curEnt);
-			for (Set<Integer> attValue : entValue.values()){
+			Map<Integer,Set<PhenotypeExpression>> entValue = eqtable.get(curEnt);
+			for (Set<PhenotypeExpression> attValue : entValue.values()){
 				result.addAll(attValue);
 			}
 		}
 		return result;
 	}
 	
+	//effectively converting EQ phenotypes into EAphenotypes
 	public Set<PhenotypeExpression> getAllEAPhenotypes(){
 		if (eaSet == null){
 			eaSet = new HashSet<PhenotypeExpression>();
 			for (Integer curEnt : getUsedEntities()){ 
-				Map<Integer,Set<Integer>> entValue = eqtable.get(curEnt);
+				Map<Integer,Set<PhenotypeExpression>> entValue = eqtable.get(curEnt);
 				for (Integer att : entValue.keySet()){
 					eaSet.add(new PhenotypeExpression(curEnt,att));
 				}

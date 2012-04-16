@@ -130,7 +130,8 @@ public class PhenotypeExpression {
 		if (anObject instanceof PhenotypeExpression){
 			PhenotypeExpression other = (PhenotypeExpression)anObject;
 			if (other.getEntity() == getEntity()  &&
-					other.getQuality() == getQuality()){
+					other.getQuality() == getQuality() &&
+					other.getEntity2() == getEntity2()){
 				return true;
 			}
 			else

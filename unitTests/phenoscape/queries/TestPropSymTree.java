@@ -377,7 +377,7 @@ public class TestPropSymTree extends PropTreeTest{
 				}
 			}
 		}
-		assertEquals("Count of genes in variation table",19,genes.size());
+		assertEquals("Count of genes in variation table",20,genes.size());
 		
 		Assert.assertTrue(geneVariation.geneExhibits(pectoralFinID,sizeID,alfID));
 		Assert.assertTrue(geneVariation.geneExhibits(opercleID,shapeID,furinaID));
@@ -428,7 +428,7 @@ public class TestPropSymTree extends PropTreeTest{
 	
 	@Test
 	public void testCountGeneEntities() throws SQLException {
-		Assert.assertEquals(5,u.countDistinctGeneEntityPhenotypeAnnotations());
+		Assert.assertEquals(6,u.countDistinctGeneEntityPhenotypeAnnotations());
 	}
 
 	@Test

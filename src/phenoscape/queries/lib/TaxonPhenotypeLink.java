@@ -10,7 +10,7 @@ public class TaxonPhenotypeLink {
 //	"JOIN phenotype ON (link.object_id = phenotype.node_id) WHERE is_inferred = false";		
 
 	private static final String TAXONQUERY = 
-		"SELECT taxon.node_id,taxon.node_id, ata.phenotype_node_id,p1.entity_node_id, p1.entity_uid, p1.quality_node_id, p1.quality_uid, p1.uid,simple_label(p1.node_id),simple_label(p1.entity_node_id),simple_label(p1.quality_node_id), p1.related_entity_node_id, p1.related_entity_uid, simple_label(p1.related_entity_node_id)" +
+		"SELECT taxon.node_id,ata.phenotype_node_id,p1.entity_node_id, p1.entity_uid, p1.quality_node_id, p1.quality_uid, p1.uid,simple_label(p1.node_id),simple_label(p1.entity_node_id),simple_label(p1.quality_node_id), p1.related_entity_node_id, p1.related_entity_uid, simple_label(p1.related_entity_node_id)" +
 		"      FROM asserted_taxon_annotation AS ata " +
 	    "JOIN taxon ON (taxon.node_id = ata.taxon_node_id AND taxon.node_id = ?) " +
 	    "JOIN phenotype AS p1 ON (p1.node_id = ata.phenotype_node_id)";		
@@ -18,7 +18,6 @@ public class TaxonPhenotypeLink {
 	
 	
 	int taxonNodeID;
-	int linkNodeID;
 	int phenotypeNodeID;
 	int entityNodeID;
 	String entityUID; 
@@ -37,19 +36,18 @@ public class TaxonPhenotypeLink {
 
 	public TaxonPhenotypeLink(ResultSet r) throws SQLException{
 		taxonNodeID = r.getInt(1);
-		linkNodeID = r.getInt(2);
-		phenotypeNodeID = r.getInt(3);
-		entityNodeID = r.getInt(4);
-		entityUID = r.getString(5);
-		qualityNodeID = r.getInt(6);
-		qualityUID = r.getString(7);
-		phenotypeUID = r.getString(8);
-		phenotypeLabel = r.getString(9);
-		entityLabel = r.getString(10);
-		qualityLabel = r.getString(11);
-		relatedEntityNodeID = r.getInt(12);
-		relatedEntityUID = r.getString(13);
-		relatedEntityLabel = r.getString(14);
+		phenotypeNodeID = r.getInt(2);
+		entityNodeID = r.getInt(3);
+		entityUID = r.getString(4);
+		qualityNodeID = r.getInt(5);
+		qualityUID = r.getString(6);
+		phenotypeUID = r.getString(7);
+		phenotypeLabel = r.getString(8);
+		entityLabel = r.getString(9);
+		qualityLabel = r.getString(10);
+		relatedEntityNodeID = r.getInt(11);
+		relatedEntityUID = r.getString(12);
+		relatedEntityLabel = r.getString(13);
 	}
 
 	public static String getQuery(){
@@ -62,9 +60,6 @@ public class TaxonPhenotypeLink {
 		return taxonNodeID;
 	}
 
-	public int getLinkNodeID(){
-		return linkNodeID;
-	}
 
 	public int getPhenotypeNodeID(){
 		return phenotypeNodeID;

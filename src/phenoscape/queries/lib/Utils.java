@@ -14,6 +14,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
+
+import phenoscape.queries.PhenotypeProfileAnalysis;
+
 public class Utils {
 	
 	
@@ -44,7 +48,8 @@ public class Utils {
 	private Connection connection;
 	
 	
-	
+	static final Logger logger = Logger.getLogger(Utils.class);
+
 	
 	public String getNodeName(int id){
 		return nodeNames.get(id);
@@ -74,6 +79,12 @@ public class Utils {
 		return nodeNames.containsKey(id);
 	}
 	
+	/**
+	 * Adds the node to the lookup tables for UIDs and names (so they can be retrieved later for debugging and reporting)
+	 * @param id database id of the node
+	 * @param uid the unique identifier string (may be an EQ expression) of the node
+	 * @param name the assigned name (if any) of the node
+	 */
 	public void putNodeUIDName(int id, String uid, String name){
 		nodeUIDs.put(id, uid);
 		nodeNames.put(id, name);
@@ -145,12 +156,14 @@ public class Utils {
 	 */
 	public Map<Integer,Integer> setupAttributes() throws SQLException{
 		Map<Integer,Integer> attMap = new HashMap<Integer,Integer>();
+		//Map<Integer,Set<Integer>> attAll = new HashMap<Integer,Set<Integer>>();
 		Statement s1 = connection.createStatement();
 		
 		
 		// if getOneName fails, these will be assigned -1 and shouldn't affect anything (handles unit test cases with incomplete attribute sets)
 		int compositionNodeID = getOneName("composition");
 		int structureNodeID = getOneName("structure");
+		int structureMinusCompositionNodeID = getOneName("structure minus composition");
 		int closureNodeID = getOneName("closure");
 		int sizeNodeID = getOneName("size");
 		int shapeNodeID = getOneName("shape");
@@ -165,35 +178,26 @@ public class Utils {
 		while(attributeResults.next()){
 			final int quality_id = attributeResults.getInt(1);
 			final int attribute_id = attributeResults.getInt(2);
-			if (attribute_id == closureStructureNodeID || attribute_id == shapeSizeNodeID){
-				//do nothing
-			}
-			else {
-				if (attMap.containsKey(quality_id)){
-					if (attMap.get(quality_id) == compositionNodeID && attribute_id == structureNodeID){
-						//do nothing
-					}
-					else if(attMap.get(quality_id) != attribute_id){  // report and let it pass
-						System.out.println("Collision: " + quality_id + " old entry =" + attMap.get(quality_id) + " new entry =" + attribute_id);
-						attMap.put(quality_id,attribute_id);						
-					}
-					else {
-						//do nothing
-					}
-				}
-				else{
-					attMap.put(quality_id,attribute_id);
-				}
-			}
+//			if (!attAll.containsKey(quality_id)){
+//				attAll.put(quality_id, new HashSet<Integer>());
+//			}
+//			else {
+				attMap.put(quality_id,attribute_id);
+//				attAll.get(quality_id).add(attribute_id);
+//			}
 			if (!hasNodeUID(attribute_id)){
 				putNodeUIDName(attribute_id,attributeResults.getString(3),attributeResults.getString(4));
 			}
 		}		
+		attMap.put(structureNodeID,structureMinusCompositionNodeID);
+		//attAll.put(structureNodeID, new HashSet<Integer>());
+		//attAll.get(structureNodeID).add(structureNodeID);
 		
-		int count = 0;
-		for(Integer q : attMap.keySet())
-			if (attMap.get(q) == compositionNodeID)
-				count++;
+//		int count = 0;
+//		for(Integer q : attAll.keySet())
+//			if (attAll.get(q).size()>1)
+//				count++;
+//		logger.info("Total of " + count + " qualities assigned to multiple attributes");
 		return attMap;
 	}
 

@@ -52,13 +52,13 @@ public class ProfileMap {
 		}
 	}
 
-	public void addPhenotype(int id,int entityID,int attributeID,int phenotypeID){
+	public void addPhenotype(int id,int entityID,int attributeID,Integer phenotypeID){
 		if (contents.containsKey(id)){
-			contents.get(id).addPhenotype(entityID,attributeID, phenotypeID);						
+			contents.get(id).addPhenotype(entityID,attributeID, phenotypeID, 0);						
 		}
 		else {
 			contents.put(id, new Profile());
-			contents.get(id).addPhenotype(entityID,attributeID, phenotypeID);	
+			contents.get(id).addPhenotype(entityID,attributeID, phenotypeID, 0);	
 		}
 
 	}
