@@ -78,6 +78,7 @@ public abstract class PropTreeTest {
 	int sec24dID;
 	int shhaID;
 	int ugdhID;
+	int nog1ID;
 	
 	final Set<Integer>geneIDs = new HashSet<Integer>();
 	
@@ -187,21 +188,25 @@ public abstract class PropTreeTest {
 		ugdhID = u.getIDFromName("ugdh");
 		Assert.assertFalse("failed to lookup gene ugdh",ugdhID==-1);
 		geneIDs.add(ugdhID);
+		
+		nog1ID = u.getIDFromName("nog1");
+		Assert.assertFalse("failed to lookup gene ugdh",nog1ID==-1);
+		geneIDs.add(nog1ID);
 
 
-		opercleID = u.getIDFromName("opercle");
+		opercleID = u.getIDFromUID("TAO:0000250");  //ambiguity with ZFA
 		if (opercleID == -1){
-			u.cacheOneNode(u.getOneName("opercle"));
-			opercleID = u.getIDFromName("opercle");
+			u.cacheOneNodeFromUID("TAO:0000250");
+			opercleID = u.getIDFromUID("TAO:0000250");
 		}
 
 		//BSPO:0000079^OBO_REL:part_of(TAO:0000100)
 		dorsalRegionOfCerebellumID = u.getOneUID("BSPO:0000079^OBO_REL:part_of(TAO:0000100)");
 
-		eyeID = u.getIDFromName("eye");
+		eyeID = u.getIDFromName("TAO:0000107");
 		if (eyeID == -1){
-			u.cacheOneNode(u.getOneName("eye"));
-			eyeID = u.getIDFromName("eye");
+			u.cacheOneNodeFromUID("TAO:0000107");
+			eyeID = u.getIDFromUID("TAO:0000107");
 		}
 
 		pectoralFinID = u.getOneUID("TAO:0001161");

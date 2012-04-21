@@ -60,7 +60,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 
 import phenoscape.queries.lib.AnnotationPair;
@@ -202,7 +201,6 @@ public class PhenotypeProfileAnalysis {
 	 * @param args currently any command-line args are ignored
 	 */
 	public static void main(String[] args) {
-		BasicConfigurator.configure();
 		Utils u = new Utils();
 		String kbName;
 		try {
@@ -337,10 +335,12 @@ public class PhenotypeProfileAnalysis {
 		TaxonomyTree t = new TaxonomyTree(ANALYSISROOT,u);
 		t.traverseOntologyTree(u);
 		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = getAllTaxonPhenotypeLinksFromKB(t,u);
+		int removedCount = removeSymmetricLinks(allLinks,u);
 		taxonProfiles = loadTaxonProfiles(allLinks,u, attributeMap, qualityNodeID, badTaxonQualities);
 		countAnnotatedTaxa(t,t.getRootNodeID(),taxonProfiles,u);
 		int eaCount = countEAAnnotations(taxonProfiles,u);
 		u.writeOrDump("Count of distinct taxon-phenotype assertions (EQ level): " + taxonPhenotypeLinkCount, taxonWriter);
+		u.writeOrDump("Count of assertions with symmetric properties where one membero of pair of inverses was removed: " + removedCount, taxonWriter);
 		u.writeOrDump("Count of distinct taxon-phenotype assertions (EA level; not filtered for variation): " + eaCount, taxonWriter);
 		u.writeOrDump("Count of annotated taxa = " + annotatedTaxa, taxonWriter);
 		u.writeOrDump("Count of parents of annotated taxa = " + parentsOfAnnotatedTaxa, taxonWriter);
@@ -348,7 +348,6 @@ public class PhenotypeProfileAnalysis {
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
 
 		traverseTaxonomy(t, t.getRootNodeID(), taxonProfiles, taxonVariation, u);
-		flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
 		t.report(u, taxonWriter);
 		taxonVariation.variationReport(u,taxonWriter);	
 		u.writeOrDump("\nList of qualities that were placed under quality as an attribute by default\n", taxonWriter);
@@ -357,6 +356,7 @@ public class PhenotypeProfileAnalysis {
 		}
 		taxonWriter.close();
 		logger.info("Finished writing taxon profiles");
+		flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
 		if (taxonProfiles.isEmpty()){
 			logger.fatal("No taxa in Profile Set");
 			throw new RuntimeException("No taxa in Profile Set");
@@ -445,6 +445,25 @@ public class PhenotypeProfileAnalysis {
 
 		logger.info("Done");
 	}
+
+	int removeSymmetricLinks(Map<Integer, Set<TaxonPhenotypeLink>> links, Utils u) throws SQLException {
+		int removeCount = 0;
+		for (Integer taxon : links.keySet()){
+			final Set<TaxonPhenotypeLink> dups = new HashSet<TaxonPhenotypeLink>();  //need this to avoid modifying lset inside loop
+			final Set<TaxonPhenotypeLink> lset = links.get(taxon);
+			for (TaxonPhenotypeLink l : lset){
+				if (u.isSymmetricProperty(l.getQualityNodeID())){
+					if (l.getEntityUID() != null && l.getRelatedEntityUID() != null && l.getEntityUID().compareTo(l.getRelatedEntityUID())<0){
+						dups.add(l);  
+					}
+				} //otherwise ignore
+			}
+			removeCount += dups.size();
+			lset.removeAll(dups);
+		}		
+		return removeCount;
+	}
+
 
 	/**
 	 * This writes the report containing profile matches
@@ -690,8 +709,8 @@ public class PhenotypeProfileAnalysis {
 							}
 						}
 						Collection<AnnotationPair> entityIntersection = sc.collectionIntersection(taxonBag, geneBag);
-						if (logger.isInfoEnabled())
-							logger.info("Permuting taxon profile of size: " + taxonSize + " (" + taxonBag.size() + ")  against gene profile of size: " + geneSize + " (" + geneBag.size() + ") with intersection size: " + entityIntersection.size());
+						if (logger.isTraceEnabled())
+							logger.trace("Permuting taxon profile of size: " + taxonSize + " (" + taxonBag.size() + ")  against gene profile of size: " + geneSize + " (" + geneBag.size() + ") with intersection size: " + entityIntersection.size());
 						dist[i] = sc.simHyperSS(taxonBag.size(),geneBag.size(),entityIntersection.size());
 					}
 					PermutedProfileScore p = new PermutedProfileScore(dist,taxonSize,geneSize);
@@ -819,19 +838,19 @@ public class PhenotypeProfileAnalysis {
 				u.putNodeUIDName(link.getPhenotypeNodeID(), link.getPhenotypeUID(),link.getPhenotypeLabel());
 				if (attMap.containsKey(link.getQualityNodeID())){
 					final int attribute_id = attMap.get(link.getQualityNodeID());
-					myProfile.addPhenotype(link.getEntityNodeID(),attribute_id, link.getPhenotypeNodeID(), link.getRelatedEntityNodeID());
+					myProfile.addPhenotype(link.getEntityNodeID(),attribute_id, link.getPhenotypeNodeID());
 				}
 				else{
 					final int linkQualityID = link.getQualityNodeID();
-					myProfile.addPhenotype(link.getEntityNodeID(),nodeIDofQuality, link.getPhenotypeNodeID(),link.getRelatedEntityNodeID());
+					myProfile.addPhenotype(link.getEntityNodeID(),nodeIDofQuality, link.getPhenotypeNodeID());
 					if (badQualities.containsKey(linkQualityID)){
 						badQualities.put(linkQualityID, badQualities.get(linkQualityID).intValue()+1);
-						myProfile.addPhenotype(link.getEntityNodeID(),qualityNodeID,link.getPhenotypeNodeID(),link.getRelatedEntityNodeID());
+						myProfile.addPhenotype(link.getEntityNodeID(),qualityNodeID,link.getPhenotypeNodeID());
 					}
 					else {
 						badQualities.put(linkQualityID, 1);
 						u.putNodeUIDName(linkQualityID, link.getQualityUID(), link.getQualityLabel());
-						myProfile.addPhenotype(link.getEntityNodeID(),qualityNodeID,link.getPhenotypeNodeID(),link.getRelatedEntityNodeID());
+						myProfile.addPhenotype(link.getEntityNodeID(),qualityNodeID,link.getPhenotypeNodeID());
 					}
 				}
 				u.putNodeUIDName(link.getEntityNodeID(), link.getEntityUID(),link.getEntityLabel());
@@ -937,60 +956,70 @@ public class PhenotypeProfileAnalysis {
 	 * @param taxon
 	 * @param taxonProfiles2
 	 * @param u
+	 * @throws SQLException 
 	 */
-	void traverseTaxonomy(TaxonomyTree t, Integer taxon, ProfileMap taxonProfiles2, VariationTable variation, Utils u){
+	void traverseTaxonomy(TaxonomyTree t, Integer taxon, ProfileMap taxonProfiles2, VariationTable variation, Utils u) throws SQLException{
 		if (t.nodeIsInternal(taxon, u)){
 			//build set of children
 			final Set<Integer> children = t.getTable().get(taxon);
-			Set<Profile> childProfiles = new HashSet<Profile>();
+			final Set<Profile> childProfiles = new HashSet<Profile>();
 			for(Integer child : children){
 				traverseTaxonomy(t,child,taxonProfiles2, variation, u);
 				childProfiles.add(taxonProfiles2.getProfile(child));
 			}
-			Profile parentProfile = taxonProfiles2.getProfile(taxon);			
+			final Profile parentProfile = taxonProfiles2.getProfile(taxon);			
 			//This builds the union and intersection sets (upwards) sets annotations for each taxon with childProfiles
 			//Changed to propagate the intersection rather than the union 21 Feb
-			Set<Integer> usedEntities = new HashSet<Integer>();
-			Set<Integer> usedAttributes = new HashSet<Integer>();
+			final Set<Integer> usedEntities = new HashSet<Integer>();
+			final Set<Integer> usedAttributes = new HashSet<Integer>();
 			for (Profile childProfile : childProfiles){
 				usedEntities.addAll(childProfile.getUsedEntities());
 				usedAttributes.addAll(childProfile.getUsedAttributes());
 			}
+			//logger.info("Processing taxon: " + u.getNodeName(taxon));
 			for(Integer ent : usedEntities){
 				for(Integer att : usedAttributes){
-					Set <PhenotypeExpression>unionSet = new HashSet<PhenotypeExpression>();
-					Set <PhenotypeExpression>intersectionSet = new HashSet<PhenotypeExpression>();
-					for (Profile childProfile : childProfiles){
-						if (!childProfile.isEmpty() && childProfile.hasPhenotypeSet(ent, att)){
-							unionSet.addAll(childProfile.getPhenotypeSet(ent,att));
-						}
-					}					
-					intersectionSet.addAll(unionSet);  // start intersection from the union and intersect each child in turn
-					for (Profile childProfile : childProfiles){
-						if (!childProfile.isEmpty()){
-							if (childProfile.hasPhenotypeSet(ent, att)){
-								intersectionSet.retainAll(childProfile.getPhenotypeSet(ent,att));
-							}
-							else {
-								intersectionSet.clear();	//if a child has no annotations to this ent/att pair, this will tag variation
-							}
-						}
+					if (taxonAnalysis(childProfiles,ent,att,parentProfile)){
+						variation.addExhibitor(ent,att,taxon);//add to the variation table
 					}
-					// now the union and intersection sets reflect the sets of children.
-					// add the asserted phenotypes of this parent (if any) to both union and intersection
-					if (parentProfile.hasPhenotypeSet(ent, att)){
-						unionSet.addAll(parentProfile.getPhenotypeSet(ent, att));
-						intersectionSet.addAll(parentProfile.getPhenotypeSet(ent,att));  //this union operation is correct!
-					}
-					if (!unionSet.equals(intersectionSet)){  //if variation
-						variation.addExhibitor(ent, att, taxon);  //add to the variation table
-					}
-					parentProfile.setPhenotypeSet(ent, att, intersectionSet);
 				}
 			}
 		}
 	}
 
+	
+	boolean taxonAnalysis(Set<Profile> childProfiles,Integer ent, Integer att,Profile parentProfile){
+		final Set <Integer>unionSet = new HashSet<Integer>();
+		final Set <Integer>intersectionSet = new HashSet<Integer>();
+		for (Profile childProfile : childProfiles){
+			if (!childProfile.isEmpty() && childProfile.hasPhenotypeSet(ent, att)){
+				unionSet.addAll(childProfile.getPhenotypeSet(ent,att));
+			}
+		}					
+		intersectionSet.addAll(unionSet);  // start intersection from the union and intersect each child in turn
+		for (Profile childProfile : childProfiles){
+			if (!childProfile.isEmpty()){
+				if (childProfile.hasPhenotypeSet(ent, att)){
+					intersectionSet.retainAll(childProfile.getPhenotypeSet(ent,att));
+				}
+				else {
+					intersectionSet.clear();	//if a child has no annotations to this ent/att pair, this will tag variation
+				}
+			}
+		}
+		// now the union and intersection sets reflect the sets of children.
+		// add the asserted phenotypes of this parent (if any) to both union and intersection
+		if (parentProfile.hasPhenotypeSet(ent, att)){
+			unionSet.addAll(parentProfile.getPhenotypeSet(ent, att));
+			intersectionSet.addAll(parentProfile.getPhenotypeSet(ent,att));  //this union operation is correct!
+		}
+		parentProfile.setPhenotypeSet(ent, att, intersectionSet);
+		//logger.info("Entity: " + entName + "; Attribute: " + attName + "; Union: " + unionSet + "; Intersection: " + intersectionSet);
+		if (!unionSet.equals(intersectionSet)){  //if variation
+			return true;
+		}
+		return false;
+	}
 
 	/**
 	 * This method removes all phenotypes that don't indicate variation from the profile.  
@@ -1514,7 +1543,5 @@ public class PhenotypeProfileAnalysis {
 	public Set<Integer> getAttributeSet(){
 		return attributeSet;
 	}	
-
-
 
 }

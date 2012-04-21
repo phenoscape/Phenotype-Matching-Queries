@@ -1,7 +1,7 @@
 package phenoscape.queries.lib;
 
-import java.io.Writer;
 import java.io.IOException;
+import java.io.Writer;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -15,8 +15,7 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
-
-import phenoscape.queries.PhenotypeProfileAnalysis;
+import org.phenoscape.obd.loader.Vocab;
 
 public class Utils {
 	
@@ -24,20 +23,6 @@ public class Utils {
 	private static final String CONNECTION_PROPERTIES_FILENAME = "unitTestconnection.properties"; 
 	
 	
-	//These are rather unfortunate, but KB-DEV currently (11-15-2010) uses an unreleased PATO with 
-	//the relational qualities removed, but includes annotations with them.  So, the three relational 
-	//qualities used by PATO will be hard coded here to support lookupIDToName and doSubstitutions.
-	
-	final static public String RELATIONALSHAPEQUALITYNAME = "relational shape quality";
-	final static public String RELATIONALSPATIALQUALITYNAME = "relational spatial quality";
-	final static public String RELATIONALSTRUCTURALQUALITYNAME = "relational structural quality";
-	
-	final static public String RELATIONALSHAPEQUALITYID = "PATO:0001647";
-	final static public String RELATIONALSPATIALQUALITYID = "PATO:0001631";
-	final static public String RELATIONALSTRUCTURALQUALITYID = "PATO:0001452";
-	
-
-
 	final private Map<Integer,String> nodeNames = new HashMap<Integer,String>(40000);
 	final private Map<Integer,String> nodeUIDs = new HashMap<Integer, String>(40000);
 	
@@ -70,6 +55,16 @@ public class Utils {
 			return -1;
 		for (Integer nodeInt : nodeUIDs.keySet()){
 			if (name.equals(nodeUIDs.get(nodeInt)))
+				return nodeInt.intValue();
+		}
+		return -1;
+	}
+	
+	public int getIDFromUID(String uid){
+		if (uid == null)
+			return -1;
+		for (Integer nodeInt : nodeUIDs.keySet()){
+			if (uid.equals(nodeUIDs.get(nodeInt)))
 				return nodeInt.intValue();
 		}
 		return -1;
@@ -121,7 +116,12 @@ public class Utils {
 	}
 	
 
-			
+	public boolean isSymmetricProperty(int nodeId) throws SQLException{
+		cacheOneNode(nodeId);
+		String uid = nodeUIDs.get(nodeId);
+		return Vocab.SYMMETRIC_QUALITIES.contains(uid);
+	}
+				
 	
 	public void addParent(Integer nodeID, Integer parentID){
 		if (parents.containsKey(nodeID)){
@@ -367,6 +367,22 @@ public class Utils {
 		
 	}
 
+	public void cacheOneNodeFromUID(String nodeUID) throws SQLException{
+		final PreparedStatement p1 = getPreparedStatement("SELECT node.node_id,simple_label(node.node_id) FROM node WHERE node.uid = ?");
+		p1.setString(1, nodeUID);
+		ResultSet uidResults = p1.executeQuery();
+		if (uidResults.next()){
+			int id = uidResults.getInt(1);
+			String label = uidResults.getString(2);
+			putNodeUIDName(id,nodeUID,label);
+		}
+		else {
+			throw new RuntimeException("Node lookup query failed; uid = " + nodeUID);
+		}
+		
+	}
+
+	
 	public void fillNames(Object e) throws SQLException{
 		if (e instanceof PhenotypeExpression)
 			((PhenotypeExpression) e).fillNames(this);

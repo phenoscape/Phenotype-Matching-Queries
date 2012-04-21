@@ -285,6 +285,7 @@ public class TestPropTree5 extends PropTreeTest{
 	public void TestGetAllTaxonPhenotypeLinksFromKB() throws Exception{
 		Map<Integer,Set<TaxonPhenotypeLink>> links = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1, u);
 		assertNotNull(links);
+		testAnalysis.removeSymmetricLinks(links,u);
 		Assert.assertEquals(15,links.size());   //this is just the number of taxa in the KB
 		for(Integer taxonID : t1.getAllTaxa()){
 			assertNotNull(links.get(taxonID));
@@ -295,6 +296,7 @@ public class TestPropTree5 extends PropTreeTest{
 	public void testLoadTaxonProfiles() throws SQLException{
 		t1.traverseOntologyTree(u);
 		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		testAnalysis.removeSymmetricLinks(allLinks,u);
 		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);		
 		assertFalse(taxonProfiles.isEmpty());
 		Assert.assertEquals(15, taxonProfiles.domainSize());  //again, should be equal to the number of taxa
@@ -306,6 +308,7 @@ public class TestPropTree5 extends PropTreeTest{
 	public void testTraverseTaxonomy() throws SQLException {
 		t1.traverseOntologyTree(u);
 		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		testAnalysis.removeSymmetricLinks(allLinks,u);
 		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
 		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
@@ -326,6 +329,7 @@ public class TestPropTree5 extends PropTreeTest{
 	public void testFlushUnvaryingPhenotypes() throws SQLException {
 		t1.traverseOntologyTree(u);
 		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		testAnalysis.removeSymmetricLinks(allLinks,u);
 		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
 		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
@@ -340,13 +344,7 @@ public class TestPropTree5 extends PropTreeTest{
 	public void testGetAllGeneAnnotationsFromKB() throws SQLException {
 		Collection<DistinctGeneAnnotationRecord> annotations = testAnalysis.getAllGeneAnnotationsFromKB(u);
 		Assert.assertEquals("Number of gene phenotype annotations",24,annotations.size());
-		initNames(u);
-		for (DistinctGeneAnnotationRecord dgar : annotations){
-			System.out.println("Trying dgar: " + dgar.getGeneLabel());
-			Assert.assertNotNull(dgar);
-			Assert.assertTrue("Bad id: " + dgar.getGeneLabel(),geneIDs.contains(dgar.getGeneID()));
-		}
-		
+		initNames(u);		
 	}
 
 	@Test
@@ -373,7 +371,7 @@ public class TestPropTree5 extends PropTreeTest{
 				}
 			}
 		}
-		assertEquals("Count of genes in variation table",19,genes.size());
+		assertEquals("Count of genes in variation table",20,genes.size());
 		
 		Assert.assertTrue(geneVariation.geneExhibits(pectoralFinID,sizeID,alfID));
 		Assert.assertTrue(geneVariation.geneExhibits(opercleID,shapeID,furinaID));
@@ -404,6 +402,7 @@ public class TestPropTree5 extends PropTreeTest{
 	public void testBuildEQParents() throws SQLException {
 		t1.traverseOntologyTree(u);
 		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		testAnalysis.removeSymmetricLinks(allLinks,u);
 		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
 		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
@@ -424,7 +423,7 @@ public class TestPropTree5 extends PropTreeTest{
 	
 	@Test
 	public void testCountGeneEntities() throws SQLException {
-		Assert.assertEquals(5,u.countDistinctGeneEntityPhenotypeAnnotations());
+		Assert.assertEquals(6,u.countDistinctGeneEntityPhenotypeAnnotations());
 	}
 
 	@Test
@@ -437,6 +436,7 @@ public class TestPropTree5 extends PropTreeTest{
 	public void testFillCountTable() throws SQLException {
 		t1.traverseOntologyTree(u);
 		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		testAnalysis.removeSymmetricLinks(allLinks,u);
 		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);
 		CountTableCheck countTableCheck = new CountTableCheck(u);  //captures expected values
 		VariationTable geneVariation = new VariationTable(VariationTable.VariationType.GENE);
@@ -466,6 +466,7 @@ public class TestPropTree5 extends PropTreeTest{
 	public void testBuildPhenotypeMatchCache() throws SQLException {
 		t1.traverseOntologyTree(u);
 		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		testAnalysis.removeSymmetricLinks(allLinks,u);
 		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);
 		testAnalysis.taxonProfiles= taxonProfiles;
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
@@ -490,6 +491,7 @@ public class TestPropTree5 extends PropTreeTest{
 	public void testWritePhenotypeMatchSummary() throws SQLException{
 		t1.traverseOntologyTree(u);
 		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		testAnalysis.removeSymmetricLinks(allLinks,u);
 		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);
 		testAnalysis.taxonProfiles= taxonProfiles;
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
@@ -515,6 +517,7 @@ public class TestPropTree5 extends PropTreeTest{
 	public void testCalcMaxIC() throws SQLException {
 		t1.traverseOntologyTree(u);
 		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		testAnalysis.removeSymmetricLinks(allLinks,u);
 		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);
 		testAnalysis.taxonProfiles= taxonProfiles;
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
@@ -623,6 +626,7 @@ public class TestPropTree5 extends PropTreeTest{
 		testAnalysis.totalAnnotations = ata + dga;
 
 		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		testAnalysis.removeSymmetricLinks(allLinks,u);
 		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);
 		testAnalysis.taxonProfiles= taxonProfiles;
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
@@ -963,6 +967,7 @@ public class TestPropTree5 extends PropTreeTest{
 		// process taxa annotations
 		
 		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		testAnalysis.removeSymmetricLinks(allLinks,u);
 		testAnalysis.taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);
 		testAnalysis.countAnnotatedTaxa(t1,t1.getRootNodeID(),testAnalysis.taxonProfiles,u);
 		int eaCount = testAnalysis.countEAAnnotations(testAnalysis.taxonProfiles,u);
