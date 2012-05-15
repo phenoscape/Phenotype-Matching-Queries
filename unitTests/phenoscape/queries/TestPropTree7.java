@@ -44,7 +44,7 @@ import phenoscape.queries.lib.TaxonPhenotypeLink;
 import phenoscape.queries.lib.Utils;
 import phenoscape.queries.lib.VariationTable;
 
-public class TestPropSymTree extends PropTreeTest{
+public class TestPropTree7 extends PropTreeTest{
 
 
 	PhenotypeProfileAnalysis testAnalysis;
@@ -101,7 +101,7 @@ public class TestPropSymTree extends PropTreeTest{
 	public void TestGetTaxonPhenotypeLinksFromKB() throws Exception{
 		int taxonid = -1;
 		ResultSet r;
-		Collection<TaxonPhenotypeLink> c;
+		Set<TaxonPhenotypeLink> lset;
 		PreparedStatement p = u.getPreparedStatement(NODEQUERY);
 
 		p.setString(1,TAXON1STR);
@@ -112,9 +112,9 @@ public class TestPropSymTree extends PropTreeTest{
 		else{
 			fail("Couldn't find node for " + TAXON1STR);
 		}
-		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
-		assertNotNull(c);
-		assertTrue(c.isEmpty());
+		lset = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
+		assertNotNull(lset);
+		assertTrue(lset.isEmpty());
 
 		p.setString(1,TAXON2STR);
 		r = p.executeQuery();
@@ -124,9 +124,9 @@ public class TestPropSymTree extends PropTreeTest{
 		else{
 			fail("Couldn't find node for " + TAXON2STR);
 		}
-		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
-		assertNotNull(c);
-		assertTrue(c.isEmpty());
+		lset = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
+		assertNotNull(lset);
+		assertTrue(lset.isEmpty());
 
 		p.setString(1,TAXON3STR);
 		r = p.executeQuery();
@@ -136,9 +136,9 @@ public class TestPropSymTree extends PropTreeTest{
 		else{
 			fail("Couldn't find node for " + TAXON3STR);
 		}
-		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
-		assertNotNull(c);
-		assertTrue(c.isEmpty());
+		lset = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
+		assertNotNull(lset);
+		assertTrue(lset.isEmpty());
 
 		p.setString(1,TAXON4STR);
 		r = p.executeQuery();
@@ -148,10 +148,10 @@ public class TestPropSymTree extends PropTreeTest{
 		else{
 			fail("Couldn't find node for " + TAXON4STR);
 		}
-		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
-		assertNotNull(c);
-		assertFalse(c.isEmpty());
-		Assert.assertEquals(4,c.size());  //will be adjusted to 3 by removeSymmetricLinks
+		lset = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
+		assertNotNull(lset);
+		assertFalse(lset.isEmpty());
+		Assert.assertEquals(4,lset.size());  //will be adjusted to 3 by removeSymmetricLinks
 
 		p.setString(1,TAXON5STR);
 		r = p.executeQuery();
@@ -161,11 +161,12 @@ public class TestPropSymTree extends PropTreeTest{
 		else{
 			fail("Couldn't find node for " + TAXON5STR);
 		}
-		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
-		assertNotNull(c);
-		assertFalse(c.isEmpty());
-		Assert.assertEquals(9,c.size());    //will be adjusted to 8 by removeSymmetricLinks
-
+		lset = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
+		assertNotNull(lset);
+		assertFalse(lset.isEmpty());
+		int delCount = testAnalysis.removeSymmetricLinksOneTaxon(lset, u);
+		Assert.assertEquals(9,lset.size());    //will be adjusted to 8 by removeSymmetricLinks
+		Assert.assertEquals(1,delCount);
 		p.setString(1,TAXON6STR);
 		r = p.executeQuery();
 		if (r.next()){
@@ -174,12 +175,13 @@ public class TestPropSymTree extends PropTreeTest{
 		else{
 			fail("Couldn't find node for " + TAXON6STR);
 		}
-		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
-		assertNotNull(c);
-		assertFalse(c.isEmpty());
+		lset = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
+		assertNotNull(lset);
+		assertFalse(lset.isEmpty());
+		delCount = testAnalysis.removeSymmetricLinksOneTaxon(lset, u);
 		//Assert.assertEquals(6,c.size());  //should be 7 when fixed
-		Assert.assertEquals(8,c.size());  //is 8 until fixed
- 
+		Assert.assertEquals(8,lset.size());  //is 8 until fixed
+		Assert.assertEquals(1,delCount);
 		p.setString(1,TAXON7STR);
 		r = p.executeQuery();
 		if (r.next()){
@@ -188,9 +190,9 @@ public class TestPropSymTree extends PropTreeTest{
 		else{
 			fail("Couldn't find node for " + TAXON7STR);
 		}
-		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
-		assertNotNull(c);
-		assertTrue(c.isEmpty());
+		lset = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
+		assertNotNull(lset);
+		assertTrue(lset.isEmpty());
 
 		p.setString(1,TAXON8STR);
 		r = p.executeQuery();
@@ -200,9 +202,9 @@ public class TestPropSymTree extends PropTreeTest{
 		else{
 			fail("Couldn't find node for " + TAXON8STR);
 		}
-		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
-		assertNotNull(c);
-		assertTrue(c.isEmpty());
+		lset = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
+		assertNotNull(lset);
+		assertTrue(lset.isEmpty());
 
 		p.setString(1,TAXON9STR);
 		r = p.executeQuery();
@@ -212,9 +214,9 @@ public class TestPropSymTree extends PropTreeTest{
 		else{
 			fail("Couldn't find node for " + TAXON9STR);
 		}
-		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
-		assertNotNull(c);
-		assertTrue(c.isEmpty());
+		lset = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
+		assertNotNull(lset);
+		assertTrue(lset.isEmpty());
 
 		p.setString(1,TAXON10STR);
 		r = p.executeQuery();
@@ -224,11 +226,12 @@ public class TestPropSymTree extends PropTreeTest{
 		else{
 			fail("Couldn't find node for " + TAXON10STR);
 		}
-		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
-		assertNotNull(c);
-		assertFalse(c.isEmpty());
-		//Assert.assertEquals(7,c.size());  //should be 7 when fixed
-		Assert.assertEquals(8,c.size());  //is 8 until fixed
+		lset = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
+		assertNotNull(lset);
+		assertFalse(lset.isEmpty());
+		delCount = testAnalysis.removeSymmetricLinksOneTaxon(lset, u);
+		Assert.assertEquals(8,lset.size());  
+		Assert.assertEquals(1,delCount);
 		
 		p.setString(1,TAXON11STR);
 		r = p.executeQuery();
@@ -238,11 +241,12 @@ public class TestPropSymTree extends PropTreeTest{
 		else{
 			fail("Couldn't find node for " + TAXON11STR);
 		}
-		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
-		assertNotNull(c);
-		assertFalse(c.isEmpty());
-		//Assert.assertEquals(7,c.size());   //should be 7 when fixed
-		Assert.assertEquals(8,c.size());  //is 8 until fixed
+		lset = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
+		assertNotNull(lset);
+		assertFalse(lset.isEmpty());
+		delCount = testAnalysis.removeSymmetricLinksOneTaxon(lset, u);
+		Assert.assertEquals(8,lset.size());  
+		Assert.assertEquals(1,delCount);
 
 		p.setString(1,TAXON12STR);
 		r = p.executeQuery();
@@ -252,11 +256,12 @@ public class TestPropSymTree extends PropTreeTest{
 		else{
 			fail("Couldn't find node for " + TAXON12STR);
 		}
-		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
-		assertNotNull(c);
-		assertFalse(c.isEmpty());
-		//Assert.assertEquals(7,c.size()); //should be 7 when fixed
-		Assert.assertEquals(8,c.size());  //is 8 until fixed
+		lset = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
+		assertNotNull(lset);
+		assertFalse(lset.isEmpty());
+		delCount = testAnalysis.removeSymmetricLinksOneTaxon(lset, u);
+		Assert.assertEquals(8,lset.size());  
+		Assert.assertEquals(1,delCount);
 
 		p.setString(1,TAXON13STR);
 		r = p.executeQuery();
@@ -266,11 +271,12 @@ public class TestPropSymTree extends PropTreeTest{
 		else{
 			fail("Couldn't find node for " + TAXON13STR);
 		}
-		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
-		assertNotNull(c);
-		assertFalse(c.isEmpty());
-		//Assert.assertEquals(6,c.size());  //should be 6 when fixed
-		Assert.assertEquals(7,c.size()); //is 7 until fixed
+		lset = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
+		assertNotNull(lset);
+		assertFalse(lset.isEmpty());
+		delCount = testAnalysis.removeSymmetricLinksOneTaxon(lset, u);
+		Assert.assertEquals(7,lset.size());  
+		Assert.assertEquals(1,delCount);
 
 		p.setString(1,TAXON14STR);
 		r = p.executeQuery();
@@ -280,11 +286,12 @@ public class TestPropSymTree extends PropTreeTest{
 		else{
 			fail("Couldn't find node for " + TAXON14STR);
 		}
-		c = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
-		assertNotNull(c);
-		assertFalse(c.isEmpty());
-		//Assert.assertEquals(6,c.size());  //should be 6 when fixed
-		Assert.assertEquals(7,c.size());  //is 7 until fixed
+		lset = testAnalysis.getTaxonPhenotypeLinksFromKB(u, taxonid);
+		assertNotNull(lset);
+		assertFalse(lset.isEmpty());
+		delCount = testAnalysis.removeSymmetricLinksOneTaxon(lset, u);
+		Assert.assertEquals(7,lset.size());  
+		Assert.assertEquals(1,delCount);
 
 	}
 
@@ -308,7 +315,221 @@ public class TestPropSymTree extends PropTreeTest{
 		assertFalse(taxonProfiles.isEmpty());
 		Assert.assertEquals(15, taxonProfiles.domainSize());  //again, should be equal to the number of taxa
 	}
+	
+	@Test
+	public void testSubsumingUnion(){
+		testAnalysis.qualitySubsumers = new HashMap<Integer,Set<Integer>>();  //start with an empty table, verify basic union,intersection
+		Set<Integer>test1 = new HashSet<Integer>();
+		test1.add(1);
+		test1.add(2);
+		test1.add(3);
+		Set<Integer>test2 = new HashSet<Integer>();
+		test2.add(2);
+		test2.add(4);
+		test2.add(6);
+		Set<Integer>test3 = new HashSet<Integer>();
+		test3.add(3);
+		test3.add(6);
+		test3.add(9);
+		Set<Integer>test4 = new HashSet<Integer>();
+		test4.add(7);
+		Set<Integer>unionSet = new HashSet<Integer>();
+		unionSet = testAnalysis.subsumingUnion(unionSet, test1);
+		assertEquals(3,unionSet.size());
+		unionSet = testAnalysis.subsumingUnion(unionSet, test2);
+		assertEquals(5,unionSet.size());
+		unionSet = testAnalysis.subsumingUnion(unionSet, test3);
+		assertEquals(6,unionSet.size());
 
+		unionSet.clear();
+		Set<Integer>fourParents = new HashSet<Integer>();
+		fourParents.add(2);
+		testAnalysis.qualitySubsumers.put(4,fourParents);
+		Set<Integer>sixParents = new HashSet<Integer>();
+		sixParents.add(2);
+		sixParents.add(3);
+		testAnalysis.qualitySubsumers.put(6,sixParents);
+		Set<Integer>eightParents = new HashSet<Integer>();
+		eightParents.add(2);
+		eightParents.add(4);
+		testAnalysis.qualitySubsumers.put(8,eightParents);
+		Set<Integer>nineParents = new HashSet<Integer>();
+		nineParents.add(3);
+		testAnalysis.qualitySubsumers.put(9,nineParents);
+		
+		
+		Set<Integer>test2x = new HashSet<Integer>();
+		test2x.add(2);
+		Set<Integer>test2y = new HashSet<Integer>();
+		test2y.add(4);
+		Set<Integer>test2z = new HashSet<Integer>();
+		test2z.add(6);
+
+		Set<Integer> test2w = new HashSet<Integer>();
+		test2w = testAnalysis.subsumingUnion(test2w, test2x);
+		assertEquals(1,test2w.size());
+		assertTrue(test2w.contains(2));
+		test2w = testAnalysis.subsumingUnion(test2w, test2y);
+		assertEquals(1,test2w.size());
+		assertTrue(test2w.contains(2));
+		test2w = testAnalysis.subsumingUnion(test2w, test2z);
+		assertEquals(1,test2w.size());
+		assertTrue(test2w.contains(2));
+		
+		test2w.clear();
+		test2w = testAnalysis.subsumingUnion(test2w, test2z);
+		assertEquals(1,test2w.size());
+		assertTrue(test2w.contains(6));
+		test2w = testAnalysis.subsumingUnion(test2w, test2y);
+		assertEquals(2,test2w.size());
+		assertTrue(test2w.contains(6));
+		assertTrue(test2w.contains(4));
+		test2w = testAnalysis.subsumingUnion(test2w, test2x);
+		assertEquals(1,test2w.size());
+		assertTrue(test2w.contains(2));
+		
+		
+		unionSet = testAnalysis.subsumingUnion(unionSet, test1);
+		assertEquals(3,unionSet.size());
+		assertTrue(unionSet.contains(1));
+		assertTrue(unionSet.contains(2));
+		assertTrue(unionSet.contains(3));		
+		unionSet = testAnalysis.subsumingUnion(unionSet, test2);
+		assertEquals(3,unionSet.size());
+		assertTrue(unionSet.contains(1));
+		assertTrue(unionSet.contains(2));
+		assertTrue(unionSet.contains(3));		
+		unionSet = testAnalysis.subsumingUnion(unionSet, test3);
+		assertEquals(3,unionSet.size());
+		assertTrue(unionSet.contains(1));
+		assertTrue(unionSet.contains(2));
+		assertTrue(unionSet.contains(3));		
+		unionSet = testAnalysis.subsumingUnion(unionSet, test4);
+		assertEquals(4,unionSet.size());
+		assertTrue(unionSet.contains(1));
+		assertTrue(unionSet.contains(2));
+		assertTrue(unionSet.contains(3));		
+		assertTrue(unionSet.contains(7));		
+
+	}
+
+	@Test
+	public void testSubsumingIntersection(){
+		testAnalysis.qualitySubsumers = new HashMap<Integer,Set<Integer>>();  //start with an empty table, verify basic union,intersection
+		Set<Integer>test1 = new HashSet<Integer>();
+		test1.add(1);
+		test1.add(2);
+		test1.add(3);
+		Set<Integer>test2 = new HashSet<Integer>();
+		test2.add(2);
+		test2.add(4);
+		test2.add(6);
+		Set<Integer>test3 = new HashSet<Integer>();
+		test3.add(3);
+		test3.add(6);
+		test3.add(9);
+		Set<Integer>test4 = new HashSet<Integer>();
+		test4.add(7);
+		
+		Set<Integer>unionSet = new HashSet<Integer>();
+		unionSet = testAnalysis.subsumingUnion(unionSet, test1);
+		unionSet = testAnalysis.subsumingUnion(unionSet, test2);
+		unionSet = testAnalysis.subsumingUnion(unionSet, test3);
+		assertEquals(6,unionSet.size());
+		Set<Integer>itest1 = testAnalysis.subsumingIntersection(unionSet, test1);
+		assertEquals(3,itest1.size());
+		assertTrue(itest1.contains(1));
+		assertTrue(itest1.contains(2));
+		assertTrue(itest1.contains(3));		
+
+		Set<Integer>itest2 = testAnalysis.subsumingIntersection(test1,test2);
+		assertEquals(1,itest2.size());
+		assertTrue(itest2.contains(2));
+		
+		Set<Integer>fourParents = new HashSet<Integer>();
+		fourParents.add(2);
+		testAnalysis.qualitySubsumers.put(4,fourParents);
+		Set<Integer>sixParents = new HashSet<Integer>();
+		sixParents.add(2);
+		sixParents.add(3);
+		testAnalysis.qualitySubsumers.put(6,sixParents);
+		Set<Integer>eightParents = new HashSet<Integer>();
+		eightParents.add(2);
+		eightParents.add(4);
+		testAnalysis.qualitySubsumers.put(8,eightParents);
+		Set<Integer>nineParents = new HashSet<Integer>();
+		nineParents.add(3);
+		testAnalysis.qualitySubsumers.put(9,nineParents);
+		
+		Set<Integer>test2x = new HashSet<Integer>();
+		test2x.add(2);
+		Set<Integer>test2y = new HashSet<Integer>();
+		test2y.add(4);
+		Set<Integer>test2z = new HashSet<Integer>();
+		test2z.add(6);
+
+		Set<Integer> test2w = new HashSet<Integer>();
+		test2w.add(1);
+		test2w.add(2);
+		test2w.add(3);
+		test2w.add(4);
+		test2w.add(5);
+		test2w.add(6);
+		
+		test2w = testAnalysis.subsumingIntersection(test2w, test2x);
+		assertEquals(1,test2w.size());
+		assertTrue(test2w.contains(4));		
+		test2w = testAnalysis.subsumingIntersection(test2w, test2y);
+		assertEquals(1,test2w.size());
+		assertTrue(test2w.contains(4));		
+		test2w = testAnalysis.subsumingIntersection(test2w, test2z);
+		assertEquals(0,test2w.size());
+		
+		test2w = unionSet;
+		test2w = testAnalysis.subsumingIntersection(test2w, test2z);
+		assertEquals(1,test2w.size());
+		assertTrue(test2w.contains(6));
+		test2w = testAnalysis.subsumingIntersection(test2w, test2y);
+		assertEquals(0,test2w.size());
+		test2w = testAnalysis.subsumingIntersection(test2w, test2x);
+		assertEquals(0,test2w.size());
+		
+		unionSet.clear();
+		unionSet = testAnalysis.subsumingUnion(unionSet, test1);
+		unionSet = testAnalysis.subsumingUnion(unionSet, test2);
+		unionSet = testAnalysis.subsumingUnion(unionSet, test3);
+
+		itest1 = testAnalysis.subsumingIntersection(test1, test1);
+		assertEquals(3,itest1.size());
+		assertTrue(itest1.contains(1));
+		assertTrue(itest1.contains(2));
+		assertTrue(itest1.contains(3));
+		
+		itest2 = testAnalysis.subsumingIntersection(test2,test2);
+		assertEquals(2,itest2.size());
+		assertTrue(itest2.contains(4));
+		assertTrue(itest2.contains(6));
+		
+		Set<Integer>itest3 = testAnalysis.subsumingIntersection(unionSet, test1);
+		assertEquals(3,itest3.size());
+
+		Set<Integer>itest4 = testAnalysis.subsumingIntersection(test1,itest2);
+		assertEquals(2,itest4.size());
+		assertTrue(itest2.contains(4));
+		assertTrue(itest2.contains(6));
+		Set<Integer>itest4r = testAnalysis.subsumingIntersection(itest2,test1);
+		assertEquals(itest4,itest4r);
+
+		Set<Integer>itest5 = testAnalysis.subsumingIntersection(itest2, test3);
+		assertEquals(1,itest5.size());
+		assertTrue(itest2.contains(6));
+		
+	}
+
+	
+	
+	
+	
 	final List<String>entityNames= Arrays.asList("body","opercle","pectoral fin","posterior region of frontal bone","process of anterior region of dentary","vertebra");
 	final List<String>attNames= Arrays.asList("optical quality","shape","size","count");
 	
@@ -324,15 +545,13 @@ public class TestPropSymTree extends PropTreeTest{
 
 		int taxon = genus1ID; 
 		assertEquals(15,t1.getTable().size());
-		final Set<Integer> children = t1.getTable().get(taxon);
+		Set<Integer> children = t1.getTable().get(taxon);
 		assertFalse(children.isEmpty());
 		final Set<Profile> childProfiles = new HashSet<Profile>();
 		for(Integer child : children){
 			childProfiles.add(taxonProfiles.getProfile(child));
 		}
-		final Profile parentProfile = taxonProfiles.getProfile(taxon);			
-		//This builds the union and intersection sets (upwards) sets annotations for each taxon with childProfiles
-		//Changed to propagate the intersection rather than the union 21 Feb
+		Profile parentProfile = taxonProfiles.getProfile(taxon);			
 		final Set<Integer> usedEntities = new HashSet<Integer>();
 		final Set<Integer> usedAttributes = new HashSet<Integer>();
 		for (Profile childProfile : childProfiles){
@@ -344,11 +563,39 @@ public class TestPropSymTree extends PropTreeTest{
 			for(Integer att : usedAttributes){
 				if ((ent.intValue() == pectoralFinID  && att.intValue() == sizeID) ||
 					(ent.intValue() == vertebraID && att.intValue() == countID) ||
-					(ent.intValue() == opercleID && att.intValue() == shapeID)){
+					(ent.intValue() == opercleID && att.intValue() == shapeID) ||
+					(ent.intValue() == opercleID && att.intValue() == opticalQualityID)){
 						assertTrue("Genus 1; ent: " + ent + "; att: " + att + "should be true",testAnalysis.taxonAnalysis(childProfiles,ent,att,parentProfile));
 					}
 				else {
 					assertFalse("Genus 1; ent: " + ent + "; att: " + att + "should be false",testAnalysis.taxonAnalysis(childProfiles,ent,att,parentProfile));
+				}
+			}
+		}
+		taxon = genus3ID; 
+		children = t1.getTable().get(taxon);
+		assertFalse(children.isEmpty());
+		childProfiles.clear();
+		for(Integer child : children){
+			childProfiles.add(taxonProfiles.getProfile(child));
+		}
+		parentProfile = taxonProfiles.getProfile(taxon);			
+		usedEntities.clear();
+		usedAttributes.clear();
+		for (Profile childProfile : childProfiles){
+			usedEntities.addAll(childProfile.getUsedEntities());
+			usedAttributes.addAll(childProfile.getUsedAttributes());
+		}
+		for(Integer ent : usedEntities){
+			for(Integer att : usedAttributes){
+				if (
+					(ent.intValue() == vertebraID && att.intValue() == countID) ||
+					(ent.intValue() == opercleID && att.intValue() == opticalQualityID) ||
+					(ent.intValue() == bodyID && att.intValue() == opticalQualityID)){
+						assertTrue("Genus 3; ent: " + ent + "; att: " + att + "should be true",testAnalysis.taxonAnalysis(childProfiles,ent,att,parentProfile));
+					}
+				else {
+					assertFalse("Genus 3; ent: " + ent + "; att: " + att + "should be false",testAnalysis.taxonAnalysis(childProfiles,ent,att,parentProfile));
 				}
 			}
 		}
@@ -1013,9 +1260,10 @@ public class TestPropSymTree extends PropTreeTest{
 
 		PhenotypeExpression.getEQTop(u);   //just to initialize early.
 
-		testAnalysis.entityAnnotations = new EntitySet(u);
 		testAnalysis.qualitySubsumers = u.buildPhenotypeSubsumers();
 
+		testAnalysis.entityAnnotations = new EntitySet(u);
+		
 		testAnalysis.entityAnnotations.fillTaxonPhenotypeAnnotationsToEntities();
 		int ata = testAnalysis.entityAnnotations.annotationTotal();
 		Assert.assertEquals(u.countAssertedTaxonPhenotypeAnnotations(),ata);

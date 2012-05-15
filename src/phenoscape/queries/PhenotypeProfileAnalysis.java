@@ -181,6 +181,8 @@ public class PhenotypeProfileAnalysis {
 	
 	EntitySet entityAnnotations;
 	
+	public Map<Integer,Set<Integer>> qualitySubsumers;
+	
 	
 	/**
 	 * This holds the number of taxa that have phenotype annotations and their parents respectively
@@ -302,6 +304,12 @@ public class PhenotypeProfileAnalysis {
 		entityAnnotations = new EntitySet(u);
 		
 		if (logger.isInfoEnabled())
+			logger.info("Loading all phenotype quality parents");
+		qualitySubsumers = u.buildPhenotypeSubsumers();
+		if (logger.isInfoEnabled())
+			logger.info("Finished loading all phenotype quality parents");
+		
+		if (logger.isInfoEnabled())
 			logger.info("Loading taxon entity annotations");
 		entityAnnotations.fillTaxonPhenotypeAnnotationsToEntities();
 		if (logger.isInfoEnabled())
@@ -340,7 +348,7 @@ public class PhenotypeProfileAnalysis {
 		countAnnotatedTaxa(t,t.getRootNodeID(),taxonProfiles,u);
 		int eaCount = countEAAnnotations(taxonProfiles,u);
 		u.writeOrDump("Count of distinct taxon-phenotype assertions (EQ level): " + taxonPhenotypeLinkCount, taxonWriter);
-		u.writeOrDump("Count of assertions with symmetric properties where one membero of pair of inverses was removed: " + removedCount, taxonWriter);
+		u.writeOrDump("Count of assertions with symmetric properties where one member of a pair of inverses was removed: " + removedCount, taxonWriter);
 		u.writeOrDump("Count of distinct taxon-phenotype assertions (EA level; not filtered for variation): " + eaCount, taxonWriter);
 		u.writeOrDump("Count of annotated taxa = " + annotatedTaxa, taxonWriter);
 		u.writeOrDump("Count of parents of annotated taxa = " + parentsOfAnnotatedTaxa, taxonWriter);
@@ -449,18 +457,23 @@ public class PhenotypeProfileAnalysis {
 	int removeSymmetricLinks(Map<Integer, Set<TaxonPhenotypeLink>> links, Utils u) throws SQLException {
 		int removeCount = 0;
 		for (Integer taxon : links.keySet()){
-			final Set<TaxonPhenotypeLink> dups = new HashSet<TaxonPhenotypeLink>();  //need this to avoid modifying lset inside loop
-			final Set<TaxonPhenotypeLink> lset = links.get(taxon);
-			for (TaxonPhenotypeLink l : lset){
-				if (u.isSymmetricProperty(l.getQualityNodeID())){
-					if (l.getEntityUID() != null && l.getRelatedEntityUID() != null && l.getEntityUID().compareTo(l.getRelatedEntityUID())<0){
-						dups.add(l);  
-					}
-				} //otherwise ignore
-			}
-			removeCount += dups.size();
-			lset.removeAll(dups);
+			removeCount += removeSymmetricLinksOneTaxon(links.get(taxon),u);
 		}		
+		return removeCount;
+	}
+	
+	int removeSymmetricLinksOneTaxon(final Set<TaxonPhenotypeLink> lset, Utils u) throws SQLException{
+		int removeCount = 0;
+		final Set<TaxonPhenotypeLink> dups = new HashSet<TaxonPhenotypeLink>();  //need this to avoid modifying lset inside loop
+		for (TaxonPhenotypeLink l : lset){
+			if (u.isSymmetricProperty(l.getQualityNodeID())){
+				if (l.getEntityUID() != null && l.getRelatedEntityUID() != null && l.getEntityUID().compareTo(l.getRelatedEntityUID())<0){
+					dups.add(l);  
+				}
+			} //otherwise ignore
+		}
+		removeCount += dups.size();
+		lset.removeAll(dups);
 		return removeCount;
 	}
 
@@ -989,18 +1002,20 @@ public class PhenotypeProfileAnalysis {
 
 	
 	boolean taxonAnalysis(Set<Profile> childProfiles,Integer ent, Integer att,Profile parentProfile){
-		final Set <Integer>unionSet = new HashSet<Integer>();
-		final Set <Integer>intersectionSet = new HashSet<Integer>();
+		Set <Integer>unionSet = new HashSet<Integer>();
+		Set <Integer>intersectionSet = new HashSet<Integer>();
 		for (Profile childProfile : childProfiles){
 			if (!childProfile.isEmpty() && childProfile.hasPhenotypeSet(ent, att)){
-				unionSet.addAll(childProfile.getPhenotypeSet(ent,att));
+				//unionSet.addAll(childProfile.getPhenotypeSet(ent,att));
+				unionSet = subsumingUnion(unionSet,childProfile.getPhenotypeSet(ent,att));
 			}
 		}					
 		intersectionSet.addAll(unionSet);  // start intersection from the union and intersect each child in turn
 		for (Profile childProfile : childProfiles){
 			if (!childProfile.isEmpty()){
 				if (childProfile.hasPhenotypeSet(ent, att)){
-					intersectionSet.retainAll(childProfile.getPhenotypeSet(ent,att));
+					//intersectionSet.retainAll(childProfile.getPhenotypeSet(ent,att));
+					intersectionSet = subsumingIntersection(intersectionSet,childProfile.getPhenotypeSet(ent, att));
 				}
 				else {
 					intersectionSet.clear();	//if a child has no annotations to this ent/att pair, this will tag variation
@@ -1021,6 +1036,64 @@ public class PhenotypeProfileAnalysis {
 		return false;
 	}
 
+	
+	//TODO make these work
+	Set<Integer>subsumingUnion(Set<Integer>unionSet, Set<Integer>newSet){
+		for (Integer phenotype : newSet){
+			unionSet = addOneToUnionSubsuming(unionSet,phenotype);
+		}
+		return unionSet;
+	}
+	
+	Set<Integer>addOneToUnionSubsuming(Set<Integer>unionSet, Integer phenotype){
+		Set<Integer>toremove = new HashSet<Integer>();
+		for (Integer unionMember : unionSet){
+			if (phenotypeSubsumes(phenotype,unionMember)){  //phenotype subsumes an entry in the unionset
+				toremove.add(unionMember);
+			}
+			else if (phenotypeSubsumes(unionMember,phenotype)){  //if an entry in the unionset subsumes the phenotype, we're done
+				return unionSet;
+			}
+		}
+		if (!toremove.isEmpty()){
+			unionSet.removeAll(toremove);
+		}
+		unionSet.add(phenotype);
+		return unionSet;
+	}
+	
+	Set<Integer>subsumingIntersection(Set<Integer>intersectionSet, Set<Integer>newSet){
+		Set<Integer> saveSet = new HashSet<Integer>();
+		for (Integer phenotype : newSet){
+			Integer save = addOneToIntersectionSubsuming(intersectionSet,phenotype);
+			if (save != null)
+				saveSet.add(save);
+		}
+		return saveSet;
+	}
+	
+	Integer addOneToIntersectionSubsuming(Set<Integer>intersectionSet, Integer phenotype){
+		Integer minimal = phenotype;
+		boolean valid = false;
+		for (Integer intersectMember : intersectionSet){
+			if (phenotypeSubsumes(intersectMember,minimal)){  //intersection entry subsumes phenotype -> phenotype is the intersection
+				valid = true;
+			}
+			else if (phenotypeSubsumes(minimal,intersectMember)){  //if the phenotype subsumes an entry, we're done
+				minimal = intersectMember;
+				valid = true;
+			}
+			else if (intersectMember.equals(minimal))
+				valid = true;
+			else
+				continue;
+		}
+		if (valid)
+			return minimal;
+		else 
+			return null;
+	}
+	
 	/**
 	 * This method removes all phenotypes that don't indicate variation from the profile.  
 	 * Note: After this runs, cells in each profile will either contain the intersection set (which may be empty)
@@ -1530,6 +1603,17 @@ public class PhenotypeProfileAnalysis {
 	}
 
 
+	//More misc Utils
+	public boolean phenotypeSubsumes(Integer parent,Integer child){
+		if (qualitySubsumers.containsKey(child)){
+			return qualitySubsumers.get(child).contains(parent);
+		}
+		else
+			return (parent.equals(child));
+			
+	}
+	
+	
 	//Misc field accessors
 
 	public int getQualityNodeID(){

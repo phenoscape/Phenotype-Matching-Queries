@@ -454,6 +454,7 @@ public class Utils {
 		return usedEntities.size();
 	}
 	
+	
 
 	private static final String QUALITYPARENTQUERY = 
 		"SELECT target.node_id FROM node AS quality " +
@@ -469,10 +470,37 @@ public class Utils {
 			int target_id = entityParents.getInt(1);
 			results.add(target_id);
 		}
+		qualityParentsStatement.close();
 		if (results.isEmpty())
 			throw new RuntimeException("");
 		return results;
 	}
+
+	private static final String ALLPHENOTYPESQUERY =
+		"SELECT node_id FROM phenotype";
+	
+	public Map<Integer,Set<Integer>> buildPhenotypeSubsumers() throws SQLException{
+		Statement phenotypesStatement = getStatement();
+		final Set<Integer> phenolist = new HashSet<Integer>();
+		final ResultSet phenoResults = phenotypesStatement.executeQuery(ALLPHENOTYPESQUERY);
+		final Map<Integer,Set<Integer>> result = new HashMap<Integer,Set<Integer>>();
+		while(phenoResults.next()){
+			int pheno_id = phenoResults.getInt(1);
+			phenolist.add(pheno_id);
+		}
+		System.out.println("Loaded phenotypes");
+		int count =0;
+		for(Integer i : phenolist){
+			Set<Integer> parents = collectQualityParents(i);
+			result.put(i,parents);
+			count++;
+			if (count % 100 == 0){
+				logger.info("Processed " + count + " phenotype parents");				
+			}
+		}
+		phenotypesStatement.close();
+		return result;
+     }
 	
 	
 	

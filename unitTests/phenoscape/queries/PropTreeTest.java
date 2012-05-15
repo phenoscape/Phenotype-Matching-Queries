@@ -44,7 +44,7 @@ public abstract class PropTreeTest {
 	
 	
 
-	protected final int genePhenotypeAnnotationCount = 23;   // True independent of the taxon data loaded
+	protected final int genePhenotypeAnnotationCount = 24;   // True independent of the taxon data loaded
 	
 	protected final double IC1 = -1*(Math.log(1.0/(double)genePhenotypeAnnotationCount)/Math.log(2));
 	protected final double IC2 = -1*(Math.log(2.0/(double)genePhenotypeAnnotationCount)/Math.log(2));
@@ -87,12 +87,15 @@ public abstract class PropTreeTest {
 	int eyeID;
 	int pectoralFinID;
 	int ventralRegionOfCerebellumID;
+	int vertebraID;
+	int bodyID;
 	
 	int countID;
 	int positionID;
 	int shapeID;
 	int sizeID;
 	int textureID;
+	int opticalQualityID;
 
 	
 	protected void initNames(Utils u) throws SQLException{
@@ -210,15 +213,23 @@ public abstract class PropTreeTest {
 		}
 
 		pectoralFinID = u.getOneUID("TAO:0001161");
+		vertebraID = u.getOneUID("TAO:0001189");
 		
 		//BSPO:0000084^OBO_REL:part_of(TAO:0000100)  
 		ventralRegionOfCerebellumID = u.getOneUID("BSPO:0000084^OBO_REL:part_of(TAO:0000100)");
+		
+		bodyID = u.getIDFromName("TAO:0001094");
+		if (bodyID == -1){
+			u.cacheOneNodeFromUID("TAO:0001094");
+			bodyID = u.getIDFromUID("TAO:0001094");
+		}
 		
 		countID = u.getIDFromName("count");
 		positionID = u.getIDFromName("position");
 		shapeID = u.getIDFromName("shape");
 		sizeID = u.getIDFromName("size");
 		textureID = u.getIDFromName("texture");
+		opticalQualityID = u.getIDFromName("optical quality");
 
 	}
 	

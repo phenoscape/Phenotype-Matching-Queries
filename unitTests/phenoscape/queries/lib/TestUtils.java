@@ -269,7 +269,7 @@ public class TestUtils {
 
 	@Test
 	public void testCountDistinctGenePhenotypeAnnotations() throws SQLException {
-		 assertEquals(19,u.countDistinctGenePhenotypeAnnotations());
+		 assertEquals(24,u.countDistinctGenePhenotypeAnnotations());
 	}
 	
 	
@@ -337,6 +337,15 @@ public class TestUtils {
 	@Test
 	public void testListIntegerMembers() {
 		fail("Not yet implemented");
+	}
+	
+	@Test
+	public void testBuildPhenotypeSubsumers() throws SQLException{
+		Map<Integer,Set<Integer>> testmap = u.buildPhenotypeSubsumers();
+		assertEquals(28,testmap.size());
+		for(Integer p : testmap.keySet()){
+			assertFalse(testmap.get(p).isEmpty());
+		}
 	}
 	
 	@After

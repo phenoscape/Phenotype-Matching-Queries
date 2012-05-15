@@ -416,9 +416,6 @@ public class TestPropTree5 extends PropTreeTest{
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		assertTrue(phenotypeParentCache.size()>0);
 		System.out.println("Size is " + phenotypeParentCache.size());
-//		for (PhenotypeExpression pe : phenotypeParentCache.keySet()){
-//			System.out.println("Phenotype: " + u.stringForMessage(pe) + "; set: " + phenotypeParentCache.get(pe).hashCode());
-//		}
 	}
 	
 	@Test

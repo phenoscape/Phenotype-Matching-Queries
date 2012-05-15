@@ -2,7 +2,9 @@
 <nexml xmlns="http://www.nexml.org/2009" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:phen="http://www.bioontologies.org/obd/schema/pheno" generator="Phenex 1.2" version="0.9">
   <meta xmlns:ter="http://purl.org/dc/terms/" xsi:type="LiteralMeta" property="ter:description">Proptree 5 tests whether counts and count ranges are being recognized for phenotypic variability (character 4).  Would expect to see variation at level of Genus 1, Genus 2, Genus 3, and Family 1; no variation in Family 2. Proptree 6 also tests whether matches to BSPO terms are made (we don't expect there to be any).
 
-Proptree_symmetric: expect to see variation in character 7 in Family 1 and in Order, but no where else!  (27 March 2012, Paula and Peter M.)</meta>
+Proptree_symmetric: expect to see variation in character 7 in Family 1 and in Order, but no where else!  (27 March 2012, Paula and Peter M.)
+
+Proptree7: looks at phenotype subsumption</meta>
   <meta xmlns:ter="http://purl.org/dc/terms/" xsi:type="LiteralMeta" property="ter:creator"/>
   <meta xmlns:ter="http://purl.org/dc/terms/" xsi:type="LiteralMeta" property="ter:references"/>
   <otus id="f527ed7a-ad36-472a-8087-00c71e3a3bfb">
@@ -366,6 +368,50 @@ Proptree_symmetric: expect to see variation in character 7 in Family 1 and in Or
           </meta>
         </state>
       </states>
+      <states id="bb068f68-a0d0-4446-a3f6-7aa1238bd07f">
+        <state id="77cc8e7c-4ac3-441f-be4a-7b542d067dbf" label="light blue" symbol="0" about="#77cc8e7c-4ac3-441f-be4a-7b542d067dbf">
+          <meta xmlns:voc="http://vocab.phenoscape.org/" xsi:type="ns:LiteralMeta" property="voc:describesPhenotype">
+            <phen:phenotype>
+              <phen:phenotype_character>
+                <phen:bearer>
+                  <phen:typeref about="TAO:0000250"/>
+                </phen:bearer>
+                <phen:quality>
+                  <phen:typeref about="PATO:0001243"/>
+                </phen:quality>
+              </phen:phenotype_character>
+            </phen:phenotype>
+          </meta>
+        </state>
+        <state id="8c02f00c-0f78-4680-a374-a3ffccde80c2" label="dark blue" symbol="1" about="#8c02f00c-0f78-4680-a374-a3ffccde80c2">
+          <meta xmlns:voc="http://vocab.phenoscape.org/" xsi:type="ns:LiteralMeta" property="voc:describesPhenotype">
+            <phen:phenotype>
+              <phen:phenotype_character>
+                <phen:bearer>
+                  <phen:typeref about="TAO:0000250"/>
+                </phen:bearer>
+                <phen:quality>
+                  <phen:typeref about="PATO:0001244"/>
+                </phen:quality>
+              </phen:phenotype_character>
+            </phen:phenotype>
+          </meta>
+        </state>
+        <state id="d5cc1ab7-a554-4dbb-bf0d-e147a72b450e" label="blue" symbol="2" about="#d5cc1ab7-a554-4dbb-bf0d-e147a72b450e">
+          <meta xmlns:voc="http://vocab.phenoscape.org/" xsi:type="ns:LiteralMeta" property="voc:describesPhenotype">
+            <phen:phenotype>
+              <phen:phenotype_character>
+                <phen:bearer>
+                  <phen:typeref about="TAO:0000250"/>
+                </phen:bearer>
+                <phen:quality>
+                  <phen:typeref about="PATO:0000318"/>
+                </phen:quality>
+              </phen:phenotype_character>
+            </phen:phenotype>
+          </meta>
+        </state>
+      </states>
       <char id="9487690e-6865-40e2-a3b7-d444355842c2" label="opercle shape" about="#9487690e-6865-40e2-a3b7-d444355842c2" states="0f21dfa7-ccf5-43cb-90a8-5b9c947eaa6f">
         <meta xmlns:rdf="http://www.w3.org/2000/01/rdf-schema#" xsi:type="ns:LiteralMeta" property="rdf:comment">1</meta>
       </char>
@@ -385,6 +431,7 @@ Proptree_symmetric: expect to see variation in character 7 in Family 1 and in Or
         <meta xmlns:rdf="http://www.w3.org/2000/01/rdf-schema#" xsi:type="ns:LiteralMeta" property="rdf:comment">6</meta>
       </char>
       <char id="742c1de8-0a81-48d9-a898-54ae8964e379" label="opercle fused with dentary" states="c7ea4a43-e66e-4e02-91f0-d4c2b482542f"/>
+      <char id="726956de-3087-4b9e-87ff-f33d0dadf22e" label="opercle color" states="bb068f68-a0d0-4446-a3f6-7aa1238bd07f"/>
     </format>
     <matrix>
       <row id="90f61dfb-595b-4e5a-ac84-7edb629536ba" otu="d9a68690-cc9a-4551-a9f3-5270ee55d173">
@@ -395,6 +442,7 @@ Proptree_symmetric: expect to see variation in character 7 in Family 1 and in Or
         <cell char="6fd93764-a57f-4b9d-892b-b93a5b82f5b0" state="aba72351-c153-41aa-ab3f-dc6ae1ef7a00"/>
         <cell char="e3fd6e15-f297-4f54-bd17-e63e989fbfee" state="5d7d7279-27ba-4397-ad9b-a03f18ccfe27"/>
         <cell char="742c1de8-0a81-48d9-a898-54ae8964e379" state="4bb024bd-1001-48f0-9662-8b9474e12c6c"/>
+        <cell char="726956de-3087-4b9e-87ff-f33d0dadf22e" state="77cc8e7c-4ac3-441f-be4a-7b542d067dbf"/>
       </row>
       <row id="22dd5ac4-89c9-4e7b-9e89-fa42d26a9282" otu="03838b37-23e4-4e71-8b28-13934493183f">
         <cell char="9487690e-6865-40e2-a3b7-d444355842c2" state="2dc7b8e3-1e2c-49e0-836e-6738d835206b"/>
@@ -404,6 +452,7 @@ Proptree_symmetric: expect to see variation in character 7 in Family 1 and in Or
         <cell char="6fd93764-a57f-4b9d-892b-b93a5b82f5b0" state="aba72351-c153-41aa-ab3f-dc6ae1ef7a00"/>
         <cell char="e3fd6e15-f297-4f54-bd17-e63e989fbfee" state="5d7d7279-27ba-4397-ad9b-a03f18ccfe27"/>
         <cell char="742c1de8-0a81-48d9-a898-54ae8964e379" state="cfa7a076-31f9-437f-8650-690f08d214a4"/>
+        <cell char="726956de-3087-4b9e-87ff-f33d0dadf22e" state="8c02f00c-0f78-4680-a374-a3ffccde80c2"/>
       </row>
       <row id="64ae33e2-cae9-4439-9b0e-77e2f85a7633" otu="23bc1e1b-1ed0-4df1-b6b0-d7180ba1caaf">
         <cell char="9487690e-6865-40e2-a3b7-d444355842c2" state="c3e18387-efea-4709-a088-718a377aa998"/>
@@ -413,6 +462,7 @@ Proptree_symmetric: expect to see variation in character 7 in Family 1 and in Or
         <cell char="6fd93764-a57f-4b9d-892b-b93a5b82f5b0" state="aba72351-c153-41aa-ab3f-dc6ae1ef7a00"/>
         <cell char="e3fd6e15-f297-4f54-bd17-e63e989fbfee" state="5d7d7279-27ba-4397-ad9b-a03f18ccfe27"/>
         <cell char="742c1de8-0a81-48d9-a898-54ae8964e379" state="4bb024bd-1001-48f0-9662-8b9474e12c6c"/>
+        <cell char="726956de-3087-4b9e-87ff-f33d0dadf22e" state="d5cc1ab7-a554-4dbb-bf0d-e147a72b450e"/>
       </row>
       <row id="627bf0c6-4b24-4683-a43c-6a64bdb0c59c" otu="5218f061-4858-4cd1-b53f-804c39daff56">
         <cell char="9487690e-6865-40e2-a3b7-d444355842c2" state="2dc7b8e3-1e2c-49e0-836e-6738d835206b"/>
@@ -421,6 +471,7 @@ Proptree_symmetric: expect to see variation in character 7 in Family 1 and in Or
         <cell char="6fd93764-a57f-4b9d-892b-b93a5b82f5b0" state="e19ce923-5bc5-4f7d-975c-7beb3e2300ac"/>
         <cell char="e3fd6e15-f297-4f54-bd17-e63e989fbfee" state="34fca4a2-9fb2-4d82-8181-8b71b13c0869"/>
         <cell char="742c1de8-0a81-48d9-a898-54ae8964e379" state="cfa7a076-31f9-437f-8650-690f08d214a4"/>
+        <cell char="726956de-3087-4b9e-87ff-f33d0dadf22e" state="77cc8e7c-4ac3-441f-be4a-7b542d067dbf"/>
       </row>
       <row id="c21865cc-96d6-4521-83fb-fa9ceab9ce52" otu="58273f3e-831c-45ed-850a-5c30b1a32157">
         <cell char="9487690e-6865-40e2-a3b7-d444355842c2" state="c3e18387-efea-4709-a088-718a377aa998"/>
@@ -429,6 +480,7 @@ Proptree_symmetric: expect to see variation in character 7 in Family 1 and in Or
         <cell char="6fd93764-a57f-4b9d-892b-b93a5b82f5b0" state="e19ce923-5bc5-4f7d-975c-7beb3e2300ac"/>
         <cell char="e3fd6e15-f297-4f54-bd17-e63e989fbfee" state="34fca4a2-9fb2-4d82-8181-8b71b13c0869"/>
         <cell char="742c1de8-0a81-48d9-a898-54ae8964e379" state="4bb024bd-1001-48f0-9662-8b9474e12c6c"/>
+        <cell char="726956de-3087-4b9e-87ff-f33d0dadf22e" state="d5cc1ab7-a554-4dbb-bf0d-e147a72b450e"/>
       </row>
       <row id="07f7af38-e445-4b15-ab73-c54103a2d532" otu="8da59240-bd53-4573-b109-8ccda691b485">
         <cell char="9487690e-6865-40e2-a3b7-d444355842c2" state="7322aec3-d169-4440-b923-a8ce27036581"/>
@@ -443,6 +495,7 @@ Proptree_symmetric: expect to see variation in character 7 in Family 1 and in Or
         <cell char="6fd93764-a57f-4b9d-892b-b93a5b82f5b0" state="e19ce923-5bc5-4f7d-975c-7beb3e2300ac"/>
         <cell char="e3fd6e15-f297-4f54-bd17-e63e989fbfee" state="5d7d7279-27ba-4397-ad9b-a03f18ccfe27"/>
         <cell char="742c1de8-0a81-48d9-a898-54ae8964e379" state="4bb024bd-1001-48f0-9662-8b9474e12c6c"/>
+        <cell char="726956de-3087-4b9e-87ff-f33d0dadf22e" state="77cc8e7c-4ac3-441f-be4a-7b542d067dbf"/>
       </row>
       <row id="cb5ab3e2-4f7b-4b9e-b639-00ac18511815" otu="11a87241-01f4-4c39-aed1-275279a088ae">
         <cell char="9487690e-6865-40e2-a3b7-d444355842c2" state="e3ecff56-df18-4660-ba22-cf5d22ae4add"/>
@@ -451,6 +504,7 @@ Proptree_symmetric: expect to see variation in character 7 in Family 1 and in Or
         <cell char="6fd93764-a57f-4b9d-892b-b93a5b82f5b0" state="e19ce923-5bc5-4f7d-975c-7beb3e2300ac"/>
         <cell char="e3fd6e15-f297-4f54-bd17-e63e989fbfee" state="5d7d7279-27ba-4397-ad9b-a03f18ccfe27"/>
         <cell char="742c1de8-0a81-48d9-a898-54ae8964e379" state="cfa7a076-31f9-437f-8650-690f08d214a4"/>
+        <cell char="726956de-3087-4b9e-87ff-f33d0dadf22e" state="8c02f00c-0f78-4680-a374-a3ffccde80c2"/>
       </row>
     </matrix>
   </characters>
