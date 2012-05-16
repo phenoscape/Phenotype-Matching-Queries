@@ -77,6 +77,7 @@ public class TestPropTree7 extends PropTreeTest{
 
 		testAnalysis.attributeSet.addAll(testAnalysis.attributeMap.values());		
 		testAnalysis.attributeSet.add(nodeIDofQuality);
+		testAnalysis.qualitySubsumers = new HashMap<Integer,Set<Integer>>(); 
 
 		badTaxonQualities = new HashMap<Integer,Integer>();
 		badGeneQualities = new HashMap<Integer,Integer>();
@@ -316,9 +317,44 @@ public class TestPropTree7 extends PropTreeTest{
 		Assert.assertEquals(15, taxonProfiles.domainSize());  //again, should be equal to the number of taxa
 	}
 	
+	// SubsumingUnion and Intersection operate on sets of Integers, retrieving subsumption relations for the phenotypes represented by those
+	// integers from the quality subsumers table.  
+	// Tests for subsumingUnion and intersection are laid out as follows:
+	//   1. test for normal operation (no subsumption)
+	//   2. test for adding singleton sets (e.g., sets built at the genus level from species
+	//   3. test for more complex cases
+	
+	
+	// Test that that subsumingUnion operates as a union operation when there are no subsumption relations among the elements
 	@Test
-	public void testSubsumingUnion(){
-		testAnalysis.qualitySubsumers = new HashMap<Integer,Set<Integer>>();  //start with an empty table, verify basic union,intersection
+	public void testSubsumingUnionNoSubsumption(){
+		testAnalysis.qualitySubsumers.clear();  //start with an empty table, verify basic union,intersection
+		Set<Integer>test1 = new HashSet<Integer>();
+		test1.add(1);
+		test1.add(2);
+		test1.add(3);
+		Set<Integer>test2 = new HashSet<Integer>();
+		test2.add(2);
+		test2.add(4);
+		test2.add(6);
+		Set<Integer>test3 = new HashSet<Integer>();
+		test3.add(3);
+		test3.add(6);
+		test3.add(9);
+		Set<Integer>unionSet = new HashSet<Integer>();
+		unionSet = testAnalysis.subsumingUnion(unionSet, test1);
+		assertEquals(3,unionSet.size());
+		unionSet = testAnalysis.subsumingUnion(unionSet, test2);
+		assertEquals(5,unionSet.size());
+		unionSet = testAnalysis.subsumingUnion(unionSet, test3);
+		assertEquals(6,unionSet.size());
+	}
+
+	// Test that that subsumingUnion works correctly when there are subsuming relations
+	//  2 subsumes 4, 6
+	//  3 subsumes 6, 9
+	@Test
+	public void testSubsumingUnionWithSubsumption(){
 		Set<Integer>test1 = new HashSet<Integer>();
 		test1.add(1);
 		test1.add(2);
@@ -334,16 +370,9 @@ public class TestPropTree7 extends PropTreeTest{
 		Set<Integer>test4 = new HashSet<Integer>();
 		test4.add(7);
 		Set<Integer>unionSet = new HashSet<Integer>();
-		unionSet = testAnalysis.subsumingUnion(unionSet, test1);
-		assertEquals(3,unionSet.size());
-		unionSet = testAnalysis.subsumingUnion(unionSet, test2);
-		assertEquals(5,unionSet.size());
-		unionSet = testAnalysis.subsumingUnion(unionSet, test3);
-		assertEquals(6,unionSet.size());
-
-		unionSet.clear();
 		Set<Integer>fourParents = new HashSet<Integer>();
 		fourParents.add(2);
+		testAnalysis.qualitySubsumers = new HashMap<Integer,Set<Integer>>();  //empty subsumption table to fill
 		testAnalysis.qualitySubsumers.put(4,fourParents);
 		Set<Integer>sixParents = new HashSet<Integer>();
 		sixParents.add(2);
@@ -357,7 +386,7 @@ public class TestPropTree7 extends PropTreeTest{
 		nineParents.add(3);
 		testAnalysis.qualitySubsumers.put(9,nineParents);
 		
-		
+		//set up some singleton sets (e.g., species phenotypes)
 		Set<Integer>test2x = new HashSet<Integer>();
 		test2x.add(2);
 		Set<Integer>test2y = new HashSet<Integer>();
@@ -365,46 +394,48 @@ public class TestPropTree7 extends PropTreeTest{
 		Set<Integer>test2z = new HashSet<Integer>();
 		test2z.add(6);
 
+		//test2w tests that subsumingUnion is order of operation independent for adding singleton sets
 		Set<Integer> test2w = new HashSet<Integer>();
-		test2w = testAnalysis.subsumingUnion(test2w, test2x);
+		test2w = testAnalysis.subsumingUnion(test2w, test2x);  //add {2}
 		assertEquals(1,test2w.size());
 		assertTrue(test2w.contains(2));
-		test2w = testAnalysis.subsumingUnion(test2w, test2y);
+		test2w = testAnalysis.subsumingUnion(test2w, test2y); // {2} U {4}
 		assertEquals(1,test2w.size());
-		assertTrue(test2w.contains(2));
-		test2w = testAnalysis.subsumingUnion(test2w, test2z);
+		assertTrue(test2w.contains(2));  // 2 subsumes 4, so nothing is added to the union
+		test2w = testAnalysis.subsumingUnion(test2w, test2z);  //{2} U {6}
 		assertEquals(1,test2w.size());
-		assertTrue(test2w.contains(2));
+		assertTrue(test2w.contains(2));  // 2 subsumes 6, so nothing is added to the union
 		
+		// add sets in the opposite order
 		test2w.clear();
-		test2w = testAnalysis.subsumingUnion(test2w, test2z);
+		test2w = testAnalysis.subsumingUnion(test2w, test2z);  // add {6}
 		assertEquals(1,test2w.size());
 		assertTrue(test2w.contains(6));
-		test2w = testAnalysis.subsumingUnion(test2w, test2y);
+		test2w = testAnalysis.subsumingUnion(test2w, test2y);  // {6} U {4}
 		assertEquals(2,test2w.size());
 		assertTrue(test2w.contains(6));
-		assertTrue(test2w.contains(4));
+		assertTrue(test2w.contains(4));  //{4, 6}
 		test2w = testAnalysis.subsumingUnion(test2w, test2x);
 		assertEquals(1,test2w.size());
-		assertTrue(test2w.contains(2));
+		assertTrue(test2w.contains(2));   // 2 subsumes both 4 and 6
 		
 		
-		unionSet = testAnalysis.subsumingUnion(unionSet, test1);
+		unionSet = testAnalysis.subsumingUnion(unionSet, test1);  //{} U {1,2,3}
 		assertEquals(3,unionSet.size());
 		assertTrue(unionSet.contains(1));
 		assertTrue(unionSet.contains(2));
 		assertTrue(unionSet.contains(3));		
-		unionSet = testAnalysis.subsumingUnion(unionSet, test2);
+		unionSet = testAnalysis.subsumingUnion(unionSet, test2); //{1,2,3} U {2,4,6} - 2 subsumes 4 and 6, so no change
 		assertEquals(3,unionSet.size());
 		assertTrue(unionSet.contains(1));
 		assertTrue(unionSet.contains(2));
 		assertTrue(unionSet.contains(3));		
-		unionSet = testAnalysis.subsumingUnion(unionSet, test3);
+		unionSet = testAnalysis.subsumingUnion(unionSet, test3);  //{1,2,3} U {3,6,9} - 3 subsumes 6 and 9, no change
 		assertEquals(3,unionSet.size());
 		assertTrue(unionSet.contains(1));
 		assertTrue(unionSet.contains(2));
 		assertTrue(unionSet.contains(3));		
-		unionSet = testAnalysis.subsumingUnion(unionSet, test4);
+		unionSet = testAnalysis.subsumingUnion(unionSet, test4);  //{1,2,3} U {7} - 7 not subsumed, so is added
 		assertEquals(4,unionSet.size());
 		assertTrue(unionSet.contains(1));
 		assertTrue(unionSet.contains(2));
@@ -414,8 +445,8 @@ public class TestPropTree7 extends PropTreeTest{
 	}
 
 	@Test
-	public void testSubsumingIntersection(){
-		testAnalysis.qualitySubsumers = new HashMap<Integer,Set<Integer>>();  //start with an empty table, verify basic union,intersection
+	public void testSubsumingIntersectionNoSubsumption(){
+		testAnalysis.qualitySubsumers = new HashMap<Integer,Set<Integer>>();  //start with an empty table, verify intersection
 		Set<Integer>test1 = new HashSet<Integer>();
 		test1.add(1);
 		test1.add(2);
@@ -431,11 +462,11 @@ public class TestPropTree7 extends PropTreeTest{
 		Set<Integer>test4 = new HashSet<Integer>();
 		test4.add(7);
 		
-		Set<Integer>unionSet = new HashSet<Integer>();
+		Set<Integer>unionSet = new HashSet<Integer>();   //building the union first best matches the use in PhenotypeProfileAnalysis
 		unionSet = testAnalysis.subsumingUnion(unionSet, test1);
 		unionSet = testAnalysis.subsumingUnion(unionSet, test2);
 		unionSet = testAnalysis.subsumingUnion(unionSet, test3);
-		assertEquals(6,unionSet.size());
+		assertEquals(6,unionSet.size());  //should be {1,2,3,4,6,9}, because there's no subsumption yet
 		Set<Integer>itest1 = testAnalysis.subsumingIntersection(unionSet, test1);
 		assertEquals(3,itest1.size());
 		assertTrue(itest1.contains(1));
@@ -445,7 +476,14 @@ public class TestPropTree7 extends PropTreeTest{
 		Set<Integer>itest2 = testAnalysis.subsumingIntersection(test1,test2);
 		assertEquals(1,itest2.size());
 		assertTrue(itest2.contains(2));
-		
+
+		Set<Integer>itest3 = testAnalysis.subsumingIntersection(test1,test3);
+		assertEquals(1,itest3.size());
+	}		
+	
+	@Test
+	public void testSubsumingIntersectionWithSubsumption(){
+		Set<Integer>unionSet = new HashSet<Integer>();   //building the union first best matches the use in PhenotypeProfileAnalysis
 		Set<Integer>fourParents = new HashSet<Integer>();
 		fourParents.add(2);
 		testAnalysis.qualitySubsumers.put(4,fourParents);
@@ -484,6 +522,26 @@ public class TestPropTree7 extends PropTreeTest{
 		assertTrue(test2w.contains(4));		
 		test2w = testAnalysis.subsumingIntersection(test2w, test2z);
 		assertEquals(0,test2w.size());
+				
+		Set<Integer>test1 = new HashSet<Integer>();
+		test1.add(1);
+		test1.add(2);
+		test1.add(3);
+		Set<Integer>test2 = new HashSet<Integer>();
+		test2.add(2);
+		test2.add(4);
+		test2.add(6);
+		Set<Integer>test3 = new HashSet<Integer>();
+		test3.add(3);
+		test3.add(6);
+		test3.add(9);
+		Set<Integer>test4 = new HashSet<Integer>();
+		test4.add(7);
+		
+		unionSet = testAnalysis.subsumingUnion(unionSet, test1);
+		unionSet = testAnalysis.subsumingUnion(unionSet, test2);
+		unionSet = testAnalysis.subsumingUnion(unionSet, test3);
+
 		
 		test2w = unionSet;
 		test2w = testAnalysis.subsumingIntersection(test2w, test2z);
@@ -493,19 +551,14 @@ public class TestPropTree7 extends PropTreeTest{
 		assertEquals(0,test2w.size());
 		test2w = testAnalysis.subsumingIntersection(test2w, test2x);
 		assertEquals(0,test2w.size());
-		
-		unionSet.clear();
-		unionSet = testAnalysis.subsumingUnion(unionSet, test1);
-		unionSet = testAnalysis.subsumingUnion(unionSet, test2);
-		unionSet = testAnalysis.subsumingUnion(unionSet, test3);
 
-		itest1 = testAnalysis.subsumingIntersection(test1, test1);
+		Set<Integer>itest1  = testAnalysis.subsumingIntersection(test1, test1);
 		assertEquals(3,itest1.size());
 		assertTrue(itest1.contains(1));
 		assertTrue(itest1.contains(2));
 		assertTrue(itest1.contains(3));
 		
-		itest2 = testAnalysis.subsumingIntersection(test2,test2);
+		Set<Integer> itest2 = testAnalysis.subsumingIntersection(test2,test2);
 		assertEquals(2,itest2.size());
 		assertTrue(itest2.contains(4));
 		assertTrue(itest2.contains(6));
@@ -952,10 +1005,6 @@ public class TestPropTree7 extends PropTreeTest{
 		CountTable<Integer> geneEntityCounts = testAnalysis.fillGeneEntityCountTable(testAnalysis.geneProfiles,  entityParentCache, u,PhenotypeProfileAnalysis.GENEENTITYCOUNTQUERY , u.countDistinctGeneEntityPhenotypeAnnotations());		
 		CountTable<Integer> taxonEntityCounts = testAnalysis.fillTaxonEntityCountTable(testAnalysis.taxonProfiles,  entityParentCache, u,PhenotypeProfileAnalysis.TAXONENTITYCOUNTQUERY , u.countDistinctGeneEntityPhenotypeAnnotations());		
 
-//		for (Integer i : sumTable.getEntities()){
-//			u.cacheOneNode(i);
-//			System.out.println(u.getNodeName(i) +  ": " + sumTable.getRawCount(i));
-//		}
 		
 		PhenotypeScoreTable phenotypeScores = new PhenotypeScoreTable();
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
@@ -965,256 +1014,6 @@ public class TestPropTree7 extends PropTreeTest{
 		
 		initNames(u);
 		
-		// check genes against order1
-//		ProfileScoreSet pSet = testAnalysis.matchOneProfilePair(order1ID,alfID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(pSet != null);
-//		System.out.println("HyperScore: " + pSet.getHyperSSScore());
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,apaID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,apcID,pScores,phenotypeScores,entityParentCache, entityChildCache, sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache, entityChildCache, sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,edn1ID,pScores,phenotypeScores,entityParentCache, entityChildCache, sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,fgf24ID,pScores,phenotypeScores,entityParentCache,entityChildCache, sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,furinaID,pScores,phenotypeScores,entityParentCache, entityChildCache, sumTable, phenotypeParentCache,u);
-//		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,henID,pScores,phenotypeScores,entityParentCache,entityChildCache, sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityChildCache, sumTable, phenotypeParentCache,u);
-//		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,lama5ID,pScores,phenotypeScores,entityParentCache,entityChildCache, sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,lofID,pScores,phenotypeScores,entityParentCache, entityChildCache, sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,rndID,pScores,phenotypeScores,entityParentCache, entityChildCache, sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,sec23aID,pScores,phenotypeScores,entityParentCache, entityChildCache, sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,sec24dID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,shhaID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(order1ID,ugdhID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//
-//		// check genes against family1
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
-//		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,apaID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.8- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,apcID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
-//		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,edn1ID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
-//		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,fgf24ID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,furinaID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
-//		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,henID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,jag1bID,pScores,phenotypeScores,entityParentCache,entityChildCache,sumTable, phenotypeParentCache,u);
-		//Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,lama5ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,lofID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,rndID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,sec23aID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,sec24dID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,shhaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(family1ID,ugdhID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		
-//		// check genes against genus1
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,jag1bID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,apaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,apcID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,edn1ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,fgf24ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,furinaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,henID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,jag1bID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,lama5ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,lofID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,rndID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,sec23aID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,sec24dID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,shhaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus1ID,ugdhID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		
-//		// check genes against genus2
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,jag1bID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,apaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,apcID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,edn1ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,fgf24ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,furinaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,henID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,jag1bID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,lama5ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,lofID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,rndID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,sec23aID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,sec24dID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,shhaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus2ID,ugdhID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		
-//		// check genes against genus3
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,jag1bID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,apaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,apcID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,cyp26b1ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,edn1ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,fgf24ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,furinaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,henID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,jag1bID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,lama5ID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,lofID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,rndID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,sec23aID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,sec24dID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,shhaID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
-//
-//		pSet = testAnalysis.matchOneProfilePair(genus3ID,ugdhID,pScores,phenotypeScores,entityParentCache,sumTable, phenotypeParentCache,u);
-//		Assert.assertTrue(Math.abs(0.6- pSet.getHyperSSScore()) < 0.0001);
 	}
 
 	
