@@ -103,6 +103,85 @@ public class SimilarityCalculator<E> {
 		}
 	}
 	
+	/**
+	 * 
+	 * @param taxonProfile
+	 * @param geneProfile
+	 * @param phenotypeScores
+	 * @return
+	 */
+	public static double calcMaxIC(Set<PhenotypeExpression> taxonPhenotypes, Set<PhenotypeExpression> genePhenotypes, PhenotypeScoreTable phenotypeScores){
+		double maxPhenotypeMatch = 0;
+		for (PhenotypeExpression tPhenotype : taxonPhenotypes){
+			for (PhenotypeExpression gPhenotype : genePhenotypes){
+				if(phenotypeScores.hasScore(tPhenotype,gPhenotype))
+					if (phenotypeScores.getScore(tPhenotype,gPhenotype) > maxPhenotypeMatch){
+						maxPhenotypeMatch = phenotypeScores.getScore(tPhenotype,gPhenotype);
+					}
+			}
+		}
+		return maxPhenotypeMatch;
+	}
+
+	
+	
+	
+	
+	
+	public double meanIC(CountTable<E> eaCounts, Utils u) throws SQLException{
+		int matchCount = 0;
+		double matchSum = 0;
+		final double eaCountSum = (double)eaCounts.getSum();
+		for(E eqM : matchIntersection){
+			if (eaCounts.hasCount(eqM)){    
+				int matchScore = eaCounts.getRawCount(eqM);
+				double icScore = CountTable.calcIC((double)matchScore/eaCountSum);
+				if (matchScore >= 0){
+					matchSum += matchScore;
+					matchCount++;
+				}
+				else 
+					throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.stringForMessage(eqM));
+			}
+			else {
+				throw new RuntimeException("eq has no score " + u.stringForMessage(eqM),null);
+			}
+		}
+		if (matchCount>0){
+			return matchSum/((double)matchCount);
+		}
+		else{
+			u.writeOrDump("Intersection", null);
+			for (E shared : matchIntersection){
+				u.fillNames(shared);
+				u.writeOrDump(u.stringForMessage(shared),null);
+			}
+			return -1;
+		}
+	}
+	
+	
+	/**
+	 * 
+	 * @param taxonProfile
+	 * @param geneProfile
+	 * @param phenotypeScores
+	 * @return
+	 */
+	public static double calcMeanIC(Set<PhenotypeExpression> taxonPhenotypes, Set<PhenotypeExpression> genePhenotypes, PhenotypeScoreTable phenotypeScores){
+		double maxPhenotypeMatch = 0;
+		for (PhenotypeExpression tPhenotype : taxonPhenotypes){
+			for (PhenotypeExpression gPhenotype : genePhenotypes){
+				if(phenotypeScores.hasScore(tPhenotype,gPhenotype))
+					if (phenotypeScores.getScore(tPhenotype,gPhenotype) > maxPhenotypeMatch){
+						maxPhenotypeMatch = phenotypeScores.getScore(tPhenotype,gPhenotype);
+					}
+			}
+		}
+		return maxPhenotypeMatch;
+	}
+
+	
 	public E MICS(CountTable<E> eaCounts, Utils u) throws SQLException{
 		
 		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize

@@ -62,10 +62,12 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import phenoscape.queries.PermutedProfileScore.ScoreType;
 import phenoscape.queries.lib.AnnotationPair;
 import phenoscape.queries.lib.CountTable;
 import phenoscape.queries.lib.DistinctGeneAnnotationRecord;
 import phenoscape.queries.lib.EntitySet;
+import phenoscape.queries.lib.PermutedScoreSet;
 import phenoscape.queries.lib.PhenotypeExpression;
 import phenoscape.queries.lib.PhenotypeScoreTable;
 import phenoscape.queries.lib.Profile;
@@ -347,6 +349,7 @@ public class PhenotypeProfileAnalysis {
 		taxonProfiles = loadTaxonProfiles(allLinks,u, attributeMap, qualityNodeID, badTaxonQualities);
 		countAnnotatedTaxa(t,t.getRootNodeID(),taxonProfiles,u);
 		int eaCount = countEAAnnotations(taxonProfiles,u);
+		u.writeOrDump("Raw count of asserted taxon annotations = " + ata, taxonWriter);
 		u.writeOrDump("Count of distinct taxon-phenotype assertions (EQ level): " + taxonPhenotypeLinkCount, taxonWriter);
 		u.writeOrDump("Count of assertions with symmetric properties where one member of a pair of inverses was removed: " + removedCount, taxonWriter);
 		u.writeOrDump("Count of distinct taxon-phenotype assertions (EA level; not filtered for variation): " + eaCount, taxonWriter);
@@ -422,17 +425,22 @@ public class PhenotypeProfileAnalysis {
 
 		logger.info("Calculating Profile Scores");
 		fillUnionSets(phenotypeParentCache);
-		List<PermutedProfileScore> pScores = calcPermutedProfileScores(taxonProfiles,geneProfiles,entityParentCache, entityChildCache, phenotypeScores,entityAnnotations, u);
-
+		List<PermutedProfileScore> pMaxICScores = new ArrayList<PermutedProfileScore>();
+		List<PermutedProfileScore> pMeanICScores = new ArrayList<PermutedProfileScore>();
+		PermutedScoreSet s = new PermutedScoreSet(taxonProfiles,geneProfiles,entityParentCache, entityChildCache, phenotypeScores, u);
+		s.setTotalAnnotations(totalAnnotations);
+		s.setRandom(rand);
+		s.calcPermutedProfileScores();
+		
 		logger.info("Writing HyperSS distribution reports");
-		for(PermutedProfileScore score : pScores){
-			score.writeDist(RANDOMIZATIONREPORTSFOLDER);
-		}
+
+		s.writeDist(RANDOMIZATIONREPORTSFOLDER);
+
 
 		//CountTable<Integer> sumTable = entityCountsForGenes.addTable(entityCountsForTaxa);
 		//CountTable<Integer> entityCountsToUse = sumTable;
 
-		profileMatchReport(phenotypeScores,pScores,w4,entityParentCache,entityChildCache, entityAnnotations, phenotypeParentCache, u);
+		profileMatchReport(phenotypeScores,s,w4,entityParentCache,entityChildCache, entityAnnotations, phenotypeParentCache, u);
 		w4.close();
 
 
@@ -449,8 +457,6 @@ public class PhenotypeProfileAnalysis {
 		u.writeOrDump(timeStamp, w6);
 
 		w6.close();
-
-
 		logger.info("Done");
 	}
 
@@ -485,14 +491,14 @@ public class PhenotypeProfileAnalysis {
 	 * @param u just used for writing
 	 * @throws SQLException 
 	 */
-	void profileMatchReport(PhenotypeScoreTable phenotypeScores,List<PermutedProfileScore> pScores, Writer w,Map<Integer, Set<Integer>> entityParentCache,Map<Integer, Set<Integer>> entityChildCache, EntitySet entityAnnotations,Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, Utils u) throws SQLException{
-		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t HyperSS \t 95% \t 99%  \t decile \t ",w); //maxIC \t iccs \t simJ \t simIC \t simGOS \t simNormGOS",w);
+	void profileMatchReport(PhenotypeScoreTable phenotypeScores,PermutedScoreSet scores, Writer w,Map<Integer, Set<Integer>> entityParentCache,Map<Integer, Set<Integer>> entityChildCache, EntitySet entityAnnotations,Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, Utils u) throws SQLException{
+		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t maxIC \t 95% \t 99%  \t decile \t meanIC \t 95% \t 99% \t decile ",w);
 
 		long zeroCount = 0;
 		//u.writeOrDump("Sizes: Taxon profiles: " + taxonProfiles.keySet().size() + "; Gene profiles: " + geneProfiles.keySet().size(), null);
 		for(Integer currentTaxon : taxonProfiles.domainSet()){
 			for(Integer currentGene : geneProfiles.domainSet()){
-				ProfileScoreSet thisMatch = matchOneProfilePair(currentTaxon,currentGene,pScores,phenotypeScores,entityParentCache,entityChildCache,entityAnnotations,phenotypeParentCache, u);
+				ProfileScoreSet thisMatch = matchOneProfilePair(currentTaxon,currentGene,scores,phenotypeScores,entityParentCache,entityChildCache,entityAnnotations,phenotypeParentCache, u);
 				if (thisMatch.isNonZero())
 					thisMatch.writeScores(u, w);
 				else
@@ -504,7 +510,7 @@ public class PhenotypeProfileAnalysis {
 
 	ProfileScoreSet matchOneProfilePair(Integer taxon, 
 			Integer gene,
-			List<PermutedProfileScore> pScores, 
+			PermutedScoreSet scores, 
 			PhenotypeScoreTable phenotypeScores,
 			Map<Integer, Set<Integer>> entityParentCache, 
 			Map<Integer, Set<Integer>> entityChildCache,
@@ -514,11 +520,7 @@ public class PhenotypeProfileAnalysis {
 		final Profile taxonProfile = taxonProfiles.getProfile(taxon);
 		final Profile geneProfile = geneProfiles.getProfile(gene);
 		ProfileScoreSet result = new ProfileScoreSet(taxon, gene,taxonProfile.getAllEAPhenotypes(), geneProfile.getAllEAPhenotypes());
-		PermutedProfileScore pScore = matchProfileSizes(taxonProfile.getAllEAPhenotypes().size(),
-				geneProfile.getAllEAPhenotypes().size(),
-				pScores);
-		// calculate maxIC
-		//double maxIC = calcMaxIC(taxonProfile.getAllEAPhenotypes(), geneProfile.getAllEAPhenotypes(),phenotypeScores);
+		PermutedProfileScore pScore = scores.matchProfileSizes(taxonProfile.getAllEAPhenotypes().size(),geneProfile.getAllEAPhenotypes().size());
 		result.setMaxICScore(-1);
 
 		//		Set<Integer> taxonEntityUnion = new HashSet<Integer>();
@@ -526,41 +528,44 @@ public class PhenotypeProfileAnalysis {
 		//			taxonEntityUnion.addAll(entityParentCache.get(e));
 		//		}
 
-		final List<Integer>taxonEntityList = buildEntityList(taxonProfile,u);
-
-		Collection<AnnotationPair>taxonBag = new ArrayList<AnnotationPair>();
-		Set<Integer>allTaxonEntities = new HashSet<Integer>();
-		for(Integer ent : taxonEntityList){
-			if (!allTaxonEntities.contains(ent)){
-				allTaxonEntities.addAll(entityChildCache.get(ent));
-				if (entityAnnotations.hasEntity(ent))
-					taxonBag.addAll(entityAnnotations.getAnnotations(ent));
-			}
-		}
+//		final List<Integer>taxonEntityList = buildEntityList(taxonProfile,u);
+//
+//		Collection<AnnotationPair>taxonBag = new ArrayList<AnnotationPair>();
+//		Set<Integer>allTaxonEntities = new HashSet<Integer>();
+//		for(Integer ent : taxonEntityList){
+//			if (!allTaxonEntities.contains(ent)){
+//				allTaxonEntities.addAll(entityChildCache.get(ent));
+//				if (entityAnnotations.hasEntity(ent))
+//					taxonBag.addAll(entityAnnotations.getAnnotations(ent));
+//			}
+//		}
 
 		//		Set<Integer> geneEntityUnion = new HashSet<Integer>();
 		//		for(Integer e : geneProfile.getUsedEntities()){
 		//			geneEntityUnion.addAll(entityParentCache.get(e));
 		//		}
 
-		final List<Integer>geneEntityList = buildEntityList(geneProfile,u);
+//		final List<Integer>geneEntityList = buildEntityList(geneProfile,u);
+//
+//		Collection<AnnotationPair>geneBag = new ArrayList<AnnotationPair>();
+//		Set<Integer>allGeneEntities = new HashSet<Integer>();
+//		for(Integer ent : geneEntityList){
+//			if (!allGeneEntities.contains(ent)){
+//				allGeneEntities.addAll(entityChildCache.get(ent));
+//				if (entityAnnotations.hasEntity(ent))
+//					geneBag.addAll(entityAnnotations.getAnnotations(ent));
+//
+//			}
+//		}
+		//SimilarityCalculator<AnnotationPair> sc = new SimilarityCalculator<AnnotationPair>(totalAnnotations);
 
-		Collection<AnnotationPair>geneBag = new ArrayList<AnnotationPair>();
-		Set<Integer>allGeneEntities = new HashSet<Integer>();
-		for(Integer ent : geneEntityList){
-			if (!allGeneEntities.contains(ent)){
-				allGeneEntities.addAll(entityChildCache.get(ent));
-				if (entityAnnotations.hasEntity(ent))
-					geneBag.addAll(entityAnnotations.getAnnotations(ent));
+		//Collection<AnnotationPair> entityIntersection = sc.collectionIntersection(taxonBag, geneBag);
 
-			}
-		}
-		SimilarityCalculator<AnnotationPair> sc = new SimilarityCalculator<AnnotationPair>(totalAnnotations);
-
-		Collection<AnnotationPair> entityIntersection = sc.collectionIntersection(taxonBag, geneBag);
-
-		double hyperSSScore = sc.simHyperSS(taxonBag.size(),geneBag.size(),entityIntersection.size());
-
+		//double hyperSSScore = sc.simHyperSS(taxonBag.size(),geneBag.size(),entityIntersection.size());
+		// calculate maxIC
+		//double maxIC = calcMaxIC(taxonProfile.getAllEAPhenotypes(), geneProfile.getAllEAPhenotypes(),phenotypeScores);
+		double maxICScore = SimilarityCalculator.calcMaxIC(taxonProfile.getAllEAPhenotypes(),geneProfile.getAllEAPhenotypes(),phenotypeScores);
+		double meanICScore = SimilarityCalculator.calcMeanIC(taxonProfile.getAllEAPhenotypes(),geneProfile.getAllEAPhenotypes(),phenotypeScores);
 
 		//sc.setTaxonParents(taxonEntityUnion,u);
 		//sc.setGeneParents(geneEntityUnion, u);
@@ -578,211 +583,33 @@ public class PhenotypeProfileAnalysis {
 		result.setSimJScore(simJScore);
 		result.setSimGOSScore(simGOSScore);
 		result.setSimNormGOSScore(simNormGOSScore);
-		result.setHyperSSScore(hyperSSScore);
+		//result.setHyperSSScore(hyperSSScore);
 
 		// install critical values
-		result.setcutOff95(pScore.cutoff095);
-		result.setcutOff99(pScore.cutoff099);
+		result.setcutOff95maxIC(pScore.cutoff095(ScoreType.MAXIC));
+		result.setcutOff99maxIC(pScore.cutoff099(ScoreType.MAXIC));
+
+		result.setcutOff95meanIC(pScore.cutoff095(ScoreType.MEANIC));
+		result.setcutOff99meanIC(pScore.cutoff099(ScoreType.MEANIC));
 
 		// testing p-value distribution
-		if (hyperSSScore>=pScore.cutoff010)
-			result.setDecile(0);
-		else if (hyperSSScore>=pScore.cutoff020)
-			result.setDecile(1);
-		else if (hyperSSScore>=pScore.cutoff030)
-			result.setDecile(2);
-		else if (hyperSSScore>=pScore.cutoff040)
-			result.setDecile(3);
-		else if (hyperSSScore>=pScore.cutoff050)
-			result.setDecile(4);
-		else if (hyperSSScore>=pScore.cutoff060)
-			result.setDecile(5);
-		else if (hyperSSScore>=pScore.cutoff070)
-			result.setDecile(6);
-		else if (hyperSSScore>=pScore.cutoff080)
-			result.setDecile(7);
-		else if (hyperSSScore>=pScore.cutoff090)
-			result.setDecile(8);
-		else if (hyperSSScore>=pScore.cutoff095)
-			result.setDecile(9);
-		else if (hyperSSScore>=pScore.cutoff099)
-			result.setDecile(10);
-		else result.setDecile(11);
+		
+		result.setDecileMaxIC(pScore.getDecile(maxICScore, ScoreType.MAXIC));
+		result.setDecileMeanIC(pScore.getDecile(meanICScore,ScoreType.MEANIC));
+		
 
 		return result;
 	}
 
 
 
-	PermutedProfileScore matchProfileSizes(int taxonSize, int geneSize,List<PermutedProfileScore> scores){
-		for(PermutedProfileScore pps : scores){
-			if (pps.matchSize(taxonSize,geneSize))
-				return pps;
-		}
-		final String message = "Couldn't find a permuted Profile size for taxon profile size = " + taxonSize + " and gene profile size = " + geneSize;
-		logger.fatal(message);
-		throw new RuntimeException(message);
-	}
 
 
 
 
-	final static int DISTSIZE = 1000;
-	protected List<PermutedProfileScore> calcPermutedProfileScores(ProfileMap taxonProfiles2,ProfileMap geneProfiles2,Map<Integer,Set<Integer>> entityParentCache, Map<Integer,Set<Integer>> entityChildCache, PhenotypeScoreTable phenotypeScores, EntitySet annotations, Utils u) throws SQLException{
-		if (logger.isInfoEnabled())
-			logger.info("Starting generation of permuted profile scores");
-		List<PermutedProfileScore> result = new ArrayList<PermutedProfileScore>();
-		List<PhenotypeExpression> allTaxonPhenotypes = new ArrayList<PhenotypeExpression>();
-		HashSet<Integer>taxonProfileSizes = new HashSet<Integer>();
-		HashSet<Integer>geneProfileSizes = new HashSet<Integer>();
-		for(Integer currentTaxon : taxonProfiles2.domainSet()){
-			Set<PhenotypeExpression> eaPhenotypes = taxonProfiles2.getProfile(currentTaxon).getAllEAPhenotypes();
-			allTaxonPhenotypes.addAll(eaPhenotypes);
-			taxonProfileSizes.add(eaPhenotypes.size());
-		}
-		ArrayList<PhenotypeExpression> allGenePhenotypes = new ArrayList<PhenotypeExpression>();
-		for(Integer currentGene : geneProfiles2.domainSet()){
-			Set<PhenotypeExpression> eaPhenotypes = geneProfiles2.getProfile(currentGene).getAllEAPhenotypes();
-			allGenePhenotypes.addAll(eaPhenotypes);
-			geneProfileSizes.add(eaPhenotypes.size());
-		}
-		if (logger.isInfoEnabled()){
-			System.out.println("taxon profile sizes: " + u.listIntegerMembers(taxonProfileSizes));
-			System.out.println("gene profile sizes: " +  u.listIntegerMembers(geneProfileSizes));
-		}
-		
-/**
- * 		final List<Integer>taxonEntityList = buildEntityList(taxonProfile,u);
-
-		List<AnnotationPair>taxonBag = new ArrayList<AnnotationPair>();
-		Set<Integer>allTaxonEntities = new HashSet<Integer>();
-		for(Integer ent : taxonEntityList){
-			if (!allTaxonEntities.contains(ent)){
-				allTaxonEntities.addAll(entityChildCache.get(ent));
-				if (entityAnnotations.hasEntity(ent))
-					taxonBag.addAll(entityAnnotations.getAnnotations(ent));
-			}
-		}
-
-		//		Set<Integer> geneEntityUnion = new HashSet<Integer>();
-		//		for(Integer e : geneProfile.getUsedEntities()){
-		//			geneEntityUnion.addAll(entityParentCache.get(e));
-		//		}
-
-		final List<Integer>geneEntityList = buildEntityList(geneProfile,u);
-
-		List<AnnotationPair>geneBag = new ArrayList<AnnotationPair>();
-		Set<Integer>allGeneEntities = new HashSet<Integer>();
-		for(Integer ent : geneEntityList){
-			if (!allGeneEntities.contains(ent)){
-				allGeneEntities.addAll(entityChildCache.get(ent));
-				if (entityAnnotations.hasEntity(ent))
-					geneBag.addAll(entityAnnotations.getAnnotations(ent));
-
-			}
-		}
-		SimilarityCalculator<AnnotationPair> sc = new SimilarityCalculator<AnnotationPair>(totalAnnotations);
-
-		Collection<AnnotationPair> entityIntersection = sc.collectionIntersection(taxonBag, geneBag);
-
-		double hyperSSScore = sc.simHyperSS(taxonBag.size(),geneBag.size(),entityIntersection.size());
-		
- */
-		
-		
-		final SimilarityCalculator<AnnotationPair> sc = new SimilarityCalculator<AnnotationPair>(totalAnnotations);
-		for(Integer taxonSize : taxonProfileSizes){
-			for (Integer geneSize : geneProfileSizes){
-				final double[] dist = new double[DISTSIZE]; 
-				for (int i = 0; i<DISTSIZE;i++){
-					final List<Integer>taxonEntityList = buildEntityListFromProfiles(allTaxonPhenotypes,taxonSize,u);
-					final List<Integer>geneEntityList = buildEntityListFromProfiles(allGenePhenotypes,geneSize,u);
-					Set<Integer>allGeneEntities = new HashSet<Integer>();
-					Set<Integer>allTaxonEntities = new HashSet<Integer>();
-					Collection<AnnotationPair>taxonBag = new ArrayList<AnnotationPair>();
-					while(taxonBag.size() == 0 || taxonBag.size()>totalAnnotations){
-						allTaxonEntities.clear();
-						for(Integer j : taxonEntityList){
-							if (!allTaxonEntities.contains(j)){
-								allTaxonEntities.addAll(entityChildCache.get(j));
-								if (annotations.hasEntity(j)){
-									taxonBag = sc.collectionUnion(taxonBag, annotations.getAnnotations(j));
-								}
-							}
-						}
-						Collection<AnnotationPair>geneBag = new ArrayList<AnnotationPair>();
-						while(geneBag.size() == 0 || geneBag.size()>totalAnnotations){
-							allGeneEntities.clear();
-							for(Integer j : geneEntityList){
-								if (!allGeneEntities.contains(j)){
-									allGeneEntities.addAll(entityChildCache.get(j));
-									if (annotations.hasEntity(j))
-										geneBag = sc.collectionUnion(geneBag, annotations.getAnnotations(j));
-								}
-							}
-						}
-						Collection<AnnotationPair> entityIntersection = sc.collectionIntersection(taxonBag, geneBag);
-						if (logger.isTraceEnabled())
-							logger.trace("Permuting taxon profile of size: " + taxonSize + " (" + taxonBag.size() + ")  against gene profile of size: " + geneSize + " (" + geneBag.size() + ") with intersection size: " + entityIntersection.size());
-						dist[i] = sc.simHyperSS(taxonBag.size(),geneBag.size(),entityIntersection.size());
-					}
-					PermutedProfileScore p = new PermutedProfileScore(dist,taxonSize,geneSize);
-					result.add(p);
-				}
-			}
-		}
-		//logger.info("Finished generation of permuted profile scores");
-		return result;
-		}
 
 
-	Set<PhenotypeExpression> generateProfile(List<PhenotypeExpression> allProfiles, Integer profileSize){
-		final int profilesCount = allProfiles.size();
-		final Set<PhenotypeExpression>result = new HashSet<PhenotypeExpression>();
-		while(result.size()<profileSize){
-			int index = rand.nextInt(profilesCount);
-			final PhenotypeExpression e = allProfiles.get(index);
-			if (!e.isSimpleQuality())
-				result.add(e);
-		}
-		return result;
-	}
 
-	List<Integer> buildEntityListFromProfiles(List<PhenotypeExpression> allProfiles, Integer profileSize, Utils u){
-		final int profilesCount = allProfiles.size();
-		final List<Integer>result = new ArrayList<Integer>();
-		while(result.size()<profileSize){
-			int index = rand.nextInt(profilesCount);
-			final PhenotypeExpression pe = allProfiles.get(index);
-			if (!pe.isSimpleQuality()){
-				Integer e = pe.getEntity();
-				String eUID = u.getNodeUID(e); 
-				if (eUID != null){
-					if (!SimilarityCalculator.SPATIALPOSTCOMPUIDPREFIX.equals(eUID.substring(0,5))){
-						result.add(e);
-					}
-				}
-				if (pe.getEntity2() != PhenotypeExpression.VOIDENTITY){
-					Integer e2 = pe.getEntity();
-					String e2UID = u.getNodeUID(e2); 
-					if (e2UID != null && result.size()<profileSize){
-						if (!SimilarityCalculator.SPATIALPOSTCOMPUIDPREFIX.equals(e2UID.substring(0,5))){
-							result.add(e);
-						}
-					}
-				}
-			}
-		}
-		if (result.size() == profileSize){
-			return result;
-		}
-		else{
-			final String message = "buildEntityListFromProfiles failed; wanted: " + profileSize + "; got: " + result.size();	
-			logger.fatal(message);
-			throw new RuntimeException(message);
-		}
-
-	}
 
 	List<Integer> buildEntityList(Profile profile, Utils u){
 		return buildEntityListfromListofPhenotypes(profile.getAllEAPhenotypes(),u);
@@ -1037,7 +864,8 @@ public class PhenotypeProfileAnalysis {
 	}
 
 	
-	//TODO make these work
+	// SubsumingUnion and Intersection operate on sets of Integers, retrieving subsumption relations for the phenotypes represented by those
+	// integers from the quality subsumers table (accessed by phenotypeSubsumes()).
 	Set<Integer>subsumingUnion(Set<Integer>unionSet, Set<Integer>newSet){
 		for (Integer phenotype : newSet){
 			unionSet = addOneToUnionSubsuming(unionSet,phenotype);

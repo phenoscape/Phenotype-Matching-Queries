@@ -10,8 +10,11 @@ public class ProfileScoreSet{
 	private final Integer taxon;
 	private final Integer gene;
 	private double maxICScore;
-	private double cutOff95;
-	private double cutOff99;
+	private double cutOff95maxIC;
+	private double cutOff99maxIC;
+	private double meanICScore;
+	private double cutOff95meanIC;
+	private double cutOff99meanIC;
 	private double iccsScore;
 	private double simICScore;
 	private double simJScore;
@@ -19,7 +22,8 @@ public class ProfileScoreSet{
 	private double simNormGOSScore;
 	private Set<PhenotypeExpression> taxonPhenotypes;
 	private Set<PhenotypeExpression> genePhenotypes;
-	private int decile;
+	private int decileMaxIC;
+	private int decileMeanIC;
 	private double hyperSSScore;
 
 	public ProfileScoreSet(Integer t, Integer g, Set<PhenotypeExpression> set, Set<PhenotypeExpression> set2){
@@ -33,35 +37,69 @@ public class ProfileScoreSet{
 		maxICScore = score;
 	}
 	
+	public void setMeanICScore(double score){
+		meanICScore = score;
+	}
+	
 	// only used for testing
 	public double getMaxICScore(){
 		return maxICScore;
 	}
 
-	public void setcutOff95(double score){
-		cutOff95 = score;
-	}
-	
-	double getcutOff95(){
-		return cutOff95;
+	// only used for testing
+	public double getMeanICScore(){
+		return meanICScore;
 	}
 
-	public void setcutOff99(double score){
-		cutOff99 = score;
+	
+	public void setcutOff95maxIC(double score){
+		cutOff95maxIC = score;
 	}
 	
-	double getcutOff99(){
-		return cutOff99;
+	double getcutOff95maxIC(){
+		return cutOff95maxIC;
 	}
 
-	public void setDecile(int d){
-		decile = d;
+	public void setcutOff99maxIC(double score){
+		cutOff99maxIC = score;
 	}
 	
-	public int getDecile(){
-		return decile;
+	double getcutOff99maxIC(){
+		return cutOff99maxIC;
+	}
+
+	public void setcutOff95meanIC(double score){
+		cutOff95meanIC = score;
 	}
 	
+	double getcutOff95meanIC(){
+		return cutOff95meanIC;
+	}
+
+	public void setcutOff99meanIC(double score){
+		cutOff99meanIC = score;
+	}
+	
+	double getcutOff99meanIC(){
+		return cutOff99meanIC;
+	}
+
+	public void setDecileMaxIC(int d){
+		decileMaxIC = d;
+	}
+	
+	public int getDecileMaxIC(){
+		return decileMaxIC;
+	}
+
+	public void setDecileMeanIC(int d){
+		decileMeanIC = d;
+	}
+	
+	public int getDecileMeanIC(){
+		return decileMeanIC;
+	}
+
 	public void setICCSScore(double score){
 		iccsScore = score;
 	}
@@ -120,14 +158,23 @@ public class ProfileScoreSet{
 		scores.append("\t");
 		scores.append(genePhenotypes.size());
 		scores.append("\t");
-		scores.append(hyperSSScore);
+		scores.append(maxICScore);
 		scores.append("\t");		
-		scores.append(cutOff95);
+		scores.append(cutOff95maxIC);
 		scores.append("\t");
-		scores.append(cutOff99);
+		scores.append(cutOff95maxIC);
 		scores.append("\t");
-		scores.append(decile);
+		scores.append(decileMaxIC);
 		scores.append("\t");
+		scores.append(meanICScore);
+		scores.append("\t");		
+		scores.append(cutOff95meanIC);
+		scores.append("\t");
+		scores.append(cutOff95meanIC);
+		scores.append("\t");
+		scores.append(decileMeanIC);
+		scores.append("\t");
+		
 //		scores.append(maxICScore);
 //		scores.append("\t");
 //		scores.append(iccsScore);

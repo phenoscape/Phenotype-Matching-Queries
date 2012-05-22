@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import junit.framework.Assert;
@@ -36,6 +37,7 @@ import org.junit.Test;
 import phenoscape.queries.lib.CountTable;
 import phenoscape.queries.lib.DistinctGeneAnnotationRecord;
 import phenoscape.queries.lib.EntitySet;
+import phenoscape.queries.lib.PermutedScoreSet;
 import phenoscape.queries.lib.PhenotypeExpression;
 import phenoscape.queries.lib.PhenotypeScoreTable;
 import phenoscape.queries.lib.Profile;
@@ -630,7 +632,9 @@ public class TestPropTree1 extends PropTreeTest{
 		testAnalysis.buildEQParents(phenotypeParentCache,entityParentCache,u);
 		CountTable<PhenotypeExpression> counts = testAnalysis.fillPhenotypeCountTable(geneProfiles, taxonProfiles, phenotypeParentCache, u, PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY, PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY, u.countDistinctGenePhenotypeAnnotations());
 		testAnalysis.buildPhenotypeMatchCache(phenotypeParentCache, phenotypeScores, counts, u);
-		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(taxonProfiles,geneProfiles,entityParentCache, entityChildCache, phenotypeScores,testAnalysis.entityAnnotations,u);
+		PermutedScoreSet s = new PermutedScoreSet(taxonProfiles,geneProfiles,entityParentCache, entityChildCache, phenotypeScores, u);
+		s.setRandom(new Random());
+		s.calcPermutedProfileScores();
 		
 		// test distribution dumping, though this is temporary...
 //		for(PermutedProfileScore score : pScores){
@@ -640,7 +644,7 @@ public class TestPropTree1 extends PropTreeTest{
 		initNames(u);
 
 		// check genes against order1
-		ProfileScoreSet pSet = testAnalysis.matchOneProfilePair(order1ID,alfID,pScores,phenotypeScores,entityParentCache,entityChildCache,testAnalysis.entityAnnotations, phenotypeParentCache,u);
+		ProfileScoreSet pSet = testAnalysis.matchOneProfilePair(order1ID,alfID,s,phenotypeScores,entityParentCache,entityChildCache,testAnalysis.entityAnnotations, phenotypeParentCache,u);
 		Assert.assertEquals(0.0, pSet.getMaxICScore());
 
 //		pSet = testAnalysis.matchOneProfilePair(order1ID,apaID,pScores,phenotypeScores);
@@ -1002,9 +1006,11 @@ public class TestPropTree1 extends PropTreeTest{
 		testAnalysis.writeTaxonGeneMaxICSummary(phenotypeScores,u,w5);
 		w5.close();
 		
-		List<PermutedProfileScore> pScores = testAnalysis.calcPermutedProfileScores(testAnalysis.taxonProfiles,testAnalysis.geneProfiles,entityParentCache, entityChildCache, phenotypeScores,testAnalysis.entityAnnotations,u);
+		PermutedScoreSet s = new PermutedScoreSet(testAnalysis.taxonProfiles,testAnalysis.geneProfiles,entityParentCache, entityChildCache, phenotypeScores, u);
+		s.setRandom(new Random());
+		s.calcPermutedProfileScores();
 
-		testAnalysis.profileMatchReport(phenotypeScores,pScores,profileWriter,entityParentCache, entityChildCache, testAnalysis.entityAnnotations,phenotypeParentCache, u);
+		testAnalysis.profileMatchReport(phenotypeScores,s,profileWriter,entityParentCache, entityChildCache, testAnalysis.entityAnnotations,phenotypeParentCache, u);
 		profileWriter.close();
 		
 		taxonWriter.close();
