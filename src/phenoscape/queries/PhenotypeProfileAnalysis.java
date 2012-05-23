@@ -521,7 +521,6 @@ public class PhenotypeProfileAnalysis {
 		final Profile geneProfile = geneProfiles.getProfile(gene);
 		ProfileScoreSet result = new ProfileScoreSet(taxon, gene,taxonProfile.getAllEAPhenotypes(), geneProfile.getAllEAPhenotypes());
 		PermutedProfileScore pScore = scores.matchProfileSizes(taxonProfile.getAllEAPhenotypes().size(),geneProfile.getAllEAPhenotypes().size());
-		result.setMaxICScore(-1);
 
 		//		Set<Integer> taxonEntityUnion = new HashSet<Integer>();
 		//		for(Integer e : taxonProfile.getUsedEntities()){
@@ -569,16 +568,16 @@ public class PhenotypeProfileAnalysis {
 
 		//sc.setTaxonParents(taxonEntityUnion,u);
 		//sc.setGeneParents(geneEntityUnion, u);
+		//double hyperSSScore = sc.simHyperSS(taxonEntityList.size(),geneEntityList.size(),null);
 
 
 
 		double iccsScore = -1; //sc.iccs(taxonEntityUnion,geneEntityUnion,entityCountsToUse,u);
 		double simJScore = -1; //sc.simJ(u);
-		double simICScore = -1; //sc.simIC(entityCountsToUse, u);
 		double simGOSScore = -1; //sc.simGOS(0.5);
 		double simNormGOSScore = -1; //sc.simNormGOS(0.5);
-		//double hyperSSScore = sc.simHyperSS(taxonEntityList.size(),geneEntityList.size(),null);
-		result.setSimICScore(simICScore);
+		result.setMaxICScore(maxICScore);
+		result.setMeanICScore(meanICScore);
 		result.setICCSScore(iccsScore);
 		result.setSimJScore(simJScore);
 		result.setSimGOSScore(simGOSScore);

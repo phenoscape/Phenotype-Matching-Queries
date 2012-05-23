@@ -119,27 +119,27 @@ public class PermutedProfileScore {
 			cutoffs = meanICcutoffs;
 		}
     // testing p-value distribution
-	if (s>=cutoffs.get(CutoffIndex.level010))
+	if (s<=cutoffs.get(CutoffIndex.level010))
 		return cutoffDeciles.get(CutoffIndex.level010);
-	else if (s>=cutoffs.get(CutoffIndex.level020))
+	else if (s<=cutoffs.get(CutoffIndex.level020))
 		return cutoffDeciles.get(CutoffIndex.level020);
-	else if (s>=cutoffs.get(CutoffIndex.level030))
+	else if (s<=cutoffs.get(CutoffIndex.level030))
 		return cutoffDeciles.get(CutoffIndex.level030);
-	else if (s>=cutoffs.get(CutoffIndex.level040))
+	else if (s<=cutoffs.get(CutoffIndex.level040))
 		return cutoffDeciles.get(CutoffIndex.level040);
-	else if (s>=cutoffs.get(CutoffIndex.level050))
+	else if (s<=cutoffs.get(CutoffIndex.level050))
 		return cutoffDeciles.get(CutoffIndex.level050);
-	else if (s>=cutoffs.get(CutoffIndex.level060))
+	else if (s<=cutoffs.get(CutoffIndex.level060))
 		return cutoffDeciles.get(CutoffIndex.level060);
-	else if (s>=cutoffs.get(CutoffIndex.level070))
+	else if (s<=cutoffs.get(CutoffIndex.level070))
 		return cutoffDeciles.get(CutoffIndex.level070);
-	else if (s>=cutoffs.get(CutoffIndex.level080))
+	else if (s<=cutoffs.get(CutoffIndex.level080))
 		return cutoffDeciles.get(CutoffIndex.level080);
-	else if (s>=cutoffs.get(CutoffIndex.level090))
+	else if (s<=cutoffs.get(CutoffIndex.level090))
 		return cutoffDeciles.get(CutoffIndex.level090);
-	else if (s>=cutoffs.get(CutoffIndex.level095))
+	else if (s<=cutoffs.get(CutoffIndex.level095))
 		return cutoffDeciles.get(CutoffIndex.level095);
-	else if (s>=cutoffs.get(CutoffIndex.level099))
+	else if (s<=cutoffs.get(CutoffIndex.level099))
 		return cutoffDeciles.get(CutoffIndex.level099);
 	else return cutoffDeciles.get(CutoffIndex.level100);
 	}

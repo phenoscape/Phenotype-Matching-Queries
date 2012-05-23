@@ -169,16 +169,21 @@ public class SimilarityCalculator<E> {
 	 * @return
 	 */
 	public static double calcMeanIC(Set<PhenotypeExpression> taxonPhenotypes, Set<PhenotypeExpression> genePhenotypes, PhenotypeScoreTable phenotypeScores){
-		double maxPhenotypeMatch = 0;
+		double icSum = 0;
+		int icCount = 0;
 		for (PhenotypeExpression tPhenotype : taxonPhenotypes){
 			for (PhenotypeExpression gPhenotype : genePhenotypes){
+				icCount++;   //mean against all possible matches
 				if(phenotypeScores.hasScore(tPhenotype,gPhenotype))
-					if (phenotypeScores.getScore(tPhenotype,gPhenotype) > maxPhenotypeMatch){
-						maxPhenotypeMatch = phenotypeScores.getScore(tPhenotype,gPhenotype);
+					if (phenotypeScores.getScore(tPhenotype,gPhenotype) >= 0){
+						 icSum += phenotypeScores.getScore(tPhenotype,gPhenotype);
 					}
 			}
 		}
-		return maxPhenotypeMatch;
+		if (icCount>0)
+			return icSum/(double)icCount;
+		else
+			return 0;
 	}
 
 	

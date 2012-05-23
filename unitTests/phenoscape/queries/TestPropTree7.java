@@ -1020,17 +1020,17 @@ public class TestPropTree7 extends PropTreeTest{
 		initNames(u);
 		// check genes against order1
 		ProfileScoreSet pSet = testAnalysis.matchOneProfilePair(order1ID,alfID,s,phenotypeScores,entityParentCache,entityChildCache,testAnalysis.entityAnnotations, phenotypeParentCache,u);
-		Assert.assertEquals(0.0, pSet.getMaxICScore());
-		
+		Assert.assertEquals(IC13, pSet.getMaxICScore());
+		Assert.assertEquals(IC13,pSet.getMeanICScore());
 	}
 
 	
-	private static final String TAXONREPORTFILENAME =  "../../SmallKBTests/PropTreeSymmetricTest/TaxonVariationReport.txt";
-	private static final String GENEREPORTFILENAME =  "../../SmallKBTests/PropTreeSymmetricTest/GeneVariationReport.txt";
-	private static final String PHENOTYPEMATCHREPORTFILENAME = "../../SmallKBTests/PropTreeSymmetricTest/PhenotypeMatchReport.txt";
-	private static final String PROFILEMATCHREPORTFILENAME = "../../SmallKBTests/PropTreeSymmetricTest/ProfileMatchReport.txt";
-	private static final String TAXONGENEMAXICSCOREFILENAME = "../../SmallKBTests/PropTreeSymmetricTest/MaxICReport.txt";
-	private static final String RANDOMIZATIONREPORTSFOLDER = "../../SmallKBTests/PropTreeSymmetricTest/RandomizationReports";
+	private static final String TAXONREPORTFILENAME =  "../../SmallKBTests/PropTree7/TaxonVariationReport.txt";
+	private static final String GENEREPORTFILENAME =  "../../SmallKBTests/PropTree7/GeneVariationReport.txt";
+	private static final String PHENOTYPEMATCHREPORTFILENAME = "../../SmallKBTests/PropTree7/PhenotypeMatchReport.txt";
+	private static final String PROFILEMATCHREPORTFILENAME = "../../SmallKBTests/PropTree7/ProfileMatchReport.txt";
+	private static final String TAXONGENEMAXICSCOREFILENAME = "../../SmallKBTests/PropTree7/MaxICReport.txt";
+	private static final String RANDOMIZATIONREPORTSFOLDER = "../../SmallKBTests/PropTree7/RandomizationReports";
 
 	
 
