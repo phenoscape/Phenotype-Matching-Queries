@@ -840,8 +840,8 @@ public class PhenotypeProfileAnalysis {
 		for (Profile childProfile : childProfiles){
 			if (!childProfile.isEmpty()){
 				if (childProfile.hasPhenotypeSet(ent, att)){
-					//intersectionSet.retainAll(childProfile.getPhenotypeSet(ent,att));
-					intersectionSet = subsumingIntersection(intersectionSet,childProfile.getPhenotypeSet(ent, att));
+					intersectionSet.retainAll(childProfile.getPhenotypeSet(ent,att));  //turns out non-subsuming intersection is correct here
+					//intersectionSet = subsumingIntersection(intersectionSet,childProfile.getPhenotypeSet(ent, att));
 				}
 				else {
 					intersectionSet.clear();	//if a child has no annotations to this ent/att pair, this will tag variation
@@ -889,37 +889,7 @@ public class PhenotypeProfileAnalysis {
 		return unionSet;
 	}
 	
-	Set<Integer>subsumingIntersection(Set<Integer>intersectionSet, Set<Integer>newSet){
-		Set<Integer> saveSet = new HashSet<Integer>();
-		for (Integer phenotype : newSet){
-			Integer save = addOneToIntersectionSubsuming(intersectionSet,phenotype);
-			if (save != null)
-				saveSet.add(save);
-		}
-		return saveSet;
-	}
 	
-	Integer addOneToIntersectionSubsuming(Set<Integer>intersectionSet, Integer phenotype){
-		Integer minimal = phenotype;
-		boolean valid = false;
-		for (Integer intersectMember : intersectionSet){
-			if (phenotypeSubsumes(intersectMember,minimal)){  //intersection entry subsumes phenotype -> phenotype is the intersection
-				valid = true;
-			}
-			else if (phenotypeSubsumes(minimal,intersectMember)){  //if the phenotype subsumes an entry, we're done
-				minimal = intersectMember;
-				valid = true;
-			}
-			else if (intersectMember.equals(minimal))
-				valid = true;
-			else
-				continue;
-		}
-		if (valid)
-			return minimal;
-		else 
-			return null;
-	}
 	
 	/**
 	 * This method removes all phenotypes that don't indicate variation from the profile.  
