@@ -883,7 +883,7 @@ public class TestPropTree7 extends PropTreeTest{
 		initNames(u);
 		// check genes against order1
 		ProfileScoreSet pSet = testAnalysis.matchOneProfilePair(order1ID,alfID,s,phenotypeScores,entityParentCache,entityChildCache,testAnalysis.entityAnnotations, phenotypeParentCache,u);
-		Assert.assertEquals(IC13, pSet.getMaxICScore());
+		Assert.assertEquals(IC13, pSet.getMedianICScore());
 		Assert.assertEquals(IC13,pSet.getMeanICScore());
 	}
 

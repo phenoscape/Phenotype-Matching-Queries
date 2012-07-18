@@ -645,7 +645,7 @@ public class TestPropTree1 extends PropTreeTest{
 
 		// check genes against order1
 		ProfileScoreSet pSet = testAnalysis.matchOneProfilePair(order1ID,alfID,s,phenotypeScores,entityParentCache,entityChildCache,testAnalysis.entityAnnotations, phenotypeParentCache,u);
-		Assert.assertEquals(0.0, pSet.getMaxICScore());
+		Assert.assertEquals(0.0, pSet.getMedianICScore());
 
 //		pSet = testAnalysis.matchOneProfilePair(order1ID,apaID,pScores,phenotypeScores);
 //		Assert.assertEquals(IC13, pSet.getMaxICScore());
