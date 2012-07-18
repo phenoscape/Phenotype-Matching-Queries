@@ -2,6 +2,7 @@ package phenoscape.queries.lib;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -127,42 +128,47 @@ public class SimilarityCalculator<E> {
 	
 	
 	
-	
-	public double meanIC(CountTable<E> eaCounts, Utils u) throws SQLException{
-		int matchCount = 0;
-		double matchSum = 0;
-		final double eaCountSum = (double)eaCounts.getSum();
-		for(E eqM : matchIntersection){
-			if (eaCounts.hasCount(eqM)){    
-				int matchScore = eaCounts.getRawCount(eqM);
-				double icScore = CountTable.calcIC((double)matchScore/eaCountSum);
-				if (matchScore >= 0){
-					matchSum += matchScore;
-					matchCount++;
-				}
-				else 
-					throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.stringForMessage(eqM));
-			}
-			else {
-				throw new RuntimeException("eq has no score " + u.stringForMessage(eqM),null);
-			}
-		}
-		if (matchCount>0){
-			return matchSum/((double)matchCount);
-		}
-		else{
-			u.writeOrDump("Intersection", null);
-			for (E shared : matchIntersection){
-				u.fillNames(shared);
-				u.writeOrDump(u.stringForMessage(shared),null);
-			}
-			return -1;
-		}
-	}
+//	/**
+//	 * @param eaCounts
+//	 * @param u
+//	 * @return
+//	 * @throws SQLException
+//	 */
+//	public double meanIC(CountTable<E> eaCounts, Utils u) throws SQLException{
+//		int matchCount = 0;
+//		double matchSum = 0;
+//		final double eaCountSum = (double)eaCounts.getSum();
+//		for(E match : matchIntersection){
+//			if (eaCounts.hasCount(match)){    
+//				int matchScore = eaCounts.getRawCount(match);
+//				double icScore = CountTable.calcIC((double)matchScore/eaCountSum);
+//				if (matchScore >= 0){
+//					matchSum += icScore;
+//					matchCount++;
+//				}
+//				else 
+//					throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.stringForMessage(match));
+//			}
+//			else {
+//				throw new RuntimeException("eq has no score " + u.stringForMessage(match),null);
+//			}
+//		}
+//		if (matchCount>0){
+//			return matchSum/((double)matchCount);
+//		}
+//		else{
+//			u.writeOrDump("Intersection", null);
+//			for (E shared : matchIntersection){
+//				u.fillNames(shared);
+//				u.writeOrDump(u.stringForMessage(shared),null);
+//			}
+//			return -1;
+//		}
+//	}
 	
 	
 	/**
-	 * 
+	 * This calculates the mean IC, ignoring intersection pairs with IC=0 
 	 * @param taxonProfile
 	 * @param geneProfile
 	 * @param phenotypeScores
@@ -173,10 +179,10 @@ public class SimilarityCalculator<E> {
 		int icCount = 0;
 		for (PhenotypeExpression tPhenotype : taxonPhenotypes){
 			for (PhenotypeExpression gPhenotype : genePhenotypes){
-				icCount++;   //mean against all possible matches
 				if(phenotypeScores.hasScore(tPhenotype,gPhenotype))
 					if (phenotypeScores.getScore(tPhenotype,gPhenotype) >= 0){
 						 icSum += phenotypeScores.getScore(tPhenotype,gPhenotype);
+ 						 icCount++;   //mean against all possible matches
 					}
 			}
 		}
@@ -186,6 +192,40 @@ public class SimilarityCalculator<E> {
 			return 0;
 	}
 
+	
+	/**
+	 * This calculates the median IC, ignoring intersection pairs with IC=0 
+	 * @param taxonProfile
+	 * @param geneProfile
+	 * @param phenotypeScores
+	 * @return
+	 */
+	public static double calcMedianIC(Set<PhenotypeExpression> taxonPhenotypes, Set<PhenotypeExpression> genePhenotypes, PhenotypeScoreTable phenotypeScores){
+		final List<Double> scores = new ArrayList<Double>();
+		for (PhenotypeExpression tPhenotype : taxonPhenotypes){
+			for (PhenotypeExpression gPhenotype : genePhenotypes){
+				if(phenotypeScores.hasScore(tPhenotype,gPhenotype))
+					if (phenotypeScores.getScore(tPhenotype,gPhenotype) >= 0){
+						scores.add(phenotypeScores.getScore(tPhenotype,gPhenotype));
+					}
+			}
+		}
+		final Double[] scoreArray = scores.toArray(new Double[0]);
+		Arrays.sort(scoreArray);
+		final int midpoint = scoreArray.length/2;
+		Double median;
+		if (scoreArray.length%2 == 0){
+			median = (scoreArray[midpoint-1] + scoreArray[midpoint])/2.0;
+		}
+		else {
+			median = scoreArray[midpoint];
+		}
+		return median;
+	}
+	
+	
+	
+	
 	
 	public E MICS(CountTable<E> eaCounts, Utils u) throws SQLException{
 		

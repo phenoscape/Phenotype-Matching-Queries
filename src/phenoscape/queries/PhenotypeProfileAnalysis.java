@@ -563,7 +563,7 @@ public class PhenotypeProfileAnalysis {
 		//double hyperSSScore = sc.simHyperSS(taxonBag.size(),geneBag.size(),entityIntersection.size());
 		// calculate maxIC
 		//double maxIC = calcMaxIC(taxonProfile.getAllEAPhenotypes(), geneProfile.getAllEAPhenotypes(),phenotypeScores);
-		double maxICScore = SimilarityCalculator.calcMaxIC(taxonProfile.getAllEAPhenotypes(),geneProfile.getAllEAPhenotypes(),phenotypeScores);
+		double medianICScore = SimilarityCalculator.calcMaxIC(taxonProfile.getAllEAPhenotypes(),geneProfile.getAllEAPhenotypes(),phenotypeScores);
 		double meanICScore = SimilarityCalculator.calcMeanIC(taxonProfile.getAllEAPhenotypes(),geneProfile.getAllEAPhenotypes(),phenotypeScores);
 
 		//sc.setTaxonParents(taxonEntityUnion,u);
@@ -576,7 +576,7 @@ public class PhenotypeProfileAnalysis {
 		double simJScore = -1; //sc.simJ(u);
 		double simGOSScore = -1; //sc.simGOS(0.5);
 		double simNormGOSScore = -1; //sc.simNormGOS(0.5);
-		result.setMaxICScore(maxICScore);
+		result.setMaxICScore(medianICScore);
 		result.setMeanICScore(meanICScore);
 		result.setICCSScore(iccsScore);
 		result.setSimJScore(simJScore);
@@ -593,7 +593,7 @@ public class PhenotypeProfileAnalysis {
 
 		// testing p-value distribution
 		
-		result.setDecileMaxIC(pScore.getDecile(maxICScore, ScoreType.MAXIC));
+		result.setDecileMaxIC(pScore.getDecile(medianICScore, ScoreType.MAXIC));
 		result.setDecileMeanIC(pScore.getDecile(meanICScore,ScoreType.MEANIC));
 		
 
@@ -826,7 +826,16 @@ public class PhenotypeProfileAnalysis {
 		}
 	}
 
-	
+	/**
+	 * This method calculates the union and intersection sets for one taxon, one entity, and one attribute (including the qualities
+	 * subsumed under the attribute). Currently Union sets are formed using subsumption of phenotypes, but intersection sets ignore
+	 * subsumption.  Note that because profiles are already sorted by entities, subsumption will only be detected 'along the quality axis.'  
+	 * @param childProfiles profiles of the children of this node
+	 * @param ent specifies the entity (as term id)
+	 * @param att specifies the attribute (as term id)
+	 * @param parentProfile the profile of this taxon
+	 * @return true if variation was inferred among the children of this taxon for the specified E and A
+	 */
 	boolean taxonAnalysis(Set<Profile> childProfiles,Integer ent, Integer att,Profile parentProfile){
 		Set <Integer>unionSet = new HashSet<Integer>();
 		Set <Integer>intersectionSet = new HashSet<Integer>();

@@ -75,15 +75,15 @@ public class PermutedScoreSet {
 		for(Integer taxonSize : taxonProfileSizes){
 			for (Integer geneSize : geneProfileSizes){
 				logger.info("Permuting taxon profile of size: " + taxonSize + " against gene profile of size: " + geneSize);
-				final double[] maxICdist = new double[DISTSIZE]; 
 				final double[] meanICdist = new double[DISTSIZE];
+				final double[] medianICdist = new double[DISTSIZE];
 				for (int i = 0; i<DISTSIZE;i++){
 					Set<PhenotypeExpression> generatedTaxonProfile = generateProfile(allTaxonPhenotypes,taxonSize);
 					Set<PhenotypeExpression> generatedGeneProfile = generateProfile(allGenePhenotypes,geneSize);
-					maxICdist[i]=SimilarityCalculator.calcMaxIC(generatedTaxonProfile,generatedGeneProfile,phenotypeScores);
 					meanICdist[i]=SimilarityCalculator.calcMeanIC(generatedTaxonProfile,generatedGeneProfile,phenotypeScores);
+					medianICdist[i]=SimilarityCalculator.calcMedianIC(generatedTaxonProfile, generatedGeneProfile, phenotypeScores);
 				}
-				PermutedProfileScore score =  new PermutedProfileScore(maxICdist,meanICdist,taxonSize,geneSize);
+				PermutedProfileScore score = new PermutedProfileScore(medianICdist,meanICdist,taxonSize,geneSize);
 				scores.add(score);
 			}
 		}
