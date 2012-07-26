@@ -17,7 +17,7 @@ import org.apache.log4j.Logger;
 
 public class SimilarityCalculator<E> {
 
-	
+
 	public static final String SPATIALPOSTCOMPUIDPREFIX = "BSPO:";
 
 	static Logger logger = Logger.getLogger(SimilarityCalculator.class.getName());
@@ -27,12 +27,12 @@ public class SimilarityCalculator<E> {
 	private final Set<E>matchIntersection = new HashSet<E>();
 	private final Set<E>matchUnion = new HashSet<E>();
 
-	
+
 
 	final private int annotationCount;
-	
-	
-	
+
+
+
 	//constructor is simplified - moving the initialization code to setters
 	public SimilarityCalculator(long annotations) throws SQLException{
 		if (annotations > Integer.MAX_VALUE){
@@ -41,17 +41,17 @@ public class SimilarityCalculator<E> {
 		annotationCount = (int)annotations;
 
 	}
-	
+
 	public void setTaxonParents(Set<E> tpp, Utils u) throws SQLException{
 		taxonParents = filterSpatialPostComps(tpp,u);
 		updateSets(u);
 	}
-	
+
 	public void setGeneParents(Set<E> gpp, Utils u) throws SQLException{
 		geneParents = filterSpatialPostComps(gpp,u);
 		updateSets(u);
 	}
-	
+
 	private void updateSets(Utils u) throws SQLException{
 		if (taxonParents != null && geneParents != null){
 			matchIntersection.addAll(taxonParents);	// add the EQ parents of the EA level taxon phenotype
@@ -65,9 +65,9 @@ public class SimilarityCalculator<E> {
 
 		}
 	}
-	
-	
-	
+
+
+
 	public double maxIC(CountTable<E> eaCounts, Utils u) throws SQLException{
 		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
 		Set<E> bestItemSet = new HashSet<E>();
@@ -75,21 +75,25 @@ public class SimilarityCalculator<E> {
 			if (eaCounts.hasCount(eqM)){    
 				int matchScore = eaCounts.getRawCount(eqM);
 				if (matchScore<bestMatch){
-					u.fillNames(eqM);
 					bestMatch = matchScore;
 					bestItemSet.clear();
 					bestItemSet.add(eqM);
 				}
 				else if (matchScore == bestMatch){
-					u.fillNames(eqM);
 					bestItemSet.add(eqM);
 				}
-				else if (matchScore < 0)
+				else if (matchScore < 0){
+					u.fillNames(eqM);
 					throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.stringForMessage(eqM));
+				}
 			}
 			else {
+				u.fillNames(eqM);
 				throw new RuntimeException("eq has no score " + u.stringForMessage(eqM),null);
 			}
+		}
+		for(E eqM : bestItemSet){
+			u.fillNames(eqM);
 		}
 		if (bestMatch<Double.MAX_VALUE && !bestItemSet.isEmpty()){
 			return CountTable.calcIC((double)bestMatch/(double)eaCounts.getSum());
@@ -103,70 +107,11 @@ public class SimilarityCalculator<E> {
 			return -1;
 		}
 	}
-	
-	/**
-	 * 
-	 * @param taxonProfile
-	 * @param geneProfile
-	 * @param phenotypeScores
-	 * @return
-	 */
-	public static double calcMaxIC(Set<PhenotypeExpression> taxonPhenotypes, Set<PhenotypeExpression> genePhenotypes, PhenotypeScoreTable phenotypeScores){
-		double maxPhenotypeMatch = 0;
-		for (PhenotypeExpression tPhenotype : taxonPhenotypes){
-			for (PhenotypeExpression gPhenotype : genePhenotypes){
-				if(phenotypeScores.hasScore(tPhenotype,gPhenotype))
-					if (phenotypeScores.getScore(tPhenotype,gPhenotype) > maxPhenotypeMatch){
-						maxPhenotypeMatch = phenotypeScores.getScore(tPhenotype,gPhenotype);
-					}
-			}
-		}
-		return maxPhenotypeMatch;
-	}
 
-	
-	
-	
-	
-//	/**
-//	 * @param eaCounts
-//	 * @param u
-//	 * @return
-//	 * @throws SQLException
-//	 */
-//	public double meanIC(CountTable<E> eaCounts, Utils u) throws SQLException{
-//		int matchCount = 0;
-//		double matchSum = 0;
-//		final double eaCountSum = (double)eaCounts.getSum();
-//		for(E match : matchIntersection){
-//			if (eaCounts.hasCount(match)){    
-//				int matchScore = eaCounts.getRawCount(match);
-//				double icScore = CountTable.calcIC((double)matchScore/eaCountSum);
-//				if (matchScore >= 0){
-//					matchSum += icScore;
-//					matchCount++;
-//				}
-//				else 
-//					throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.stringForMessage(match));
-//			}
-//			else {
-//				throw new RuntimeException("eq has no score " + u.stringForMessage(match),null);
-//			}
-//		}
-//		if (matchCount>0){
-//			return matchSum/((double)matchCount);
-//		}
-//		else{
-//			u.writeOrDump("Intersection", null);
-//			for (E shared : matchIntersection){
-//				u.fillNames(shared);
-//				u.writeOrDump(u.stringForMessage(shared),null);
-//			}
-//			return -1;
-//		}
-//	}
-	
-	
+
+
+
+
 	/**
 	 * This calculates the mean IC, ignoring intersection pairs with IC=0 
 	 * @param taxonProfile
@@ -181,8 +126,8 @@ public class SimilarityCalculator<E> {
 			for (PhenotypeExpression gPhenotype : genePhenotypes){
 				if(phenotypeScores.hasScore(tPhenotype,gPhenotype))
 					if (phenotypeScores.getScore(tPhenotype,gPhenotype) >= 0){
-						 icSum += phenotypeScores.getScore(tPhenotype,gPhenotype);
- 						 icCount++;   //mean against all possible matches
+						icSum += phenotypeScores.getScore(tPhenotype,gPhenotype);
+						icCount++;   //mean against all possible matches
 					}
 			}
 		}
@@ -192,7 +137,7 @@ public class SimilarityCalculator<E> {
 			return 0;
 	}
 
-	
+
 	/**
 	 * This calculates the median IC, ignoring intersection pairs with IC=0 
 	 * @param taxonProfile
@@ -210,25 +155,30 @@ public class SimilarityCalculator<E> {
 					}
 			}
 		}
-		final Double[] scoreArray = scores.toArray(new Double[0]);
-		Arrays.sort(scoreArray);
-		final int midpoint = scoreArray.length/2;
-		Double median;
-		if (scoreArray.length%2 == 0){
-			median = (scoreArray[midpoint-1] + scoreArray[midpoint])/2.0;
+		if (scores.size() > 0){
+			final Double[] scoreArray = scores.toArray(new Double[0]);
+			Arrays.sort(scoreArray);
+			final int midpoint = scoreArray.length/2;
+			Double median;
+			if (scoreArray.length%2 == 0){
+				median = (scoreArray[midpoint-1] + scoreArray[midpoint])/2.0;
+			}
+			else {
+				median = scoreArray[midpoint];
+			}
+			return median;
 		}
 		else {
-			median = scoreArray[midpoint];
+			return 0;
 		}
-		return median;
 	}
-	
-	
-	
-	
-	
+
+
+
+
+
 	public E MICS(CountTable<E> eaCounts, Utils u) throws SQLException{
-		
+
 		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
 		Set<E> bestItemSet = new HashSet<E>();
 		for(E eqM : matchIntersection){
@@ -273,44 +223,9 @@ public class SimilarityCalculator<E> {
 			return null;
 		}
 	}
-	
-	/**
-	 * 
-	 * @param taxonProfile
-	 * @param geneProfile
-	 * @param phenotypeScores
-	 * @return
-	 */
-	
-	public double iccs(Set<E> parents1, Set<E> parents2, CountTable<E> eaCounts, Utils u){
-//		List<Double> maxByTaxon = new ArrayList<Double>();
-//		for (PhenotypeExpression  tPhenotype : parents1){
-//			for (PhenotypeExpression  gPhenotype : parents2){
-//				double bestIC = 0.0;
-//				for (Integer gEntity : geneProfile.getUsedEntities()){
-//					if (phenotypeScores.hasScore(tPhenotype,gPhenotype)) {
-//						if (phenotypeScores.getScore(tPhenotype,gPhenotype) > bestIC){
-//							bestIC = phenotypeScores.getScore(tPhenotype,gPhenotype);
-//						}
-//					}
-//				}
-//				maxByTaxon.add(bestIC);
-//			}
-//		}
-//		double sum =0;
-//		for(Double s : maxByTaxon){
-//			sum += s.doubleValue();
-//		}
-//		if (Double.isInfinite(sum) || true)
-			return -1.0;
-//		else
-//			return sum/((double)maxByTaxon.size());
-
-	}
 
 
-	
-	
+
 	/**
 	 * 
 	 * @param u used to load names if errors are to be reported
@@ -318,23 +233,23 @@ public class SimilarityCalculator<E> {
 	 * @throws SQLException
 	 */
 	public double simJ(Utils u) throws SQLException{
-//		if (matchIntersection.isEmpty()){
-//			logger.warn("No intersection between taxon and gene parents");
-//			logger.info("Taxon Parents: ");
-//			for (E taxonP : taxonParents){
-//				u.fillNames(taxonP);
-//				logger.info(u.stringForMessage(taxonP));
-//			}
-//			logger.warn("Gene Parents: ");
-//			for (E geneP : geneParents){
-//				u.fillNames(geneP);
-//				logger.info(u.stringForMessage(geneP));
-//			}
-//		}
+		//		if (matchIntersection.isEmpty()){
+		//			logger.warn("No intersection between taxon and gene parents");
+		//			logger.info("Taxon Parents: ");
+		//			for (E taxonP : taxonParents){
+		//				u.fillNames(taxonP);
+		//				logger.info(u.stringForMessage(taxonP));
+		//			}
+		//			logger.warn("Gene Parents: ");
+		//			for (E geneP : geneParents){
+		//				u.fillNames(geneP);
+		//				logger.info(u.stringForMessage(geneP));
+		//			}
+		//		}
 		return ((double)matchIntersection.size())/(double)matchUnion.size();
 
 	}
-	
+
 	/**
 	 * 
 	 * @param eaCounts
@@ -344,17 +259,17 @@ public class SimilarityCalculator<E> {
 	 */
 	public double simIC(CountTable<E> eaCounts, Utils u) throws SQLException{
 		if (matchIntersection.isEmpty()){
-//			logger.warn("No intersection between taxon and gene parents");
-//			logger.info("Taxon Parents: ");
-//			for (E taxonP : taxonParents ){
-//				u.fillNames(taxonP);
-//				logger.info(u.stringForMessage(taxonP));
-//			}
-//			logger.info("Gene Parents: ");
-//			for (E geneP : geneParents){
-//				u.fillNames(geneP);
-//				logger.info(u.stringForMessage(geneP));
-//			}
+			//			logger.warn("No intersection between taxon and gene parents");
+			//			logger.info("Taxon Parents: ");
+			//			for (E taxonP : taxonParents ){
+			//				u.fillNames(taxonP);
+			//				logger.info(u.stringForMessage(taxonP));
+			//			}
+			//			logger.info("Gene Parents: ");
+			//			for (E geneP : geneParents){
+			//				u.fillNames(geneP);
+			//				logger.info(u.stringForMessage(geneP));
+			//			}
 			return 0;
 		}
 		double intersectionSum = 0.0;
@@ -383,7 +298,7 @@ public class SimilarityCalculator<E> {
 		return gos;
 	}
 
-	
+
 	/**
 	 * normalized version of simGOS metric suggested by T. Vision
 	 * @param xWeight
@@ -422,8 +337,8 @@ public class SimilarityCalculator<E> {
 		//System.out.println("population: " + popSize + "; te: " + successes + "; ge: " + sampleSize + "; intersection: " + intersectionSize + "; stat: " + result);
 		return result;
 	}
-	
-	
+
+
 	/**
 	 * 
 	 * @param list1
@@ -448,7 +363,7 @@ public class SimilarityCalculator<E> {
 		}
 		return result;
 	}
-	
+
 
 	/**
 	 * 
@@ -471,7 +386,7 @@ public class SimilarityCalculator<E> {
 		}
 		return result;
 	}
-	
+
 	/**
 	 * 
 	 * @param list1
@@ -485,8 +400,8 @@ public class SimilarityCalculator<E> {
 		return result;
 	}
 
-	
-	
+
+
 	public int countOccurrences(Collection<E> c1, E item){
 		int result = 0;
 		for (E entry : c1){
@@ -495,9 +410,9 @@ public class SimilarityCalculator<E> {
 		}
 		return result;
 	}
-	
-	
-	
+
+
+
 	// filter out spatial postcompositions
 	private Set<E> filterSpatialPostComps(Set<E> matchIntersection, Utils u) throws SQLException{
 		final Set<E> matchesCopy = new HashSet<E>();
@@ -542,5 +457,5 @@ public class SimilarityCalculator<E> {
 	}
 
 
-	
+
 }

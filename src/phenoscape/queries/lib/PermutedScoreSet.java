@@ -141,10 +141,10 @@ public class PermutedScoreSet {
 	}
 
 	public void writeDist(String reportFolder) throws IOException{
-		final String maxICFolder = reportFolder + "/maxIC";
+		final String medianICFolder = reportFolder + "/medianIC";
 		final String meanICFolder = reportFolder + "/meanIC";
 		for(PermutedProfileScore score : scores){
-			score.writeDist(maxICFolder, PermutedProfileScore.ScoreType.MAXIC);
+			score.writeDist(medianICFolder, PermutedProfileScore.ScoreType.MEDIANIC);
 			score.writeDist(meanICFolder, PermutedProfileScore.ScoreType.MEANIC);
 		}
 	}

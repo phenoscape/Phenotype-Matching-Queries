@@ -279,13 +279,13 @@ public class PhenotypeProfileAnalysis {
 	 * @param u handles db connections, name caching and some formatting
 	 * @param taxonWriter the writer for the taxon variation report stream
 	 * @param geneWriter the stream for the gene variation report
-	 * @param w3 the stream for the phenotype match report
-	 * @param w4 the stream for the profile match report
+	 * @param phenoWriter the stream for the phenotype match report
+	 * @param profileWriter the stream for the profile match report
 	 * @param w5 the stream for the maxIC report
 	 * @throws IOException this might be thrown when writers are closed; not sure why things work better when writers are closed here
 	 * @throws SQLException pass this through to next level, which will catch it.
 	 */
-	void process(Utils u,Writer taxonWriter, Writer geneWriter, Writer w3, Writer w4, Writer w5) throws IOException, SQLException{
+	void process(Utils u,Writer taxonWriter, Writer geneWriter, Writer phenoWriter, Writer profileWriter, Writer w5) throws IOException, SQLException{
 		if (logger.isInfoEnabled())
 			logger.info("Setting up Attribute table");
 		qualityNodeID = u.getQualityNodeID();   //set to the root of PATO
@@ -413,8 +413,8 @@ public class PhenotypeProfileAnalysis {
 		taxonWriter.close();
 		if (logger.isInfoEnabled())
 			logger.info("Finished building phenotype match cache; Writing Phenotype match summary");
-		writePhenotypeMatchSummary(phenotypeScores,u,w3);		
-		w3.close();
+		writePhenotypeMatchSummary(phenotypeScores,u,phenoWriter);		
+		phenoWriter.close();
 
 		if (logger.isInfoEnabled())
 			logger.info("Finished Writing Phenotype match summary");
@@ -440,8 +440,8 @@ public class PhenotypeProfileAnalysis {
 		//CountTable<Integer> sumTable = entityCountsForGenes.addTable(entityCountsForTaxa);
 		//CountTable<Integer> entityCountsToUse = sumTable;
 
-		profileMatchReport(phenotypeScores,s,w4,entityParentCache,entityChildCache, entityAnnotations, phenotypeParentCache, u);
-		w4.close();
+		profileMatchReport(phenotypeScores,s,profileWriter,entityParentCache,entityChildCache, entityAnnotations, phenotypeParentCache, u);
+		profileWriter.close();
 
 
 		File outFile6 = new File(PERMUTATIONSCORESFILENAME);
@@ -492,7 +492,7 @@ public class PhenotypeProfileAnalysis {
 	 * @throws SQLException 
 	 */
 	void profileMatchReport(PhenotypeScoreTable phenotypeScores,PermutedScoreSet scores, Writer w,Map<Integer, Set<Integer>> entityParentCache,Map<Integer, Set<Integer>> entityChildCache, EntitySet entityAnnotations,Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, Utils u) throws SQLException{
-		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t maxIC \t 95% \t 99%  \t decile \t meanIC \t 95% \t 99% \t decile ",w);
+		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t median IC \t 95% \t 99%  \t decile \t meanIC \t 95% \t 99% \t decile ",w);
 
 		long zeroCount = 0;
 		//u.writeOrDump("Sizes: Taxon profiles: " + taxonProfiles.keySet().size() + "; Gene profiles: " + geneProfiles.keySet().size(), null);
@@ -563,7 +563,7 @@ public class PhenotypeProfileAnalysis {
 		//double hyperSSScore = sc.simHyperSS(taxonBag.size(),geneBag.size(),entityIntersection.size());
 		// calculate maxIC
 		//double maxIC = calcMaxIC(taxonProfile.getAllEAPhenotypes(), geneProfile.getAllEAPhenotypes(),phenotypeScores);
-		double medianICScore = SimilarityCalculator.calcMaxIC(taxonProfile.getAllEAPhenotypes(),geneProfile.getAllEAPhenotypes(),phenotypeScores);
+		double medianICScore = SimilarityCalculator.calcMedianIC(taxonProfile.getAllEAPhenotypes(),geneProfile.getAllEAPhenotypes(),phenotypeScores);
 		double meanICScore = SimilarityCalculator.calcMeanIC(taxonProfile.getAllEAPhenotypes(),geneProfile.getAllEAPhenotypes(),phenotypeScores);
 
 		//sc.setTaxonParents(taxonEntityUnion,u);
@@ -573,27 +573,21 @@ public class PhenotypeProfileAnalysis {
 
 
 		double iccsScore = -1; //sc.iccs(taxonEntityUnion,geneEntityUnion,entityCountsToUse,u);
-		double simJScore = -1; //sc.simJ(u);
-		double simGOSScore = -1; //sc.simGOS(0.5);
-		double simNormGOSScore = -1; //sc.simNormGOS(0.5);
-		result.setMaxICScore(medianICScore);
+		result.setMedianICScore(medianICScore);
 		result.setMeanICScore(meanICScore);
 		result.setICCSScore(iccsScore);
-		result.setSimJScore(simJScore);
-		result.setSimGOSScore(simGOSScore);
-		result.setSimNormGOSScore(simNormGOSScore);
 		//result.setHyperSSScore(hyperSSScore);
 
 		// install critical values
-		result.setcutOff95maxIC(pScore.cutoff095(ScoreType.MAXIC));
-		result.setcutOff99maxIC(pScore.cutoff099(ScoreType.MAXIC));
+		result.setcutOff95meanIC(pScore.cutoff095(ScoreType.MEDIANIC));
+		result.setcutOff99medianIC(pScore.cutoff099(ScoreType.MEDIANIC));
 
 		result.setcutOff95meanIC(pScore.cutoff095(ScoreType.MEANIC));
 		result.setcutOff99meanIC(pScore.cutoff099(ScoreType.MEANIC));
 
 		// testing p-value distribution
 		
-		result.setDecileMaxIC(pScore.getDecile(medianICScore, ScoreType.MAXIC));
+		result.setDecileMedianIC(pScore.getDecile(medianICScore, ScoreType.MEDIANIC));
 		result.setDecileMeanIC(pScore.getDecile(meanICScore,ScoreType.MEANIC));
 		
 
@@ -1221,6 +1215,7 @@ public class PhenotypeProfileAnalysis {
 			currentTaxonProfile.setUnionSet(unionSet);
 		}
 		for(Integer currentGene : geneProfiles.domainSet()){
+			logger.info("Current gene is :" + currentGene);
 			Profile currentGeneProfile = geneProfiles.getProfile(currentGene);
 			Set <PhenotypeExpression> unionSet = new HashSet<PhenotypeExpression>();
 			for (PhenotypeExpression ea : currentGeneProfile.getAllEAPhenotypes()){
