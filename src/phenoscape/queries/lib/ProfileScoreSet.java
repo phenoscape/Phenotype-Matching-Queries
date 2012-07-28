@@ -46,7 +46,7 @@ public class ProfileScoreSet{
 	}
 
 	
-	public void setcutOff95medianxIC(double score){
+	public void setcutOff95medianIC(double score){
 		cutOff95medianIC = score;
 	}
 	

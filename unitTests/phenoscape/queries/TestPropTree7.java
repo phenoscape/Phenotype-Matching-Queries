@@ -1009,10 +1009,6 @@ public class TestPropTree7 extends PropTreeTest{
 
 		s.writeDist(RANDOMIZATIONREPORTSFOLDER);
 		testAnalysis.profileMatchReport(phenotypeScores,s,profileWriter,entityParentCache, entityChildCache, testAnalysis.entityAnnotations,phenotypeParentCache, u);
-		
-		
-
-		testAnalysis.profileMatchReport(phenotypeScores,s,profileWriter,entityParentCache,entityChildCache,testAnalysis.entityAnnotations, phenotypeParentCache, u);
 		profileWriter.close();
 		
 		

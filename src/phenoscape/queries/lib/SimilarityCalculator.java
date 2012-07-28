@@ -74,13 +74,21 @@ public class SimilarityCalculator<E> {
 		for(E eqM : matchIntersection){
 			if (eaCounts.hasCount(eqM)){    
 				int matchScore = eaCounts.getRawCount(eqM);
-				if (matchScore<bestMatch){
-					bestMatch = matchScore;
-					bestItemSet.clear();
-					bestItemSet.add(eqM);
+				if (matchScore > 0){
+					if (matchScore<bestMatch){
+						bestMatch = matchScore;
+						bestItemSet.clear();
+						bestItemSet.add(eqM);
+					}
+					else if (matchScore == bestMatch){
+						bestItemSet.add(eqM);
+					}
 				}
-				else if (matchScore == bestMatch){
-					bestItemSet.add(eqM);
+				else if (matchScore == 0){
+					//at present not worth an exception, but worth logging
+					u.fillNames(eqM);
+					//logger.warn("Match score == 0: " + u.stringForMessage(eqM));
+					System.err.println("Match score == 0: " + u.stringForMessage(eqM));
 				}
 				else if (matchScore < 0){
 					u.fillNames(eqM);

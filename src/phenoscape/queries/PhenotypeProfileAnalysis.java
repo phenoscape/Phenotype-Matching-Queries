@@ -210,6 +210,7 @@ public class PhenotypeProfileAnalysis {
 		try {
 			kbName = u.openKBFromConnections(CONNECTION_PROPERTIES_FILENAME);
 		} catch (SQLException e) {
+			System.err.println("Failed to open KB; will exit.  Reason was " + e.toString());
 			logger.fatal("Failed to open KB; will exit.  Reason was " + e.toString());
 			return;
 		}
@@ -508,6 +509,21 @@ public class PhenotypeProfileAnalysis {
 		u.writeOrDump("Pairs with zero score = " + zeroCount, w);
 	}
 
+	
+	/**
+	 * 
+	 * @param taxon database id of the taxon
+	 * @param gene database id of the gene
+	 * @param scores
+	 * @param phenotypeScores
+	 * @param entityParentCache
+	 * @param entityChildCache
+	 * @param entityAnnotations
+	 * @param phenotypeParentCache
+	 * @param u
+	 * @return
+	 * @throws SQLException
+	 */
 	ProfileScoreSet matchOneProfilePair(Integer taxon, 
 			Integer gene,
 			PermutedScoreSet scores, 
@@ -517,8 +533,8 @@ public class PhenotypeProfileAnalysis {
 			EntitySet entityAnnotations, 
 			Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, 
 			Utils u) throws SQLException{
-		final Profile taxonProfile = taxonProfiles.getProfile(taxon);
-		final Profile geneProfile = geneProfiles.getProfile(gene);
+		final Profile taxonProfile = taxonProfiles.getProfile(taxon);  //get the profile associated with (the children of) taxon
+		final Profile geneProfile = geneProfiles.getProfile(gene);  //get the profile associated with the gene
 		ProfileScoreSet result = new ProfileScoreSet(taxon, gene,taxonProfile.getAllEAPhenotypes(), geneProfile.getAllEAPhenotypes());
 		PermutedProfileScore pScore = scores.matchProfileSizes(taxonProfile.getAllEAPhenotypes().size(),geneProfile.getAllEAPhenotypes().size());
 
@@ -579,7 +595,7 @@ public class PhenotypeProfileAnalysis {
 		//result.setHyperSSScore(hyperSSScore);
 
 		// install critical values
-		result.setcutOff95meanIC(pScore.cutoff095(ScoreType.MEDIANIC));
+		result.setcutOff95medianIC(pScore.cutoff095(ScoreType.MEDIANIC));
 		result.setcutOff99medianIC(pScore.cutoff099(ScoreType.MEDIANIC));
 
 		result.setcutOff95meanIC(pScore.cutoff095(ScoreType.MEANIC));

@@ -155,7 +155,7 @@ public class PermutedScoreSet {
 				return pps;
 		}
 		final String message = "Couldn't find a permuted Profile size for taxon profile size = " + taxonSize + " and gene profile size = " + geneSize;
-		logger.fatal(message);
+        logger.fatal(message);
 		throw new RuntimeException(message);
 	}
 	

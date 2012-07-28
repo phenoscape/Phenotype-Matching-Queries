@@ -532,7 +532,7 @@ public class Utils {
 		try {
 			properties.load(this.getClass().getResourceAsStream(connectionsSpec));
 		} catch (Exception e1) {
-			throw new RuntimeException("Failed to open connection properties file; path = " + CONNECTION_PROPERTIES_FILENAME);
+			throw new RuntimeException("Failed to open connection properties file; path = " + connectionsSpec);
 		} 
 		try {
 			Class.forName("org.postgresql.Driver");
@@ -545,7 +545,7 @@ public class Utils {
 		final String user = properties.getProperty("user");
 		final String password = "29upLift61"; //properties.getProperty("pw");
 		String connectionStr = host + " " + db + " " + user + " " + password;
-		//System.err.println("connectStr is " + connectionStr);
+		System.err.println("connectStr is " + connectionStr);
 		connection = DriverManager.getConnection(String.format("jdbc:postgresql://%s/%s",host,db),user,password);
 		return "Host: " + host + " db: " + db;
 		

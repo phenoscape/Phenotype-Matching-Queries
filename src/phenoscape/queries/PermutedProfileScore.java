@@ -50,38 +50,38 @@ public class PermutedProfileScore {
 		Arrays.sort(mediandistribution);  // this puts values in ascending order, opposite of what we what with HyperSS
 		Arrays.sort(meandistribution);
 		final int distsize = mediandistribution.length;
-		medianICcutoffs.put(CutoffIndex.level010, medianICdist[(int)(0.9*distsize)]);
-		meanICcutoffs.put(CutoffIndex.level010, meanICdist[(int)(0.9*distsize)]);
+		medianICcutoffs.put(CutoffIndex.level010, medianICdist[(int)(0.1*distsize)]);
+		meanICcutoffs.put(CutoffIndex.level010, meanICdist[(int)(0.1*distsize)]);
 
-		medianICcutoffs.put(CutoffIndex.level020, medianICdist[(int)(0.8*distsize)]);
-		meanICcutoffs.put(CutoffIndex.level020, meanICdist[(int)(0.8*distsize)]);
+		medianICcutoffs.put(CutoffIndex.level020, medianICdist[(int)(0.2*distsize)]);
+		meanICcutoffs.put(CutoffIndex.level020, meanICdist[(int)(0.2*distsize)]);
 
-		medianICcutoffs.put(CutoffIndex.level030, medianICdist[(int)(0.7*distsize)]);
-		meanICcutoffs.put(CutoffIndex.level030, meanICdist[(int)(0.7*distsize)]);
+		medianICcutoffs.put(CutoffIndex.level030, medianICdist[(int)(0.3*distsize)]);
+		meanICcutoffs.put(CutoffIndex.level030, meanICdist[(int)(0.3*distsize)]);
 
-		medianICcutoffs.put(CutoffIndex.level040, medianICdist[(int)(0.6*distsize)]);
-		meanICcutoffs.put(CutoffIndex.level040, meanICdist[(int)(0.6*distsize)]);
+		medianICcutoffs.put(CutoffIndex.level040, medianICdist[(int)(0.4*distsize)]);
+		meanICcutoffs.put(CutoffIndex.level040, meanICdist[(int)(0.4*distsize)]);
 
 		medianICcutoffs.put(CutoffIndex.level050, medianICdist[(int)(0.5*distsize)]);
 		meanICcutoffs.put(CutoffIndex.level050, meanICdist[(int)(0.5*distsize)]);
 
-		medianICcutoffs.put(CutoffIndex.level060, medianICdist[(int)(0.4*distsize)]);
-		meanICcutoffs.put(CutoffIndex.level060, meanICdist[(int)(0.4*distsize)]);
+		medianICcutoffs.put(CutoffIndex.level060, medianICdist[(int)(0.6*distsize)]);
+		meanICcutoffs.put(CutoffIndex.level060, meanICdist[(int)(0.6*distsize)]);
 
-		medianICcutoffs.put(CutoffIndex.level070, medianICdist[(int)(0.3*distsize)]);
-		meanICcutoffs.put(CutoffIndex.level070, meanICdist[(int)(0.3*distsize)]);
+		medianICcutoffs.put(CutoffIndex.level070, medianICdist[(int)(0.7*distsize)]);
+		meanICcutoffs.put(CutoffIndex.level070, meanICdist[(int)(0.7*distsize)]);
 
-		medianICcutoffs.put(CutoffIndex.level080, medianICdist[(int)(0.2*distsize)]);
-		meanICcutoffs.put(CutoffIndex.level080, meanICdist[(int)(0.2*distsize)]);
+		medianICcutoffs.put(CutoffIndex.level080, medianICdist[(int)(0.8*distsize)]);
+		meanICcutoffs.put(CutoffIndex.level080, meanICdist[(int)(0.8*distsize)]);
 
-		medianICcutoffs.put(CutoffIndex.level090, medianICdist[(int)(0.1*distsize)]);
-		meanICcutoffs.put(CutoffIndex.level090, meanICdist[(int)(0.1*distsize)]);
+		medianICcutoffs.put(CutoffIndex.level090, medianICdist[(int)(0.9*distsize)]);
+		meanICcutoffs.put(CutoffIndex.level090, meanICdist[(int)(0.9*distsize)]);
 
-		medianICcutoffs.put(CutoffIndex.level095, medianICdist[(int)(0.05*distsize)]);
-		meanICcutoffs.put(CutoffIndex.level095, meanICdist[(int)(0.05*distsize)]);
+		medianICcutoffs.put(CutoffIndex.level095, medianICdist[(int)(0.95*distsize)]);
+		meanICcutoffs.put(CutoffIndex.level095, meanICdist[(int)(0.95*distsize)]);
 
-		medianICcutoffs.put(CutoffIndex.level099, medianICdist[(int)(0.01*distsize)]);
-		meanICcutoffs.put(CutoffIndex.level099, meanICdist[(int)(0.01*distsize)]);
+		medianICcutoffs.put(CutoffIndex.level099, medianICdist[(int)(0.99*distsize)]);
+		meanICcutoffs.put(CutoffIndex.level099, meanICdist[(int)(0.99*distsize)]);
 
 	}
 	
