@@ -39,7 +39,6 @@ public class SimilarityCalculator<E> {
 			throw new IllegalArgumentException("Annotation count too large for hypergeometric distribution: " + annotations);
 		}
 		annotationCount = (int)annotations;
-
 	}
 
 	public void setTaxonParents(Set<E> tpp, Utils u) throws SQLException{
@@ -99,7 +98,7 @@ public class SimilarityCalculator<E> {
 		for(E eqM : bestItemSet){
 			u.fillNames(eqM);
 		}
-		if (bestMatch<Double.MAX_VALUE && !bestItemSet.isEmpty()){
+		if (bestMatch<Double.MAX_VALUE && !bestItemSet.isEmpty() && eaCounts.getSum() != 0){
 			return CountTable.calcIC((double)bestMatch/(double)eaCounts.getSum());
 		}
 		else{
@@ -122,17 +121,23 @@ public class SimilarityCalculator<E> {
 	 * @param geneProfile
 	 * @param phenotypeScores
 	 * @return
+	 * @throws SQLException 
 	 */
-	public static double calcMeanIC(Set<PhenotypeExpression> taxonPhenotypes, Set<PhenotypeExpression> genePhenotypes, PhenotypeScoreTable phenotypeScores){
+	public static double calcMeanIC(Set<PhenotypeExpression> taxonPhenotypes, Set<PhenotypeExpression> genePhenotypes, PhenotypeScoreTable phenotypeScores, Utils u) throws SQLException{
 		double icSum = 0;
 		int icCount = 0;
 		for (PhenotypeExpression tPhenotype : taxonPhenotypes){
 			for (PhenotypeExpression gPhenotype : genePhenotypes){
-				if(phenotypeScores.hasScore(tPhenotype,gPhenotype))
-					if (phenotypeScores.getScore(tPhenotype,gPhenotype) >= 0){
+				if(phenotypeScores.hasScore(tPhenotype,gPhenotype)){
+					final double score = phenotypeScores.getScore(tPhenotype,gPhenotype);
+					if (Double.isInfinite(score)){
+						System.out.println("toxic infinite score; tPhenotype = " + tPhenotype.getFullName(u) + "gPhenotype = " + gPhenotype.getFullName(u));
+					}
+					if (score >= 0 && !Double.isInfinite(score)){
 						icSum += phenotypeScores.getScore(tPhenotype,gPhenotype);
 						icCount++;   //mean against all possible matches
 					}
+				}
 			}
 		}
 		if (icCount>0)
@@ -180,9 +185,9 @@ public class SimilarityCalculator<E> {
 
 
 
-
+	// This should be returning the most informative common subsumer
+	//TODO: does it?
 	public E MICS(CountTable<E> eaCounts, Utils u) throws SQLException{
-
 		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
 		Set<E> bestItemSet = new HashSet<E>();
 		for(E eqM : matchIntersection){
@@ -230,63 +235,6 @@ public class SimilarityCalculator<E> {
 
 
 
-	/**
-	 * 
-	 * @param u used to load names if errors are to be reported
-	 * @return simJ jacquard similarity metric for taxon and gene parents (induced by profiles or individual exhibitors)
-	 * @throws SQLException
-	 */
-	public double simJ(Utils u) throws SQLException{
-		//		if (matchIntersection.isEmpty()){
-		//			logger.warn("No intersection between taxon and gene parents");
-		//			logger.info("Taxon Parents: ");
-		//			for (E taxonP : taxonParents){
-		//				u.fillNames(taxonP);
-		//				logger.info(u.stringForMessage(taxonP));
-		//			}
-		//			logger.warn("Gene Parents: ");
-		//			for (E geneP : geneParents){
-		//				u.fillNames(geneP);
-		//				logger.info(u.stringForMessage(geneP));
-		//			}
-		//		}
-		return ((double)matchIntersection.size())/(double)matchUnion.size();
-
-	}
-
-	/**
-	 * 
-	 * @param eaCounts
-	 * @param u used to load names if errors are to be reported
-	 * @return simIC jacquard-like metric that uses sum of IC-values rather than simple counts from taxon and gene parents (induced by profiles or individual exhibitors)
-	 * @throws SQLException
-	 */
-	public double simIC(CountTable<E> eaCounts, Utils u) throws SQLException{
-		if (matchIntersection.isEmpty()){
-			//			logger.warn("No intersection between taxon and gene parents");
-			//			logger.info("Taxon Parents: ");
-			//			for (E taxonP : taxonParents ){
-			//				u.fillNames(taxonP);
-			//				logger.info(u.stringForMessage(taxonP));
-			//			}
-			//			logger.info("Gene Parents: ");
-			//			for (E geneP : geneParents){
-			//				u.fillNames(geneP);
-			//				logger.info(u.stringForMessage(geneP));
-			//			}
-			return 0;
-		}
-		double intersectionSum = 0.0;
-		for(E e : matchIntersection){
-			intersectionSum += eaCounts.getIC(e);
-		}
-		double unionSum = 0.0;
-		for(E e : matchUnion){
-			if (eaCounts.getRawCount(e) > 0)
-				unionSum += eaCounts.getIC(e);
-		}
-		return intersectionSum/unionSum;
-	}
 
 	/**
 	 * simGOS metric suggested by T. Vision

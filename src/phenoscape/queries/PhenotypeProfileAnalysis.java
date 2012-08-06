@@ -433,7 +433,7 @@ public class PhenotypeProfileAnalysis {
 		s.setRandom(rand);
 		s.calcPermutedProfileScores();
 		
-		logger.info("Writing HyperSS distribution reports");
+		logger.info("Writing median/mean distribution reports");
 
 		s.writeDist(RANDOMIZATIONREPORTSFOLDER);
 
@@ -493,10 +493,8 @@ public class PhenotypeProfileAnalysis {
 	 * @throws SQLException 
 	 */
 	void profileMatchReport(PhenotypeScoreTable phenotypeScores,PermutedScoreSet scores, Writer w,Map<Integer, Set<Integer>> entityParentCache,Map<Integer, Set<Integer>> entityChildCache, EntitySet entityAnnotations,Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, Utils u) throws SQLException{
-		u.writeOrDump("Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t median IC \t 95% \t 99%  \t decile \t meanIC \t 95% \t 99% \t decile ",w);
-
+		ProfileScoreSet.writeHeader(u,w);
 		long zeroCount = 0;
-		//u.writeOrDump("Sizes: Taxon profiles: " + taxonProfiles.keySet().size() + "; Gene profiles: " + geneProfiles.keySet().size(), null);
 		for(Integer currentTaxon : taxonProfiles.domainSet()){
 			for(Integer currentGene : geneProfiles.domainSet()){
 				ProfileScoreSet thisMatch = matchOneProfilePair(currentTaxon,currentGene,scores,phenotypeScores,entityParentCache,entityChildCache,entityAnnotations,phenotypeParentCache, u);
@@ -580,40 +578,23 @@ public class PhenotypeProfileAnalysis {
 		// calculate maxIC
 		//double maxIC = calcMaxIC(taxonProfile.getAllEAPhenotypes(), geneProfile.getAllEAPhenotypes(),phenotypeScores);
 		double medianICScore = SimilarityCalculator.calcMedianIC(taxonProfile.getAllEAPhenotypes(),geneProfile.getAllEAPhenotypes(),phenotypeScores);
-		double meanICScore = SimilarityCalculator.calcMeanIC(taxonProfile.getAllEAPhenotypes(),geneProfile.getAllEAPhenotypes(),phenotypeScores);
+		double meanICScore = SimilarityCalculator.calcMeanIC(taxonProfile.getAllEAPhenotypes(),geneProfile.getAllEAPhenotypes(),phenotypeScores,u);
 
-		//sc.setTaxonParents(taxonEntityUnion,u);
-		//sc.setGeneParents(geneEntityUnion, u);
-		//double hyperSSScore = sc.simHyperSS(taxonEntityList.size(),geneEntityList.size(),null);
-
-
-
-		double iccsScore = -1; //sc.iccs(taxonEntityUnion,geneEntityUnion,entityCountsToUse,u);
 		result.setMedianICScore(medianICScore);
 		result.setMeanICScore(meanICScore);
-		result.setICCSScore(iccsScore);
-		//result.setHyperSSScore(hyperSSScore);
 
-		// install critical values
-		result.setcutOff95medianIC(pScore.cutoff095(ScoreType.MEDIANIC));
-		result.setcutOff99medianIC(pScore.cutoff099(ScoreType.MEDIANIC));
+		double[] meanICPVs = pScore.get_pvalues(meanICScore, PermutedProfileScore.ScoreType.MEANIC); 
+		result.setMeanPV(meanICPVs[1]);
+		result.setMeanTiesPV(meanICPVs[0]);
 
-		result.setcutOff95meanIC(pScore.cutoff095(ScoreType.MEANIC));
-		result.setcutOff99meanIC(pScore.cutoff099(ScoreType.MEANIC));
+		double[] medianICPVs = pScore.get_pvalues(meanICScore, PermutedProfileScore.ScoreType.MEANIC); 
+		result.setMedianPV(medianICPVs[1]);
+		result.setMedianTiesPV(medianICPVs[0]);
 
 		// testing p-value distribution
 		
-		result.setDecileMedianIC(pScore.getDecile(medianICScore, ScoreType.MEDIANIC));
-		result.setDecileMeanIC(pScore.getDecile(meanICScore,ScoreType.MEANIC));
-		
-
 		return result;
 	}
-
-
-
-
-
 
 
 
@@ -1291,15 +1272,11 @@ public class PhenotypeProfileAnalysis {
 								throw new RuntimeException("IC value of bestPhenotype " + bestPhenotype + " not equal to icScore = " + icScore);
 							}
 							double iccsScore = 0;
-							double simJScore = sc.simJ(u);
-							double simICScore = sc.simIC(eaCounts, u);
 							double simGOSScore = sc.simGOS(0.5);
 							double simNormGOSScore = sc.simNormGOS(0.5);
 							//double hypergeoProb = sc.simHyperSS();
 							phenotypeScores.addScore(tPhenotype,gPhenotype,eaCounts.getIC(bestPhenotype),bestPhenotype);
 							phenotypeScores.setICCSScore(tPhenotype,gPhenotype,iccsScore);
-							phenotypeScores.setSimJScore(tPhenotype, gPhenotype, simJScore);
-							phenotypeScores.setSimICScore(tPhenotype, gPhenotype, simICScore);
 							phenotypeScores.setGOSScore(tPhenotype, gPhenotype, simGOSScore);
 							phenotypeScores.setNormGOSScore(tPhenotype, gPhenotype, simNormGOSScore);
 							//phenotypeScores.setHypergeoScore(tPhenotype, gPhenotype,hypergeoProb);
@@ -1323,7 +1300,7 @@ public class PhenotypeProfileAnalysis {
 	 * @throws SQLException
 	 */
 	void writePhenotypeMatchSummary(PhenotypeScoreTable phenotypeScores,Utils u, Writer w) throws SQLException{
-		u.writeOrDump("Taxon\tGene\tTaxon Entity\tGeneEntity\tAttribute\tLowest Common Subsumer\tmaxIC\tICCS\tsimJ\tsimIC", w);
+		u.writeOrDump("Taxon\tGene\tTaxon Entity\tGeneEntity\tAttribute\tLowest Common Subsumer\tmaxIC", w);
 		for(Integer currentTaxon : taxonProfiles.domainSet()){
 			Profile currentTaxonProfile = taxonProfiles.getProfile(currentTaxon);
 			for (PhenotypeExpression tPhenotype : currentTaxonProfile.getAllEAPhenotypes()){
@@ -1349,12 +1326,6 @@ public class PhenotypeProfileAnalysis {
 									lineBuilder.append(bestID);
 									lineBuilder.append("\t");
 									lineBuilder.append(phenotypeScores.getScore(tPhenotype, gPhenotype));
-									lineBuilder.append("\t");
-									lineBuilder.append(phenotypeScores.getICCSScore(tPhenotype, gPhenotype));
-									lineBuilder.append("\t");
-									lineBuilder.append(phenotypeScores.getSimJScore(tPhenotype, gPhenotype));
-									lineBuilder.append("\t");
-									lineBuilder.append(phenotypeScores.getSimICScore(tPhenotype, gPhenotype));
 									u.writeOrDump(lineBuilder.toString(),w);	
 								}
 							}

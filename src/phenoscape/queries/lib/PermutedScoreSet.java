@@ -51,7 +51,7 @@ public class PermutedScoreSet {
 		rand = r;
 	}
 	
-	public void calcPermutedProfileScores(){
+	public void calcPermutedProfileScores() throws SQLException{
 		logger.info("Starting generation of permuted profile scores");
 		//List<PermutedProfileScore> result = new ArrayList<PermutedProfileScore>();
 		List<PhenotypeExpression> allTaxonPhenotypes = new ArrayList<PhenotypeExpression>();
@@ -80,7 +80,7 @@ public class PermutedScoreSet {
 				for (int i = 0; i<DISTSIZE;i++){
 					Set<PhenotypeExpression> generatedTaxonProfile = generateProfile(allTaxonPhenotypes,taxonSize);
 					Set<PhenotypeExpression> generatedGeneProfile = generateProfile(allGenePhenotypes,geneSize);
-					meanICdist[i]=SimilarityCalculator.calcMeanIC(generatedTaxonProfile,generatedGeneProfile,phenotypeScores);
+					meanICdist[i]=SimilarityCalculator.calcMeanIC(generatedTaxonProfile,generatedGeneProfile,phenotypeScores,u);
 					medianICdist[i]=SimilarityCalculator.calcMedianIC(generatedTaxonProfile, generatedGeneProfile, phenotypeScores);
 				}
 				PermutedProfileScore score = new PermutedProfileScore(medianICdist,meanICdist,taxonSize,geneSize);

@@ -55,21 +55,6 @@ public class PhenotypeScoreTable {
 		table.get(tPhenotype).get(gPhenotype).setICCSScore(score);
 	}
 
-	public double getSimICScore(PhenotypeExpression tPhenotype, PhenotypeExpression gPhenotype){
-		return table.get(tPhenotype).get(gPhenotype).getSimICScore();
-	}
-
-	public void setSimICScore(PhenotypeExpression tPhenotype, PhenotypeExpression gPhenotype, double score){
-			table.get(tPhenotype).get(gPhenotype).setSimICScore(score);
-	}
-
-	public double getSimJScore(PhenotypeExpression tPhenotype, PhenotypeExpression gPhenotype){
-		return table.get(tPhenotype).get(gPhenotype).getSimJScore();
-	}
-
-	public void setSimJScore(PhenotypeExpression tPhenotype, PhenotypeExpression gPhenotype, double score){
-		table.get(tPhenotype).get(gPhenotype).setSimJScore(score);
-	}
 
 	public double getGOSScore(PhenotypeExpression tPhenotype, PhenotypeExpression gPhenotype){
 		return table.get(tPhenotype).get(gPhenotype).getSimGOSScore();
@@ -99,8 +84,6 @@ public class PhenotypeScoreTable {
 	private static class Result {
 		double maxICScore;
 		double iccsScore;
-		double simJScore;
-		double simICScore;
 		double simGOSScore;
 		double simNormGOSScore;
 		double hypergeoScore;
@@ -136,22 +119,6 @@ public class PhenotypeScoreTable {
 		}
 
 		
-		void setSimICScore(double score){
-			simICScore = score;
-		}
-		
-		double getSimICScore(){
-			return simICScore;
-		}
-
-		
-		void setSimJScore(double score){
-			simJScore = score;
-		}
-		
-		double getSimJScore(){
-			return simJScore;
-		}
 
 		void setSimGOSScore(double score){
 			simGOSScore = score;
