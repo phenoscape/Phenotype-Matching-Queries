@@ -113,6 +113,55 @@ public class SimilarityCalculator<E> {
 
 
 
+	// This should be returning the most informative common subsumer
+	//TODO: does it?
+	public E MICS(CountTable<E> eaCounts, Utils u) throws SQLException{
+		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
+		Set<E> bestItemSet = new HashSet<E>();
+		for(E eqM : matchIntersection){
+			if (eaCounts.hasCount(eqM)){    
+				int matchScore = eaCounts.getRawCount(eqM);
+				if (matchScore<bestMatch){
+					u.fillNames(eqM);
+					bestMatch = matchScore;
+					bestItemSet.clear();
+					bestItemSet.add(eqM);
+				}
+				else if (matchScore == bestMatch){
+					u.fillNames(eqM);
+					bestItemSet.add(eqM);
+				}
+				else if (matchScore < 0)
+					throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.stringForMessage(eqM));
+			}
+			else {
+				throw new RuntimeException("eq has no score " + u.stringForMessage(eqM),null);
+			}
+		}
+		if (bestMatch<Double.MAX_VALUE && !bestItemSet.isEmpty()){
+			final SortedMap<String,E> sortedItems = new TreeMap<String,E>();
+			for (E eq : bestItemSet){
+				String eqName = u.fullNameString(eq);
+				if (eqName == null){
+					eqName = eq.toString();
+				}
+				sortedItems.put(eqName,eq);
+			}
+			final String last = sortedItems.lastKey();
+			final E bestItem = sortedItems.get(last);
+			return bestItem;
+		}
+		else{
+			u.writeOrDump("Intersection", null);
+			for (E shared : matchIntersection){
+				u.fillNames(shared);
+				u.writeOrDump(u.fullNameString(shared),null);
+			}
+			return null;
+		}
+	}
+
+
 
 
 	/**
@@ -185,55 +234,6 @@ public class SimilarityCalculator<E> {
 
 
 
-	// This should be returning the most informative common subsumer
-	//TODO: does it?
-	public E MICS(CountTable<E> eaCounts, Utils u) throws SQLException{
-		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
-		Set<E> bestItemSet = new HashSet<E>();
-		for(E eqM : matchIntersection){
-			if (eaCounts.hasCount(eqM)){    
-				int matchScore = eaCounts.getRawCount(eqM);
-				if (matchScore<bestMatch){
-					u.fillNames(eqM);
-					bestMatch = matchScore;
-					bestItemSet.clear();
-					bestItemSet.add(eqM);
-				}
-				else if (matchScore == bestMatch){
-					u.fillNames(eqM);
-					bestItemSet.add(eqM);
-				}
-				else if (matchScore < 0)
-					throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.stringForMessage(eqM));
-			}
-			else {
-				throw new RuntimeException("eq has no score " + u.stringForMessage(eqM),null);
-			}
-		}
-		if (bestMatch<Double.MAX_VALUE && !bestItemSet.isEmpty()){
-			final SortedMap<String,E> sortedItems = new TreeMap<String,E>();
-			for (E eq : bestItemSet){
-				String eqName = u.fullNameString(eq);
-				if (eqName == null){
-					eqName = eq.toString();
-				}
-				sortedItems.put(eqName,eq);
-			}
-			final String last = sortedItems.lastKey();
-			final E bestItem = sortedItems.get(last);
-			return bestItem;
-		}
-		else{
-			u.writeOrDump("Intersection", null);
-			for (E shared : matchIntersection){
-				u.fillNames(shared);
-				u.writeOrDump(u.fullNameString(shared),null);
-			}
-			return null;
-		}
-	}
-
-
 
 
 	/**
@@ -284,84 +284,10 @@ public class SimilarityCalculator<E> {
 		final int successes = taxonCount;    //taxon parent count
 		final int sampleSize = geneCount;   //gene parent count
 		final HypergeometricDistribution hg = new HypergeometricDistributionImpl(popSize, successes, sampleSize);
-		//final int intersectionSize = collectionIntersectionSize(taxonEntities,geneEntities);
 		final double result = hg.probability(entIntersectionScore);    //maybe cumulativeProbablility() ?
-		//System.out.println("population: " + popSize + "; te: " + successes + "; ge: " + sampleSize + "; intersection: " + intersectionSize + "; stat: " + result);
 		return result;
 	}
 
-
-	/**
-	 * 
-	 * @param list1
-	 * @param list2
-	 * @return
-	 */
-	public Collection<E> collectionIntersection(Collection<E>c1,Collection<E>c2){
-		Collection<E> result = new ArrayList<E>();
-		Set<E> overlap = new HashSet<E>();  //will hold a list non-duplicated members
-		overlap.addAll(c1);
-		overlap.addAll(c2);
-		for (E item : overlap){
-			final int count1 = countOccurrences(c1,item);
-			final int count2 = countOccurrences(c2,item);
-			int theCount;
-			if (count1 <= count2)
-				theCount = count1;
-			else
-				theCount = count2;
-			for(int i=0;i<theCount;i++)
-				result.add(item);
-		}
-		return result;
-	}
-
-
-	/**
-	 * 
-	 * @param list1
-	 * @param list2
-	 * @return
-	 */
-	public int collectionIntersectionSize(Collection<E>c1,Collection<E>c2){
-		int result = 0;
-		Set<E> overlap = new HashSet<E>();  //will hold a list non-duplicated members
-		overlap.addAll(c1);
-		overlap.addAll(c2);
-		for (E item : overlap){
-			final int count1 = countOccurrences(c1,item);
-			final int count2 = countOccurrences(c2,item);
-			if (count1<= count2)
-				result += count1;
-			else
-				result += count2;
-		}
-		return result;
-	}
-
-	/**
-	 * 
-	 * @param list1
-	 * @param list2
-	 * @return
-	 */
-	public Collection<E> collectionUnion(Collection<E>c1,Collection<E>c2){
-		Collection<E> result = new ArrayList<E>();
-		result.addAll(c1);
-		result.addAll(c2);
-		return result;
-	}
-
-
-
-	public int countOccurrences(Collection<E> c1, E item){
-		int result = 0;
-		for (E entry : c1){
-			if (entry.equals(item))
-				result++;
-		}
-		return result;
-	}
 
 
 
@@ -376,12 +302,11 @@ public class SimilarityCalculator<E> {
 				//logger.info("Checking " + eUID);
 				if (eUID != null){
 					if (SPATIALPOSTCOMPUIDPREFIX.equals(eUID.substring(0,5))){
-						//logger.info("Supressing " + pe.getFullName(u) + " from intersection");
 						matchIntersection.remove(ent);
 					}
 				}
 				else {
-					logger.info("Entity id had no UID: " + ent);
+					logger.warn("Entity id had no UID: " + ent);
 				}
 			}  
 			else{ 
@@ -408,6 +333,25 @@ public class SimilarityCalculator<E> {
 		return matchIntersection;
 	}
 
+	
+	static class MICS<E>{
+		final E subsumer;
+		final double ic;
+		
+		MICS(E sub, double maxIC){
+			subsumer = sub;
+			ic = maxIC;
+		}
+		
+		E getSubsumer(){
+			return subsumer;
+		}
+		
+		double getMaxIC(){
+			return ic;
+		}
+		
+	}
 
 
 }

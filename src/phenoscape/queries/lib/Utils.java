@@ -543,7 +543,7 @@ public class Utils {
 		final String host = properties.getProperty("host");
 		final String db = properties.getProperty("db");
 		final String user = properties.getProperty("user");
-		final String password = "29upLift61"; //properties.getProperty("pw");
+		final String password = properties.getProperty("pw");
 		String connectionStr = host + " " + db + " " + user + " " + password;
 		connection = DriverManager.getConnection(String.format("jdbc:postgresql://%s/%s",host,db),user,password);
 		return "Host: " + host + " db: " + db;

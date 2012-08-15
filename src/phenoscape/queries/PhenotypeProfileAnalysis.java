@@ -587,7 +587,7 @@ public class PhenotypeProfileAnalysis {
 		result.setMeanPV(meanICPVs[1]);
 		result.setMeanTiesPV(meanICPVs[0]);
 
-		double[] medianICPVs = pScore.get_pvalues(meanICScore, PermutedProfileScore.ScoreType.MEANIC); 
+		double[] medianICPVs = pScore.get_pvalues(medianICScore, PermutedProfileScore.ScoreType.MEDIANIC); 
 		result.setMedianPV(medianICPVs[1]);
 		result.setMedianTiesPV(medianICPVs[0]);
 
