@@ -62,8 +62,6 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import phenoscape.queries.PermutedProfileScore.ScoreType;
-import phenoscape.queries.lib.AnnotationPair;
 import phenoscape.queries.lib.CountTable;
 import phenoscape.queries.lib.DistinctGeneAnnotationRecord;
 import phenoscape.queries.lib.EntitySet;
@@ -309,11 +307,10 @@ public class PhenotypeProfileAnalysis {
 		if (logger.isInfoEnabled())
 			logger.info("Loading all phenotype quality parents");
 		qualitySubsumers = u.buildPhenotypeSubsumers();
-		if (logger.isInfoEnabled())
+		if (logger.isInfoEnabled()){
 			logger.info("Finished loading all phenotype quality parents");
-		
-		if (logger.isInfoEnabled())
 			logger.info("Loading taxon entity annotations");
+		}
 		entityAnnotations.fillTaxonPhenotypeAnnotationsToEntities();
 		if (logger.isInfoEnabled())
 			logger.info("Finished loading; checking counts");
@@ -984,7 +981,7 @@ public class PhenotypeProfileAnalysis {
 
 
 	/**
-	 * For each phenotype in the taxonProfile, this builds the set of class expression parents (both EQ and Q) of the phenotype.
+	 * For each phenotype in the taxonProfile, this builds the set of class expression subsumers (both EQ and Q) of the phenotype.
 	 * Changed to save the parents (iipo parents) indexed by the entity, which is more efficient and useful later on.
 	 * 
 	 * @param entityParentCache
@@ -993,44 +990,57 @@ public class PhenotypeProfileAnalysis {
 	 */
 	void buildEQParents(Map<PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, Map <Integer,Set<Integer>> entityParentCache, Utils u) throws SQLException{
 		for(Integer curAtt : attributeSet){
-			Set<Integer> qualityParentSet = u.collectQualityParents(curAtt);
 			for(Integer curEntity : entityParentCache.keySet()){
 				PhenotypeExpression curEQ = new PhenotypeExpression(curEntity,curAtt);
-				if (!phenotypeParentCache.containsKey(curEQ)){
-					Set<Integer> entityParentSet = entityParentCache.get(curEntity);
-					Set<PhenotypeExpression> eqParentSet = new HashSet<PhenotypeExpression>();  //pass phenotype id, list of entities returned
-					phenotypeParentCache.put(curEQ,eqParentSet);
-					if (entityParentSet.isEmpty() || qualityParentSet.isEmpty()){
-						curEQ.fillNames(u);
-						if (logger.isInfoEnabled()){
-							logger.info("Failed to add Parents of: " + curEQ);
-							if (entityParentSet.isEmpty() && qualityParentSet.isEmpty())
-								logger.info("Because both parent sets are empty");
-							else if (entityParentSet.isEmpty())
-								logger.info("Because the entity parent set is empty");
-							else
-								logger.info("Because the parent set of " + curAtt + " is empty");
-						}
-					}
-					for(Integer qualParent : qualityParentSet){
-						for(Integer entParent : entityParentSet){
-							PhenotypeExpression newParentEQ = new PhenotypeExpression(entParent,qualParent);
-							eqParentSet.add(newParentEQ);
-						}
-						PhenotypeExpression newParentQ = new PhenotypeExpression(qualParent);
-						eqParentSet.add(newParentQ);
-					}
-					if (eqParentSet.isEmpty()){
-						throw new RuntimeException("empty parentSet: " + u.getNodeName(curEntity) + " " + u.getNodeName(curAtt) );
-					}
-					// finally add quality
-					eqParentSet.add(PhenotypeExpression.getEQTop(u));
-				}
+				buildEQParent(phenotypeParentCache,curEQ,entityParentCache,u);
 			}
 		}
 	}
 
-
+	/**
+	 * builds the set of class expression subsumers for one phenotype
+	 * @param phenotypeParentCache
+	 * @param curEQ
+	 * @param entityParentCache
+	 * @param u
+	 */
+	void buildEQParent(Map<PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, PhenotypeExpression curEQ,Map <Integer,Set<Integer>> entityParentCache, Utils u) throws SQLException{
+		if (!phenotypeParentCache.containsKey(curEQ)){
+			final Integer curEntity = curEQ.getEntity();
+			final Integer curAtt = curEQ.getQuality();
+			final Set<Integer>qualityParentSet = u.collectQualityParents(curAtt);
+			Set<Integer> entityParentSet = entityParentCache.get(curEntity);
+			Set<PhenotypeExpression> eqParentSet = new HashSet<PhenotypeExpression>();  //pass phenotype id, list of entities returned
+			phenotypeParentCache.put(curEQ,eqParentSet);
+			if (entityParentSet.isEmpty() || qualityParentSet.isEmpty()){
+				curEQ.fillNames(u);
+				if (logger.isInfoEnabled()){
+					logger.info("Failed to add Parents of: " + curEQ);
+					if (entityParentSet.isEmpty() && qualityParentSet.isEmpty())
+						logger.info("Because both parent sets are empty");
+					else if (entityParentSet.isEmpty())
+						logger.info("Because the entity parent set is empty");
+					else
+						logger.info("Because the parent set of " + curAtt + " is empty");
+				}
+			}
+			for(Integer qualParent : qualityParentSet){
+				for(Integer entParent : entityParentSet){
+					PhenotypeExpression newParentEQ = new PhenotypeExpression(entParent,qualParent);
+					eqParentSet.add(newParentEQ);
+				}
+				PhenotypeExpression newParentQ = new PhenotypeExpression(qualParent);
+				eqParentSet.add(newParentQ);
+			}
+			if (eqParentSet.isEmpty()){
+				throw new RuntimeException("empty parentSet: " + u.getNodeName(curEntity) + " " + u.getNodeName(curAtt) );
+			}
+			// finally add quality
+			eqParentSet.add(PhenotypeExpression.getEQTop(u));
+		}
+	}
+		
+		
 	/**
 	 * 
 	 * @param profiles
@@ -1038,7 +1048,7 @@ public class PhenotypeProfileAnalysis {
 	 * @param parents
 	 * @throws SQLException 
 	 */
-	CountTable<PhenotypeExpression> fillPhenotypeCountTable(ProfileMap geneProfiles,ProfileMap taxonProfiles2, Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, Utils u, String phenotypeQuery, String qualityQuery, int annotationCount) throws SQLException{
+	CountTable<PhenotypeExpression> fillPhenotypeCountTable(ProfileMap geneProfiles,ProfileMap taxonProfiles, Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache, Utils u, String phenotypeQuery, String qualityQuery, int annotationCount) throws SQLException{
 		final CountTable<PhenotypeExpression> result = new CountTable<PhenotypeExpression>();
 		final PreparedStatement phenotypeStatement = u.getPreparedStatement(phenotypeQuery);
 		final PreparedStatement qualityStatement = u.getPreparedStatement(qualityQuery);
@@ -1056,7 +1066,7 @@ public class PhenotypeProfileAnalysis {
 						logger.error("The Phenotype " + curEQ + " seems to have no parents");
 					}
 					else {
-						curEQ.fillNames(u);
+						//curEQ.fillNames(u);
 						//System.out.println("Processing " + curEQ);
 						for(PhenotypeExpression phenotypeParent : allParents){
 							if (!result.hasCount(phenotypeParent)){
@@ -1093,7 +1103,7 @@ public class PhenotypeProfileAnalysis {
 				}
 			}
 		}
-		for(Profile currentProfile : taxonProfiles2.range()){
+		for(Profile currentProfile : taxonProfiles.range()){
 			Set <Integer> usedEntities = currentProfile.getUsedEntities();
 			Set <Integer> usedAttributes = currentProfile.getUsedAttributes();
 			for(Integer profileEntity : usedEntities){
@@ -1104,7 +1114,7 @@ public class PhenotypeProfileAnalysis {
 						logger.error("The Phenotype " + curEQ + " seems to have no parents");
 					}
 					else {
-						curEQ.fillNames(u);
+						//curEQ.fillNames(u);
 						//System.out.println("Processing " + curEQ);
 						for(PhenotypeExpression phenotypeParent : allParents){
 							if (!result.hasCount(phenotypeParent)){
@@ -1161,7 +1171,16 @@ public class PhenotypeProfileAnalysis {
 
 
 
-
+	/**
+	 * 
+	 * @param taxonProfiles
+	 * @param entityParentCache
+	 * @param u
+	 * @param entityQuery
+	 * @param annotationCount
+	 * @return
+	 * @throws SQLException
+	 */
 	CountTable<Integer> fillTaxonEntityCountTable(ProfileMap taxonProfiles, Map <Integer,Set<Integer>> entityParentCache, Utils u, String entityQuery, int annotationCount) throws SQLException{
 		final CountTable<Integer> result = new CountTable<Integer>();
 		final PreparedStatement entityStatement = u.getPreparedStatement(entityQuery);
