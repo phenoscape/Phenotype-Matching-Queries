@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<nexml xmlns="http://www.nexml.org/2009" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:phen="http://www.bioontologies.org/obd/schema/pheno" generator="Phenex 1.2" version="0.9">
+<nexml xmlns="http://www.nexml.org/2009" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:phen="http://www.bioontologies.org/obd/schema/pheno" generator="Phenex 1.4.3" version="0.9">
   <meta xmlns:ter="http://purl.org/dc/terms/" xsi:type="LiteralMeta" property="ter:description">Proptree 5 tests whether counts and count ranges are being recognized for phenotypic variability (character 4).  Would expect to see variation at level of Genus 1, Genus 2, Genus 3, and Family 1; no variation in Family 2. Proptree 6 also tests whether matches to BSPO terms are made (we don't expect there to be any).
 
 Proptree_symmetric: expect to see variation in character 7 in Family 1 and in Order, but no where else!  (27 March 2012, Paula and Peter M.)
 
-Proptree7: looks at phenotype subsumption</meta>
+Proptree7: looks at phenotype subsumption; also problems with intersection phenotype ICs (infinite)</meta>
   <meta xmlns:ter="http://purl.org/dc/terms/" xsi:type="LiteralMeta" property="ter:creator"/>
   <meta xmlns:ter="http://purl.org/dc/terms/" xsi:type="LiteralMeta" property="ter:references"/>
   <otus id="f527ed7a-ad36-472a-8087-00c71e3a3bfb">
@@ -412,6 +412,25 @@ Proptree7: looks at phenotype subsumption</meta>
           </meta>
         </state>
       </states>
+      <states id="f46da2a1-0073-4843-88e8-4a66102a2ec0">
+        <state id="e5af1934-ca5f-42c6-9d22-df9d0cc64a60" label="teeth ankylosed to bone" symbol="0" about="#e5af1934-ca5f-42c6-9d22-df9d0cc64a60">
+          <meta xmlns:voc="http://vocab.phenoscape.org/" xsi:type="ns:LiteralMeta" property="voc:describesPhenotype">
+            <phen:phenotype>
+              <phen:phenotype_character>
+                <phen:bearer>
+                  <phen:typeref about="TAO:0001239"/>
+                </phen:bearer>
+                <phen:quality>
+                  <phen:typeref about="PATO:7777777"/>
+                </phen:quality>
+              </phen:phenotype_character>
+            </phen:phenotype>
+          </meta>
+        </state>
+        <state id="f013e595-abe5-4ca2-8409-f35762f7a4c3" label="teeth unattached" about="#f013e595-abe5-4ca2-8409-f35762f7a4c3" symbol="1">
+          <meta xmlns:rdf="http://www.w3.org/2000/01/rdf-schema#" xsi:type="ns:LiteralMeta" property="rdf:comment">bogus state</meta>
+        </state>
+      </states>
       <char id="9487690e-6865-40e2-a3b7-d444355842c2" label="opercle shape" about="#9487690e-6865-40e2-a3b7-d444355842c2" states="0f21dfa7-ccf5-43cb-90a8-5b9c947eaa6f">
         <meta xmlns:rdf="http://www.w3.org/2000/01/rdf-schema#" xsi:type="ns:LiteralMeta" property="rdf:comment">1</meta>
       </char>
@@ -432,6 +451,7 @@ Proptree7: looks at phenotype subsumption</meta>
       </char>
       <char id="742c1de8-0a81-48d9-a898-54ae8964e379" label="opercle fused with dentary" states="c7ea4a43-e66e-4e02-91f0-d4c2b482542f"/>
       <char id="726956de-3087-4b9e-87ff-f33d0dadf22e" label="opercle color" states="bb068f68-a0d0-4446-a3f6-7aa1238bd07f"/>
+      <char id="71c576a8-abaa-485b-a1e7-d53a27b27d8a" label="ceratobranchial 5 bone structure" states="f46da2a1-0073-4843-88e8-4a66102a2ec0"/>
     </format>
     <matrix>
       <row id="90f61dfb-595b-4e5a-ac84-7edb629536ba" otu="d9a68690-cc9a-4551-a9f3-5270ee55d173">
@@ -496,6 +516,7 @@ Proptree7: looks at phenotype subsumption</meta>
         <cell char="e3fd6e15-f297-4f54-bd17-e63e989fbfee" state="5d7d7279-27ba-4397-ad9b-a03f18ccfe27"/>
         <cell char="742c1de8-0a81-48d9-a898-54ae8964e379" state="4bb024bd-1001-48f0-9662-8b9474e12c6c"/>
         <cell char="726956de-3087-4b9e-87ff-f33d0dadf22e" state="77cc8e7c-4ac3-441f-be4a-7b542d067dbf"/>
+        <cell char="71c576a8-abaa-485b-a1e7-d53a27b27d8a" state="e5af1934-ca5f-42c6-9d22-df9d0cc64a60"/>
       </row>
       <row id="cb5ab3e2-4f7b-4b9e-b639-00ac18511815" otu="11a87241-01f4-4c39-aed1-275279a088ae">
         <cell char="9487690e-6865-40e2-a3b7-d444355842c2" state="e3ecff56-df18-4660-ba22-cf5d22ae4add"/>
@@ -505,6 +526,7 @@ Proptree7: looks at phenotype subsumption</meta>
         <cell char="e3fd6e15-f297-4f54-bd17-e63e989fbfee" state="5d7d7279-27ba-4397-ad9b-a03f18ccfe27"/>
         <cell char="742c1de8-0a81-48d9-a898-54ae8964e379" state="cfa7a076-31f9-437f-8650-690f08d214a4"/>
         <cell char="726956de-3087-4b9e-87ff-f33d0dadf22e" state="8c02f00c-0f78-4680-a374-a3ffccde80c2"/>
+        <cell char="71c576a8-abaa-485b-a1e7-d53a27b27d8a" state="f013e595-abe5-4ca2-8409-f35762f7a4c3"/>
       </row>
     </matrix>
   </characters>
