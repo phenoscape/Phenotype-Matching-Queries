@@ -68,59 +68,25 @@ public class SimilarityCalculator<E> {
 
 
 	public double maxIC(CountTable<E> eaCounts, Utils u) throws SQLException{
-		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
-		Set<E> bestItemSet = new HashSet<E>();
-		for(E eqM : matchIntersection){
-			if (eaCounts.hasCount(eqM)){    
-				int matchScore = eaCounts.getRawCount(eqM);
-				if (matchScore<bestMatch){
-					bestMatch = matchScore;
-					bestItemSet.clear();
-					bestItemSet.add(eqM);
-				}
-				else if (matchScore == bestMatch){
-					bestItemSet.add(eqM);
-				}
-				else if (matchScore == 0){
-					u.fillNames(eqM);
-					System.err.println("Bad match score value < 0: " + matchScore + " " + u.stringForMessage(eqM));
-				}
-				else if (matchScore < 0){
-					u.fillNames(eqM);
-					throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.stringForMessage(eqM));
-				}
-			}
-			else {
-				u.fillNames(eqM);
-				throw new RuntimeException("eq has no score " + u.stringForMessage(eqM),null);
-			}
-		}
-		for(E eqM : bestItemSet){
-			u.fillNames(eqM);
-		}
-		if (bestMatch<Double.MAX_VALUE && !bestItemSet.isEmpty() && eaCounts.getSum() != 0){
-			return CountTable.calcIC((double)bestMatch/(double)eaCounts.getSum());
-		}
-		else{
-			u.writeOrDump("Intersection", null);
-			for (E shared : matchIntersection){
-				u.fillNames(shared);
-				u.writeOrDump(u.stringForMessage(shared),null);
-			}
-			return -1;
-		}
+		final E bestSubsumer = MICS(eaCounts,u);
+		final double bestCounts = (double)eaCounts.getRawCount(bestSubsumer);
+		return CountTable.calcIC(bestCounts/(double)eaCounts.getSum());
 	}
 
 
 
 	// This should be returning the most informative common subsumer
-	//TODO: does it?
 	public E MICS(CountTable<E> eaCounts, Utils u) throws SQLException{
 		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
 		Set<E> bestItemSet = new HashSet<E>();
 		for(E eqM : matchIntersection){
-			if (eaCounts.hasCount(eqM)){    
+			if (eaCounts.hasCount(eqM)){  
 				int matchScore = eaCounts.getRawCount(eqM);
+				if (matchScore < 0)
+					throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.stringForMessage(eqM));
+				if (matchScore == 0){
+					// assume, for now that this can be ignored
+				}
 				if (matchScore<bestMatch){
 					u.fillNames(eqM);
 					bestMatch = matchScore;
@@ -131,8 +97,6 @@ public class SimilarityCalculator<E> {
 					u.fillNames(eqM);
 					bestItemSet.add(eqM);
 				}
-				else if (matchScore < 0)
-					throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.stringForMessage(eqM));
 			}
 			else {
 				throw new RuntimeException("eq has no score " + u.stringForMessage(eqM),null);
@@ -179,9 +143,6 @@ public class SimilarityCalculator<E> {
 			for (PhenotypeExpression gPhenotype : genePhenotypes){
 				if(phenotypeScores.hasScore(tPhenotype,gPhenotype)){
 					final double score = phenotypeScores.getScore(tPhenotype,gPhenotype);
-					if (Double.isInfinite(score)){
-						System.out.println("toxic infinite score; tPhenotype = " + tPhenotype.getFullName(u) + "gPhenotype = " + gPhenotype.getFullName(u));
-					}
 					if (score >= 0 && !Double.isInfinite(score)){
 						icSum += phenotypeScores.getScore(tPhenotype,gPhenotype);
 						icCount++;   //mean against all possible matches

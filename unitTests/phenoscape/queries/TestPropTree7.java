@@ -49,6 +49,7 @@ import phenoscape.queries.lib.VariationTable;
 
 public class TestPropTree7 extends PropTreeTest{
 
+	//constants specific to this test
 
 	PhenotypeProfileAnalysis testAnalysis;
 	Utils u = new Utils();
@@ -169,7 +170,7 @@ public class TestPropTree7 extends PropTreeTest{
 		assertNotNull(lset);
 		assertFalse(lset.isEmpty());
 		int delCount = testAnalysis.removeSymmetricLinksOneTaxon(lset, u);
-		Assert.assertEquals(9,lset.size());    //will be adjusted to 8 by removeSymmetricLinks
+		Assert.assertEquals(10,lset.size());    //will be adjusted to 8 by removeSymmetricLinks
 		Assert.assertEquals(1,delCount);
 		p.setString(1,TAXON6STR);
 		r = p.executeQuery();
@@ -304,7 +305,7 @@ public class TestPropTree7 extends PropTreeTest{
 	public void TestGetAllTaxonPhenotypeLinksFromKB() throws Exception{
 		Map<Integer,Set<TaxonPhenotypeLink>> links = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1, u);
 		assertNotNull(links);
-		Assert.assertEquals(15,links.size());   //this is just the number of taxa in the KB
+		Assert.assertEquals(TAXONCOUNT,links.size()); 
 		for(Integer taxonID : t1.getAllTaxa()){
 			assertNotNull(links.get(taxonID));
 		}
@@ -317,7 +318,7 @@ public class TestPropTree7 extends PropTreeTest{
 		testAnalysis.removeSymmetricLinks(allLinks,u);
 		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);		
 		assertFalse(taxonProfiles.isEmpty());
-		Assert.assertEquals(15, taxonProfiles.domainSize());  //again, should be equal to the number of taxa
+		Assert.assertEquals(TAXONCOUNT, taxonProfiles.domainSize());  //again, should be equal to the number of taxa
 	}
 	
 	// SubsumingUnion and Intersection operate on sets of Integers, retrieving subsumption relations for the phenotypes represented by those
@@ -329,6 +330,7 @@ public class TestPropTree7 extends PropTreeTest{
 	
 	
 	// Test that that subsumingUnion operates as a union operation when there are no subsumption relations among the elements
+	// This has nothing in particular to do with PropTree7, should be moved to TestPhenotypeProfileAnalysis
 	@Test
 	public void testSubsumingUnionNoSubsumption(){
 		testAnalysis.qualitySubsumers.clear();  //start with an empty table, verify basic union,intersection
@@ -533,7 +535,7 @@ public class TestPropTree7 extends PropTreeTest{
 		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);
 		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
 		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
-		Assert.assertEquals("Count of entities used",6,taxonVariation.getUsedEntities().size()); 
+		Assert.assertEquals("Count of entities used",7,taxonVariation.getUsedEntities().size()); 
 		for (Integer entity : taxonVariation.getUsedEntities()){
 			Assert.assertTrue("Found unexpected entity " + u.getNodeName(entity.intValue()),entityNames.contains(u.getNodeName(entity.intValue())));
 		}
@@ -565,7 +567,7 @@ public class TestPropTree7 extends PropTreeTest{
 	@Test
 	public void testGetAllGeneAnnotationsFromKB() throws SQLException {
 		Collection<DistinctGeneAnnotationRecord> annotations = testAnalysis.getAllGeneAnnotationsFromKB(u);
-		Assert.assertEquals("Number of gene phenotype annotations",24,annotations.size());
+		Assert.assertEquals("Number of gene phenotype annotations",25,annotations.size());
 	}
 
 	@Test
@@ -592,7 +594,7 @@ public class TestPropTree7 extends PropTreeTest{
 				}
 			}
 		}
-		assertEquals("Count of genes in variation table",20,genes.size());
+		assertEquals("Count of genes in variation table",21,genes.size());
 		
 		Assert.assertTrue(geneVariation.geneExhibits(pectoralFinID,sizeID,alfID));
 		Assert.assertTrue(geneVariation.geneExhibits(opercleID,shapeID,furinaID));
@@ -616,9 +618,31 @@ public class TestPropTree7 extends PropTreeTest{
 		Assert.assertTrue(geneVariation.geneExhibits(opercleID,textureID,macf1ID));
 		Assert.assertTrue(geneVariation.geneExhibits(pectoralFinID,sizeID,fgf24ID));
 		Assert.assertTrue(geneVariation.geneExhibits(pectoralFinID,sizeID,lofID));
+		Assert.assertTrue(geneVariation.geneExhibits(ceratobranchialBoneID, structureMinusCompositionID, unc45bID));
 
 	}
 
+	@Test
+	public void testBuildEQParent() throws SQLException {
+		testAnalysis.qualitySubsumers = u.buildPhenotypeSubsumers();
+		t1.traverseOntologyTree(u);
+		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
+		testAnalysis.removeSymmetricLinks(allLinks,u);
+		ProfileMap taxonProfiles = testAnalysis.loadTaxonProfiles(allLinks,u, attMap, nodeIDofQuality, badTaxonQualities);
+		final VariationTable taxonVariation = new VariationTable(VariationTable.VariationType.TAXON);
+		testAnalysis.traverseTaxonomy(t1, t1.getRootNodeID(), taxonProfiles, taxonVariation, u);
+		assertFalse(taxonProfiles.isEmpty());
+		Assert.assertEquals(15,taxonProfiles.domainSize()); //profiles before the flush includes all taxa
+		testAnalysis.flushUnvaryingPhenotypes(taxonProfiles,taxonVariation,u);
+		Map <Integer,Set<Integer>> entityParentCache = new HashMap<Integer,Set<Integer>>();
+		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
+		u.setupEntityParents(entityParentCache,entityChildCache);
+		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
+		PhenotypeExpression curEQ = null;
+		testAnalysis.buildEQParent(phenotypeParentCache,curEQ,entityParentCache,u);
+	}
+	
+	
 	@Test
 	public void testBuildEQParents() throws SQLException {
 		testAnalysis.qualitySubsumers = u.buildPhenotypeSubsumers();
@@ -653,6 +677,108 @@ public class TestPropTree7 extends PropTreeTest{
 		Assert.assertEquals(7,u.countDistinctTaxonEntityPhenotypeAnnotations());
 	}
 
+	
+	
+	int countID;
+	int positionID;
+	int shapeID;
+	int sizeID;
+	int textureID;
+	int opticalQualityID;
+	int structureMinusCompositionID;
+	
+	
+	static final String GENEQUALITYCOUNTQUERY =
+		"SELECT count(*) FROM distinct_gene_annotation  WHERE distinct_gene_annotation.phenotype_node_id IN " +
+		"(SELECT phenotype.node_id from phenotype " +
+		"WHERE phenotype."
+		//"JOIN link quality_is_a ON (quality_is_a.node_id = phenotype.node_id AND quality_is_a.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:is_a')) " +
+		//"WHERE (quality_is_a.object_id = ?))";
+
+
+	@Test
+	public void testCountGeneQualities() throws SQLException {
+		final PreparedStatement qualityStatement = u.getPreparedStatement(PhenotypeProfileAnalysis.GENEQUALITYCOUNTQUERY);
+		qualityStatement.setInt(1, countID);
+		ResultSet qResult = qualityStatement.executeQuery();
+		if(qResult.next()){
+			int count = qResult.getInt(1);
+			Assert.assertEquals(0,count); //?
+		}
+		else {
+			fail("Count query for quality 'count' failed");
+		}
+		qualityStatement.setInt(1, positionID);
+		qResult = qualityStatement.executeQuery();
+		if(qResult.next()){
+			int count = qResult.getInt(1);
+			Assert.assertEquals(0,count);
+		}
+		else {
+			fail("Count query for quality 'position' failed");
+		}
+		qualityStatement.setInt(1, shapeID);
+		qResult = qualityStatement.executeQuery();
+		if(qResult.next()){
+			int count = qResult.getInt(1);
+			Assert.assertEquals(0,count);
+		}
+		else {
+			fail("Count query for quality 'shape' failed");
+		}
+		qualityStatement.setInt(1, sizeID);
+		qResult = qualityStatement.executeQuery();
+		if(qResult.next()){
+			int count = qResult.getInt(1);
+			Assert.assertEquals(0,count);
+		}
+		else {
+			fail("Count query for quality 'size' failed");
+		}
+		qualityStatement.setInt(1, textureID);
+		qResult = qualityStatement.executeQuery();
+		if(qResult.next()){
+			int count = qResult.getInt(1);
+			Assert.assertEquals(0,count);
+		}
+		else {
+			fail("Count query for quality 'texture' failed");
+		}
+		qualityStatement.setInt(1, opticalQualityID);
+		qResult = qualityStatement.executeQuery();
+		if(qResult.next()){
+			int count = qResult.getInt(1);
+			Assert.assertEquals(0,count);
+		}
+		else {
+			fail("Count query for quality 'opticalQuality' failed");
+		}
+		qualityStatement.setInt(1, structureMinusCompositionID);
+		qResult = qualityStatement.executeQuery();
+		if(qResult.next()){
+			int count = qResult.getInt(1);
+			Assert.assertEquals(0,count);
+		}
+		else {
+			fail("Count query for quality 'structureMinusComposition' failed");
+		}
+	}
+
+	@Test
+	public void testCountGenePhenotypes() throws SQLException {
+		final PreparedStatement phenotypeStatement = u.getPreparedStatement(PhenotypeProfileAnalysis.GENEPHENOTYPECOUNTQUERY);
+		phenotypeStatement.setInt(1, pectoralFinID);
+		phenotypeStatement.setInt(2, sizeID);
+		ResultSet qResult = phenotypeStatement.executeQuery();
+		if(qResult.next()){
+			int count = qResult.getInt(1);
+			Assert.assertEquals(0,count); //?
+		}
+		else {
+			fail("Count query for phenotype 'size inheres_in some pectoral fin' failed");
+		}
+
+	}
 	
 	@Test
 	public void testFillCountTable() throws SQLException {

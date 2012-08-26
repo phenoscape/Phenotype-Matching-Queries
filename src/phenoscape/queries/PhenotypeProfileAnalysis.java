@@ -1066,8 +1066,8 @@ public class PhenotypeProfileAnalysis {
 						logger.error("The Phenotype " + curEQ + " seems to have no parents");
 					}
 					else {
-						//curEQ.fillNames(u);
-						//System.out.println("Processing " + curEQ);
+						curEQ.fillNames(u);
+						//logger.info("Processing " + curEQ);
 						for(PhenotypeExpression phenotypeParent : allParents){
 							if (!result.hasCount(phenotypeParent)){
 								if (phenotypeParent.isSimpleQuality()){
@@ -1077,7 +1077,15 @@ public class PhenotypeProfileAnalysis {
 										int count = qResult.getInt(1);
 										result.addCount(phenotypeParent, count);
 										phenotypeParent.fillNames(u);
-										//System.out.println(" ** Adding count to parent: " + phenotypeParent + "; count = " + count);
+										if (count == 0){
+											System.err.print(" ** Adding count to parent: " + phenotypeParent + "; count = " + count);
+											if (result.hasCount(phenotypeParent)){
+												System.err.println("; prior count = " + result.getRawCount(phenotypeParent));
+											}
+											else{
+												System.err.println();
+											}
+										}
 									}
 									else {
 										throw new RuntimeException("count query failed for quality " + u.getNodeName(phenotypeParent.getQuality()));
@@ -1090,7 +1098,15 @@ public class PhenotypeProfileAnalysis {
 									if(eaResult.next()){
 										int count = eaResult.getInt(1);
 										phenotypeParent.fillNames(u);
-										//System.out.println("  *** Adding count to parent: " + phenotypeParent + " adding count " + count);
+										if (count == 0){
+											System.err.print(" ** Adding count to parent: " + phenotypeParent + "; count = " + count);
+											if (result.hasCount(phenotypeParent)){
+												System.err.println("; prior count = " + result.getRawCount(phenotypeParent));
+											}
+											else{
+												System.err.println();
+											}
+										}
 										result.addCount(phenotypeParent, count);
 									}
 									else {
@@ -1294,6 +1310,9 @@ public class PhenotypeProfileAnalysis {
 							double simGOSScore = sc.simGOS(0.5);
 							double simNormGOSScore = sc.simNormGOS(0.5);
 							//double hypergeoProb = sc.simHyperSS();
+							if (Double.isInfinite(eaCounts.getIC(bestPhenotype))){
+								System.out.println("**toxic infinite score; tPhenotype = " + tPhenotype.getFullName(u) + "gPhenotype = " + gPhenotype.getFullName(u) + " best: " + bestPhenotype.getFullName(u));
+							}
 							phenotypeScores.addScore(tPhenotype,gPhenotype,eaCounts.getIC(bestPhenotype),bestPhenotype);
 							phenotypeScores.setICCSScore(tPhenotype,gPhenotype,iccsScore);
 							phenotypeScores.setGOSScore(tPhenotype, gPhenotype, simGOSScore);

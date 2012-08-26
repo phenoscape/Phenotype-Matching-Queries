@@ -10,6 +10,8 @@ import junit.framework.Assert;
 public abstract class PropTreeTest {
 
 	
+	protected static final int TAXONCOUNT = 15;  //Change or shadow if a different taxonomy is used 
+	
 	protected static final String UNITTESTROOT = "TTO:0000015";	
 	protected static final String UNITTESTKB = "unitTestconnection.properties"; 
 	protected static final String TAXON1STR = "TTO:0000001";
@@ -79,6 +81,7 @@ public abstract class PropTreeTest {
 	int shhaID;
 	int ugdhID;
 	int nog1ID;
+	int unc45bID;
 	
 	final Set<Integer>geneIDs = new HashSet<Integer>();
 	
@@ -89,6 +92,7 @@ public abstract class PropTreeTest {
 	int ventralRegionOfCerebellumID;
 	int vertebraID;
 	int bodyID;
+	int ceratobranchialBoneID;
 	
 	int countID;
 	int positionID;
@@ -96,6 +100,7 @@ public abstract class PropTreeTest {
 	int sizeID;
 	int textureID;
 	int opticalQualityID;
+	int structureMinusCompositionID;
 
 	
 	protected void initNames(Utils u) throws SQLException{
@@ -196,7 +201,10 @@ public abstract class PropTreeTest {
 		Assert.assertFalse("failed to lookup gene ugdh",nog1ID==-1);
 		geneIDs.add(nog1ID);
 
-
+		unc45bID = u.getIDFromName("unc45b");
+		Assert.assertFalse("failted to lookup gene unc45b",unc45bID==-1);
+		geneIDs.add(unc45bID);
+		
 		opercleID = u.getIDFromUID("TAO:0000250");  //ambiguity with ZFA
 		if (opercleID == -1){
 			u.cacheOneNodeFromUID("TAO:0000250");
@@ -224,12 +232,20 @@ public abstract class PropTreeTest {
 			bodyID = u.getIDFromUID("TAO:0001094");
 		}
 		
+		ceratobranchialBoneID = u.getIDFromName("TAO:0000488");
+		if (ceratobranchialBoneID == -1){
+			u.cacheOneNodeFromUID("TAO:0000488");
+			ceratobranchialBoneID = u.getIDFromUID("TAO:0000488");
+		}
+		
+		
 		countID = u.getIDFromName("count");
 		positionID = u.getIDFromName("position");
 		shapeID = u.getIDFromName("shape");
 		sizeID = u.getIDFromName("size");
 		textureID = u.getIDFromName("texture");
 		opticalQualityID = u.getIDFromName("optical quality");
+		structureMinusCompositionID = u.getIDFromUID("PATO:7777777");
 
 	}
 	

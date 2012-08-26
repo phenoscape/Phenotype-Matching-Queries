@@ -35,7 +35,7 @@ public class TestTaxonomyTree2 {
 	@Before
 	public void setUp() throws Exception {
 		u = new Utils();
-		u.openKB();
+		u.openKBFromConnections("connection.properties");
 		final PreparedStatement p = u.getPreparedStatement(ROOTQUERY);
 		p.setString(1,OSTARIOPHYSIROOT);
 		ResultSet r = p.executeQuery();

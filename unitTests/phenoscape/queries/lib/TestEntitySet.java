@@ -38,23 +38,23 @@ public class TestEntitySet {
 	@Test
 	public void testFillTaxonPhenotypeAnnotationsToEntities() throws SQLException {
 		testSet.fillTaxonPhenotypeAnnotationsToEntities();
-		Assert.assertEquals(6,testSet.size());
-		Assert.assertEquals(43,testSet.annotationTotal());
+		Assert.assertEquals(7,testSet.size());
+		Assert.assertEquals(66,testSet.annotationTotal());
 	}
 
 	@Test
 	public void testFillGenePhenotypeAnnotationsToEntities() throws SQLException {
 		testSet.fillGenePhenotypeAnnotationsToEntities();
-		Assert.assertEquals(5,testSet.size());
-		Assert.assertEquals(23,testSet.annotationTotal());
+		Assert.assertEquals(6,testSet.size());
+		Assert.assertEquals(24,testSet.annotationTotal());
 	}
 
 	@Test
 	public void testFillTaxonGenePhenotypeAnnotationsToEntities() throws SQLException {
 		testSet.fillTaxonPhenotypeAnnotationsToEntities();
 		testSet.fillGenePhenotypeAnnotationsToEntities();
-		Assert.assertEquals(9,testSet.size());  //not 11
-		Assert.assertEquals(66,testSet.annotationTotal());
+		Assert.assertEquals(11,testSet.size());  // 9? not 11
+		Assert.assertEquals(90,testSet.annotationTotal());
 	}
 
 	
