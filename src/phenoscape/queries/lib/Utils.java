@@ -189,7 +189,7 @@ public class Utils {
 				putNodeUIDName(attribute_id,attributeResults.getString(3),attributeResults.getString(4));
 			}
 		}		
-		attMap.put(structureNodeID,structureMinusCompositionNodeID);
+		attMap.put(structureNodeID,structureNodeID);
 		//attAll.put(structureNodeID, new HashSet<Integer>());
 		//attAll.get(structureNodeID).add(structureNodeID);
 		

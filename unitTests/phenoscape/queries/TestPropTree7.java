@@ -688,12 +688,6 @@ public class TestPropTree7 extends PropTreeTest{
 	int structureMinusCompositionID;
 	
 	
-	static final String GENEQUALITYCOUNTQUERY =
-		"SELECT count(*) FROM distinct_gene_annotation  WHERE distinct_gene_annotation.phenotype_node_id IN " +
-		"(SELECT phenotype.node_id from phenotype " +
-		"WHERE phenotype."
-		//"JOIN link quality_is_a ON (quality_is_a.node_id = phenotype.node_id AND quality_is_a.predicate_id = (SELECT node.node_id FROM node WHERE node.uid='OBO_REL:is_a')) " +
-		//"WHERE (quality_is_a.object_id = ?))";
 
 
 	@Test

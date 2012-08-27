@@ -75,7 +75,7 @@ public class SimilarityCalculator<E> {
 
 
 
-	// This should be returning the most informative common subsumer
+	// This returns the most informative common subsumer
 	public E MICS(CountTable<E> eaCounts, Utils u) throws SQLException{
 		int bestMatch = Integer.MAX_VALUE;  //we're using counts, so minimize
 		Set<E> bestItemSet = new HashSet<E>();
@@ -84,19 +84,18 @@ public class SimilarityCalculator<E> {
 				int matchScore = eaCounts.getRawCount(eqM);
 				if (matchScore < 0)
 					throw new RuntimeException("Bad match score value < 0: " + matchScore + " " + u.stringForMessage(eqM));
-				if (matchScore == 0){
-					// assume, for now that this can be ignored
-				}
-				if (matchScore<bestMatch){
-					u.fillNames(eqM);
-					bestMatch = matchScore;
-					bestItemSet.clear();
-					bestItemSet.add(eqM);
-				}
-				else if (matchScore == bestMatch){
-					u.fillNames(eqM);
-					bestItemSet.add(eqM);
-				}
+				if (matchScore > 0){
+					if (matchScore<bestMatch){
+						u.fillNames(eqM);
+						bestMatch = matchScore;
+						bestItemSet.clear();
+						bestItemSet.add(eqM);
+					}
+					else if (matchScore == bestMatch){
+						u.fillNames(eqM);
+						bestItemSet.add(eqM);
+					}
+				}  // else matchScore == 0; ignore, this results from some annotations to structure being assigned structure minus function as attribute
 			}
 			else {
 				throw new RuntimeException("eq has no score " + u.stringForMessage(eqM),null);

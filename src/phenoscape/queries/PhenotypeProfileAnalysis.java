@@ -1067,7 +1067,7 @@ public class PhenotypeProfileAnalysis {
 					}
 					else {
 						curEQ.fillNames(u);
-						//logger.info("Processing " + curEQ);
+						logger.info("Processing " + curEQ);
 						for(PhenotypeExpression phenotypeParent : allParents){
 							if (!result.hasCount(phenotypeParent)){
 								if (phenotypeParent.isSimpleQuality()){
@@ -1077,15 +1077,7 @@ public class PhenotypeProfileAnalysis {
 										int count = qResult.getInt(1);
 										result.addCount(phenotypeParent, count);
 										phenotypeParent.fillNames(u);
-										if (count == 0){
-											System.err.print(" ** Adding count to parent: " + phenotypeParent + "; count = " + count);
-											if (result.hasCount(phenotypeParent)){
-												System.err.println("; prior count = " + result.getRawCount(phenotypeParent));
-											}
-											else{
-												System.err.println();
-											}
-										}
+										reportZeroCount(result,phenotypeParent,count);
 									}
 									else {
 										throw new RuntimeException("count query failed for quality " + u.getNodeName(phenotypeParent.getQuality()));
@@ -1097,17 +1089,9 @@ public class PhenotypeProfileAnalysis {
 									ResultSet eaResult = phenotypeStatement.executeQuery();
 									if(eaResult.next()){
 										int count = eaResult.getInt(1);
-										phenotypeParent.fillNames(u);
-										if (count == 0){
-											System.err.print(" ** Adding count to parent: " + phenotypeParent + "; count = " + count);
-											if (result.hasCount(phenotypeParent)){
-												System.err.println("; prior count = " + result.getRawCount(phenotypeParent));
-											}
-											else{
-												System.err.println();
-											}
-										}
 										result.addCount(phenotypeParent, count);
+										phenotypeParent.fillNames(u);
+										reportZeroCount(result,phenotypeParent,count);
 									}
 									else {
 										throw new RuntimeException("count query failed for phenotype expression " + u.getNodeName(phenotypeParent.getEntity()) + " " + u.getNodeName(phenotypeParent.getQuality()));
@@ -1145,6 +1129,18 @@ public class PhenotypeProfileAnalysis {
 	}
 
 
+	private void reportZeroCount(CountTable<PhenotypeExpression> table, PhenotypeExpression phenotypeParent, int count){
+		if (count == 0){
+			if (table.hasCount(phenotypeParent)){
+				logger.warn(" ** Adding count to parent: " + phenotypeParent + "; count = " + count + "; prior count = " + table.getRawCount(phenotypeParent));
+			}
+			else{
+				logger.warn(" ** Adding count to parent: " + phenotypeParent + "; count = " + count);
+			}
+		}
+
+	}
+	
 	/**
 	 * 
 	 * @param profiles
