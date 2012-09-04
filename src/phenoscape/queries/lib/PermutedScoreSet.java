@@ -1,5 +1,6 @@
 package phenoscape.queries.lib;
 
+import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -140,9 +141,17 @@ public class PermutedScoreSet {
 
 	}
 
-	public void writeDist(String reportFolder) throws IOException{
-		final String medianICFolder = reportFolder + "/medianIC";
-		final String meanICFolder = reportFolder + "/meanIC";
+	public void writeDist(String reportDirString) throws IOException{
+		final String medianICFolder = reportDirString + "/medianIC";
+		final String meanICFolder = reportDirString + "/meanIC";
+		final File medianDirectory = new File(medianICFolder);
+		if (!medianDirectory.exists()){
+			medianDirectory.mkdirs();
+		}
+		final File meanDirectory = new File(meanICFolder);
+		if (!meanDirectory.exists()){
+			meanDirectory.mkdir();
+		}
 		for(PermutedProfileScore score : scores){
 			score.writeDist(medianICFolder, PermutedProfileScore.ScoreType.MEDIANIC);
 			score.writeDist(meanICFolder, PermutedProfileScore.ScoreType.MEANIC);
