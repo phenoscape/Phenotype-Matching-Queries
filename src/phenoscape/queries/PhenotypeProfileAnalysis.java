@@ -419,9 +419,11 @@ public class PhenotypeProfileAnalysis {
 
 		writeTaxonGeneMaxICSummary(phenotypeScores,u,w5);
 		w5.close();
-		logger.info("Finished Writing maxIC for taxon/gene summary");		
+		if (logger.isInfoEnabled()){
+			logger.info("Finished Writing maxIC for taxon/gene summary");		
 
-		logger.info("Calculating Profile Scores");
+			logger.info("Calculating Profile Scores");
+		}
 		fillUnionSets(phenotypeParentCache);
 		List<PermutedProfileScore> pMaxICScores = new ArrayList<PermutedProfileScore>();
 		List<PermutedProfileScore> pMeanICScores = new ArrayList<PermutedProfileScore>();
@@ -430,8 +432,9 @@ public class PhenotypeProfileAnalysis {
 		s.setRandom(rand);
 		s.calcPermutedProfileScores();
 		
-		logger.info("Writing median/mean distribution reports");
-
+		if (logger.isInfoEnabled()){
+			logger.info("Writing median/mean distribution reports");
+		}
 		s.writeDist(RANDOMIZATIONREPORTSFOLDER);
 
 
@@ -580,14 +583,16 @@ public class PhenotypeProfileAnalysis {
 		result.setMedianICScore(medianICScore);
 		result.setMeanICScore(meanICScore);
 
-		double[] meanICPVs = pScore.get_pvalues(meanICScore, PermutedProfileScore.ScoreType.MEANIC); 
-		result.setMeanPV(meanICPVs[1]);
-		result.setMeanTiesPV(meanICPVs[0]);
-
-		double[] medianICPVs = pScore.get_pvalues(medianICScore, PermutedProfileScore.ScoreType.MEDIANIC); 
-		result.setMedianPV(medianICPVs[1]);
-		result.setMedianTiesPV(medianICPVs[0]);
-
+		//double[] meanICPVs = pScore.get_pvalues(meanICScore, PermutedProfileScore.ScoreType.MEANIC); 
+		//result.setMeanPV(meanICPVs[1]);
+		//result.setMeanTiesPV(meanICPVs[0]);
+		result.setMeanPV(-1);
+		
+		//double[] medianICPVs = pScore.get_pvalues(medianICScore, PermutedProfileScore.ScoreType.MEDIANIC); 
+		//result.setMedianPV(medianICPVs[1]);
+		//result.setMedianTiesPV(medianICPVs[0]);
+		result.setMedianPV(-1);
+		
 		// testing p-value distribution
 		
 		return result;
@@ -732,8 +737,9 @@ public class PhenotypeProfileAnalysis {
 	 */
 	int countEAAnnotations(ProfileMap taxonProfiles2, Utils u){
 		int result = 0;
-		if (logger.isDebugEnabled())
+		if (logger.isDebugEnabled()){
 			logger.debug("Number of profiles = " + taxonProfiles2.domainSize());
+		}
 		for (Integer exhibitor : taxonProfiles2.domainSet()){
 			Profile curProfile = taxonProfiles2.getProfile(exhibitor);
 			for (Integer ent : curProfile.getUsedEntities()){
@@ -1066,8 +1072,8 @@ public class PhenotypeProfileAnalysis {
 						logger.error("The Phenotype " + curEQ + " seems to have no parents");
 					}
 					else {
-						curEQ.fillNames(u);
-						logger.info("Processing " + curEQ);
+						//curEQ.fillNames(u);
+						//logger.info("Processing " + curEQ);
 						for(PhenotypeExpression phenotypeParent : allParents){
 							if (!result.hasCount(phenotypeParent)){
 								if (phenotypeParent.isSimpleQuality()){
@@ -1077,7 +1083,7 @@ public class PhenotypeProfileAnalysis {
 										int count = qResult.getInt(1);
 										result.addCount(phenotypeParent, count);
 										phenotypeParent.fillNames(u);
-										reportZeroCount(result,phenotypeParent,count);
+										//reportZeroCount(result,phenotypeParent,count);
 									}
 									else {
 										throw new RuntimeException("count query failed for quality " + u.getNodeName(phenotypeParent.getQuality()));
@@ -1091,7 +1097,7 @@ public class PhenotypeProfileAnalysis {
 										int count = eaResult.getInt(1);
 										result.addCount(phenotypeParent, count);
 										phenotypeParent.fillNames(u);
-										reportZeroCount(result,phenotypeParent,count);
+										//reportZeroCount(result,phenotypeParent,count);
 									}
 									else {
 										throw new RuntimeException("count query failed for phenotype expression " + u.getNodeName(phenotypeParent.getEntity()) + " " + u.getNodeName(phenotypeParent.getQuality()));
@@ -1114,8 +1120,6 @@ public class PhenotypeProfileAnalysis {
 						logger.error("The Phenotype " + curEQ + " seems to have no parents");
 					}
 					else {
-						//curEQ.fillNames(u);
-						//System.out.println("Processing " + curEQ);
 						for(PhenotypeExpression phenotypeParent : allParents){
 							if (!result.hasCount(phenotypeParent)){
 								result.addCount(phenotypeParent,0);
@@ -1129,17 +1133,17 @@ public class PhenotypeProfileAnalysis {
 	}
 
 
-	private void reportZeroCount(CountTable<PhenotypeExpression> table, PhenotypeExpression phenotypeParent, int count){
-		if (count == 0){
-			if (table.hasCount(phenotypeParent)){
-				logger.warn(" ** Adding count to parent: " + phenotypeParent + "; count = " + count + "; prior count = " + table.getRawCount(phenotypeParent));
-			}
-			else{
-				logger.warn(" ** Adding count to parent: " + phenotypeParent + "; count = " + count);
-			}
-		}
-
-	}
+//	private void reportZeroCount(CountTable<PhenotypeExpression> table, PhenotypeExpression phenotypeParent, int count){
+//		if (count == 0){
+//			if (table.hasCount(phenotypeParent)){
+//				logger.warn(" ** Adding count to parent: " + phenotypeParent + "; count = " + count + "; prior count = " + table.getRawCount(phenotypeParent));
+//			}
+//			else{
+//				logger.warn(" ** Adding count to parent: " + phenotypeParent + "; count = " + count);
+//			}
+//		}
+//
+//	}
 	
 	/**
 	 * 

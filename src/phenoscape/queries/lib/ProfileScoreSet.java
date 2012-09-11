@@ -72,7 +72,7 @@ public class ProfileScoreSet{
 	
 	
 	final static String REPORT_HEADER = 
-		"Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t median IC \t pv \t pv(ties) \t meanIC \t pv \t pv(ties) ";
+		"Taxon \t Gene \t taxon phenotypes \t gene phenotypes \t median IC \t pv \t meanIC \t pv ";
 	
 	public static void writeHeader(Utils u, Writer w){
 		u.writeOrDump(REPORT_HEADER,w);		
@@ -90,15 +90,11 @@ public class ProfileScoreSet{
 		scores.append("\t");
 		scores.append(medianICScore);
 		scores.append("\t");		
-		scores.append(medianPV);
-		scores.append("\t");
-		scores.append(medianTiesPV);
+		scores.append("-1"); //scores.append(medianPV);
 		scores.append("\t");
 		scores.append(meanICScore);
 		scores.append("\t");		
-		scores.append(meanPV);
-		scores.append("\t");
-		scores.append(meanTiesPV);
+		scores.append("-1"); //scores.append(meanPV);
 		scores.append("\t");
 		
 		u.writeOrDump(scores.toString(),w);
