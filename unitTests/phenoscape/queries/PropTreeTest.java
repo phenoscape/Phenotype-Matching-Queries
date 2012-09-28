@@ -46,7 +46,7 @@ public abstract class PropTreeTest {
 	
 	
 
-	protected final int genePhenotypeAnnotationCount = 24;   // True independent of the taxon data loaded
+	protected final int genePhenotypeAnnotationCount = 25;   // True independent of the taxon data loaded
 	
 	protected final double IC1 = -1*(Math.log(1.0/(double)genePhenotypeAnnotationCount)/Math.log(2));
 	protected final double IC2 = -1*(Math.log(2.0/(double)genePhenotypeAnnotationCount)/Math.log(2));
@@ -93,6 +93,7 @@ public abstract class PropTreeTest {
 	int vertebraID;
 	int bodyID;
 	int ceratobranchialBoneID;
+	int ceratobranchial5BoneID;
 	
 	int countID;
 	int positionID;
@@ -101,6 +102,7 @@ public abstract class PropTreeTest {
 	int textureID;
 	int opticalQualityID;
 	int structureMinusCompositionID;
+	int structureID;
 
 	
 	protected void initNames(Utils u) throws SQLException{
@@ -237,7 +239,13 @@ public abstract class PropTreeTest {
 			u.cacheOneNodeFromUID("TAO:0000488");
 			ceratobranchialBoneID = u.getIDFromUID("TAO:0000488");
 		}
-		
+
+		ceratobranchial5BoneID = u.getIDFromName("TAO:0001239");
+		if (ceratobranchial5BoneID == -1){
+			u.cacheOneNodeFromUID("TAO:0001239");
+			ceratobranchial5BoneID = u.getIDFromUID("TAO:0001239");
+		}
+
 		
 		countID = u.getIDFromName("count");
 		positionID = u.getIDFromName("position");
@@ -245,7 +253,10 @@ public abstract class PropTreeTest {
 		sizeID = u.getIDFromName("size");
 		textureID = u.getIDFromName("texture");
 		opticalQualityID = u.getIDFromName("optical quality");
+		u.cacheOneNodeFromUID("PATO:7777777");
 		structureMinusCompositionID = u.getIDFromUID("PATO:7777777");
+		u.cacheOneNodeFromUID("PATO:0000141");
+		structureID = u.getIDFromUID("PATO:0000141");
 
 	}
 	

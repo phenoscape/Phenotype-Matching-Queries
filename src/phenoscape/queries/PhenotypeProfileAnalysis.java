@@ -361,7 +361,7 @@ public class PhenotypeProfileAnalysis {
 		taxonVariation.variationReport(u,taxonWriter);	
 		u.writeOrDump("\nList of qualities that were placed under quality as an attribute by default\n", taxonWriter);
 		for(Integer bad_id : badTaxonQualities.keySet()){
-			u.writeOrDump(u.getNodeName(bad_id) + " " + badTaxonQualities.get(bad_id), taxonWriter);
+			u.writeOrDump(u.getNodeName(bad_id) + " " + badTaxonQualities.get(bad_id) + " id = " + bad_id, taxonWriter);
 		}
 		taxonWriter.close();
 		logger.info("Finished writing taxon profiles");
@@ -425,8 +425,6 @@ public class PhenotypeProfileAnalysis {
 			logger.info("Calculating Profile Scores");
 		}
 		fillUnionSets(phenotypeParentCache);
-		List<PermutedProfileScore> pMaxICScores = new ArrayList<PermutedProfileScore>();
-		List<PermutedProfileScore> pMeanICScores = new ArrayList<PermutedProfileScore>();
 		PermutedScoreSet s = new PermutedScoreSet(taxonProfiles,geneProfiles,entityParentCache, entityChildCache, phenotypeScores, u);
 		s.setTotalAnnotations(totalAnnotations);
 		s.setRandom(rand);

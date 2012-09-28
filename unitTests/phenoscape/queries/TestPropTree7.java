@@ -451,8 +451,8 @@ public class TestPropTree7 extends PropTreeTest{
 
 
 	
-	final List<String>entityNames= Arrays.asList("body","opercle","pectoral fin","posterior region of frontal bone","process of anterior region of dentary","vertebra");
-	final List<String>attNames= Arrays.asList("optical quality","shape","size","count");
+	final List<String>entityNames= Arrays.asList("body","opercle","pectoral fin","posterior region of frontal bone","process of anterior region of dentary","vertebra","ceratobranchial 5 bone");
+	final List<String>attNames= Arrays.asList("optical quality","shape","size","count","structure minus composition");
 	
 	@Test
 	public void testTaxonAnalysis() throws SQLException{
@@ -486,10 +486,10 @@ public class TestPropTree7 extends PropTreeTest{
 					(ent.intValue() == vertebraID && att.intValue() == countID) ||
 					(ent.intValue() == opercleID && att.intValue() == shapeID) ||
 					(ent.intValue() == opercleID && att.intValue() == opticalQualityID)){
-						assertTrue("Genus 1; ent: " + ent + "; att: " + att + "should be true",testAnalysis.taxonAnalysis(childProfiles,ent,att,parentProfile));
+						assertTrue("Genus 1; ent: " + u.getNodeName(ent) + "; att: " + u.getNodeName(att) + " should be true",testAnalysis.taxonAnalysis(childProfiles,ent,att,parentProfile));
 					}
 				else {
-					assertFalse("Genus 1; ent: " + ent + "; att: " + att + "should be false",testAnalysis.taxonAnalysis(childProfiles,ent,att,parentProfile));
+					assertFalse("Genus 1; ent: " + u.getNodeName(ent) + "; att: " + u.getNodeName(att) + " should be false",testAnalysis.taxonAnalysis(childProfiles,ent,att,parentProfile));
 				}
 			}
 		}
@@ -507,16 +507,25 @@ public class TestPropTree7 extends PropTreeTest{
 			usedEntities.addAll(childProfile.getUsedEntities());
 			usedAttributes.addAll(childProfile.getUsedAttributes());
 		}
+		System.out.println("Entities");
+		for(Integer ent : usedEntities){
+			System.out.print(ent.toString() + "  ");
+		}
+		System.out.println("Attributes");
+		for(Integer att : usedAttributes){
+			System.out.print(att.toString() + "  ");
+		}
 		for(Integer ent : usedEntities){
 			for(Integer att : usedAttributes){
 				if (
 					(ent.intValue() == vertebraID && att.intValue() == countID) ||
 					(ent.intValue() == opercleID && att.intValue() == opticalQualityID) ||
-					(ent.intValue() == bodyID && att.intValue() == opticalQualityID)){
-						assertTrue("Genus 3; ent: " + ent + "; att: " + att + "should be true",testAnalysis.taxonAnalysis(childProfiles,ent,att,parentProfile));
+					(ent.intValue() == bodyID && att.intValue() == opticalQualityID) ||
+					(ent.intValue() == ceratobranchial5BoneID && att.intValue() == structureMinusCompositionID) ){
+						assertTrue("Genus 3; ent: " + u.getNodeName(ent) + "; att: " + u.getNodeName(att) + " should be true",testAnalysis.taxonAnalysis(childProfiles,ent,att,parentProfile));
 					}
 				else {
-					assertFalse("Genus 3; ent: " + ent + "; att: " + att + "should be false",testAnalysis.taxonAnalysis(childProfiles,ent,att,parentProfile));
+					assertFalse("Genus 3; ent: " + u.getNodeName(ent) + "; att: " + u.getNodeName(att) + " should be false",testAnalysis.taxonAnalysis(childProfiles,ent,att,parentProfile));
 				}
 			}
 		}
@@ -539,7 +548,7 @@ public class TestPropTree7 extends PropTreeTest{
 		for (Integer entity : taxonVariation.getUsedEntities()){
 			Assert.assertTrue("Found unexpected entity " + u.getNodeName(entity.intValue()),entityNames.contains(u.getNodeName(entity.intValue())));
 		}
-		Assert.assertEquals("Count of qualities used",4,taxonVariation.getUsedAttributes().size());  
+		Assert.assertEquals("Count of qualities used",5,taxonVariation.getUsedAttributes().size());  
 		for (Integer att : taxonVariation.getUsedAttributes()){
 			Assert.assertTrue("Found unexpected attribute " + u.getNodeName(att.intValue()),attNames.contains(u.getNodeName(att.intValue())));
 		}
@@ -567,7 +576,7 @@ public class TestPropTree7 extends PropTreeTest{
 	@Test
 	public void testGetAllGeneAnnotationsFromKB() throws SQLException {
 		Collection<DistinctGeneAnnotationRecord> annotations = testAnalysis.getAllGeneAnnotationsFromKB(u);
-		Assert.assertEquals("Number of gene phenotype annotations",25,annotations.size());
+		Assert.assertEquals("Number of gene phenotype annotations",genePhenotypeAnnotationCount,annotations.size());
 	}
 
 	@Test
@@ -618,12 +627,13 @@ public class TestPropTree7 extends PropTreeTest{
 		Assert.assertTrue(geneVariation.geneExhibits(opercleID,textureID,macf1ID));
 		Assert.assertTrue(geneVariation.geneExhibits(pectoralFinID,sizeID,fgf24ID));
 		Assert.assertTrue(geneVariation.geneExhibits(pectoralFinID,sizeID,lofID));
-		Assert.assertTrue(geneVariation.geneExhibits(ceratobranchialBoneID, structureMinusCompositionID, unc45bID));
+		Assert.assertTrue(geneVariation.geneExhibits(ceratobranchialBoneID, structureID, unc45bID));
 
 	}
 
 	@Test
 	public void testBuildEQParent() throws SQLException {
+		initNames(u);
 		testAnalysis.qualitySubsumers = u.buildPhenotypeSubsumers();
 		t1.traverseOntologyTree(u);
 		Map<Integer,Set<TaxonPhenotypeLink>> allLinks = testAnalysis.getAllTaxonPhenotypeLinksFromKB(t1,u);
@@ -638,7 +648,7 @@ public class TestPropTree7 extends PropTreeTest{
 		Map <Integer,Set<Integer>> entityChildCache = new HashMap<Integer,Set<Integer>>();
 		u.setupEntityParents(entityParentCache,entityChildCache);
 		Map <PhenotypeExpression,Set<PhenotypeExpression>> phenotypeParentCache = new HashMap<PhenotypeExpression,Set<PhenotypeExpression>>();
-		PhenotypeExpression curEQ = null;
+		PhenotypeExpression curEQ = new PhenotypeExpression(pectoralFinID,sizeID);
 		testAnalysis.buildEQParent(phenotypeParentCache,curEQ,entityParentCache,u);
 	}
 	
@@ -669,23 +679,16 @@ public class TestPropTree7 extends PropTreeTest{
 	
 	@Test
 	public void testCountGeneEntities() throws SQLException {
-		Assert.assertEquals(6,u.countDistinctGeneEntityPhenotypeAnnotations());
+		Assert.assertEquals(7,u.countDistinctGeneEntityPhenotypeAnnotations());
 	}
 
 	@Test
 	public void testCountTaxonEntities() throws SQLException {
-		Assert.assertEquals(7,u.countDistinctTaxonEntityPhenotypeAnnotations());
+		Assert.assertEquals(8,u.countDistinctTaxonEntityPhenotypeAnnotations());
 	}
 
 	
 	
-	int countID;
-	int positionID;
-	int shapeID;
-	int sizeID;
-	int textureID;
-	int opticalQualityID;
-	int structureMinusCompositionID;
 	
 	
 

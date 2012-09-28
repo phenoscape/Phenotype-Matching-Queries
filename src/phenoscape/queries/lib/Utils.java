@@ -190,6 +190,7 @@ public class Utils {
 			}
 		}		
 		attMap.put(structureNodeID,structureNodeID);
+		attMap.put(structureNodeID, getOneUID("PATO:0000141^PHENOSCAPE:complement_of(PATO:0001590)"));
 		//attAll.put(structureNodeID, new HashSet<Integer>());
 		//attAll.get(structureNodeID).add(structureNodeID);
 		
@@ -544,7 +545,8 @@ public class Utils {
 		final String db = properties.getProperty("db");
 		final String user = properties.getProperty("user");
 		final String password = properties.getProperty("pw");
-		String connectionStr = host + " " + db + " " + user + " " + password;
+		String connectionStr = host + " " + db + " " + user;
+		System.out.println("ConnectionStr is " + connectionStr);
 		connection = DriverManager.getConnection(String.format("jdbc:postgresql://%s/%s",host,db),user,password);
 		return "Host: " + host + " db: " + db;
 		
