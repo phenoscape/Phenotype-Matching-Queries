@@ -1,6 +1,5 @@
 package phenoscape.queries.lib;
 
-import static org.junit.Assert.*;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -13,8 +12,18 @@ import org.junit.Test;
 
 import phenoscape.queries.lib.PhenotypeExpression;
 import phenoscape.queries.lib.SimilarityCalculator;
+import junit.framework.Assert;
 
 public class TestSimilarityCalculator {
+	
+	
+	final static Double[] array1 = new Double[]{25.0};
+	final static Double[] array2 = new Double[]{23.0,23.0};
+	final static Double[] array3 = new Double[]{23.0,25.0};
+	final static Double[] array4 = new Double[]{25.0,23.0};
+	final static Double[] array5 = new Double[]{1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0};
+	final static Double[] array6 = new Double[]{5.0,9.0,3.0,2.0,10.0,4.0,7.0,6.0,1.0,8.0};
+	final static Double[] array7 = new Double[]{19.0,10.0,94.0,11.0,23.0,17.0};
 	
 	SimilarityCalculator<Integer> testEntityCalculator;
 	SimilarityCalculator<PhenotypeExpression> testPhenotypeCalculator;
@@ -39,112 +48,14 @@ public class TestSimilarityCalculator {
 	
 
 	@Test
-	public void testSimHyperSS() throws SQLException {
-		List<Integer>testTaxonEntities = new ArrayList<Integer>();
-		List<Integer>testGeneEntities = new ArrayList<Integer>();
-		testTaxonEntities.add(1);
-		testGeneEntities.add(1);
-		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		double result = testEntityCalculator.simHyperSS(testTaxonEntities.size(), testGeneEntities.size(),0);
-		System.out.println("Pop size = 2933; taxon Entities = {1}; gene Entities = {1}");
-		System.out.println("HyperSS result = " + result);
-
-		testTaxonEntities.add(1);
-		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testTaxonEntities.size(), testGeneEntities.size(),0);
-		System.out.println("Pop size = 2933; taxon Entities = {1,1}; gene Entities = {1}");
-		System.out.println("HyperSS result = " + result);
-
-		testTaxonEntities.clear();
-		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testTaxonEntities.size(), testGeneEntities.size(),0);
-		System.out.println("Pop size = 2933; taxon Entities = {}; gene Entities = {1}");
-		System.out.println("HyperSS result = " + result);
-
+	public void testQuickSelect() throws SQLException {
+		Assert.assertEquals(25.0,SimilarityCalculator.select(array1,0));
+		Assert.assertEquals(23.0,SimilarityCalculator.select(array2,0));
+		Assert.assertEquals(23.0,SimilarityCalculator.select(array3,0));
+		Assert.assertEquals(23.0,SimilarityCalculator.select(array4,0));
+		Assert.assertEquals(5.0,SimilarityCalculator.select(array5,4));
+		Assert.assertEquals(5.0,SimilarityCalculator.select(array6,4));
+		Assert.assertEquals(17.0,SimilarityCalculator.select(array7,2));
 		
-		testTaxonEntities.clear();
-		testTaxonEntities.add(1);
-		testGeneEntities.clear();
-		testGeneEntities.add(2);
-		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testTaxonEntities.size(), testGeneEntities.size(),0);
-		System.out.println("Pop size = 2933; taxon Entities = {1}; gene Entities = {2}");
-		System.out.println("HyperSS result = " + result);
-		
-		testGeneEntities.add(3);
-		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testTaxonEntities.size(), testGeneEntities.size(),0);
-		System.out.println("Pop size = 2933;  taxon Entities = {1} gene Entities = {2,3};");  //swapping
-		System.out.println("HyperSS result = " + result);
-
-		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
-		System.out.println("Pop size = 2933;  taxon Entities = {2,3} gene Entities = {1};");  //swapping
-		System.out.println("HyperSS result = " + result);
-
-		testTaxonEntities.clear();
-		testTaxonEntities.add(1);
-		testGeneEntities.clear();
-		testGeneEntities.add(1);
-		testGeneEntities.add(2);
-		testGeneEntities.add(3);
-		testGeneEntities.add(4);
-		testGeneEntities.add(5);
-		testGeneEntities.add(6);
-		testGeneEntities.add(7);
-		testGeneEntities.add(8);
-		testGeneEntities.add(9);
-		testGeneEntities.add(10);
-		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
-		System.out.println("Pop size = 2933;  taxon Entities = {1} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
-		System.out.println("HyperSS result = " + result);
-
-		testTaxonEntities.add(2);
-		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
-		System.out.println("Pop size = 2933;  taxon Entities = {1,2} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
-		System.out.println("HyperSS result = " + result);
-
-		testTaxonEntities.add(3);
-		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
-		System.out.println("Pop size = 2933;  taxon Entities = {1,2,3} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
-		System.out.println("HyperSS result = " + result);
-
-		testTaxonEntities.add(4);
-		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
-		System.out.println("Pop size = 2933;  taxon Entities = {1,2,3,4} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
-		System.out.println("HyperSS result = " + result);
-
-		//
-		testTaxonEntities.clear();
-		testTaxonEntities.add(11);
-		
-		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
-		System.out.println("Pop size = 2933;  taxon Entities = {11} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
-		System.out.println("HyperSS result = " + result + "\n");
-
-		testTaxonEntities.add(12);
-		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
-		System.out.println("Pop size = 2933;  taxon Entities = {11,12} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
-		System.out.println("HyperSS result = " + result + "\n");
-
-		testTaxonEntities.add(13);
-		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
-		System.out.println("Pop size = 2933;  taxon Entities = {11,12,13} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
-		System.out.println("HyperSS result = " + result + "\n");
-
-		testTaxonEntities.add(14);
-		testEntityCalculator = new SimilarityCalculator<Integer>(2933);
-		result = testEntityCalculator.simHyperSS(testGeneEntities.size(), testTaxonEntities.size(),0);
-		System.out.println("Pop size = 2933;  taxon Entities = {11,12,13,14} gene Entities = {1,2,3,4,5,6,7,8,9,10};");  //swapping
-		System.out.println("HyperSS result = " + result + "\n");
-
 	}
-
 }
