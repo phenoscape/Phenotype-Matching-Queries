@@ -156,12 +156,13 @@ public class SimilarityCalculator<E> {
 	}
 
 
+	final static private Double[] seedArray = new Double[0];
 	/**
 	 * This calculates the median IC, ignoring intersection pairs with IC=0 
 	 * @param taxonProfile
 	 * @param geneProfile
 	 * @param phenotypeScores
-	 * @return
+	 * @return median IC score across all phenotype pairs with IC<>0 (zero is returned if there are no such pairs)
 	 */
 	public static double calcMedianIC(Set<PhenotypeExpression> taxonPhenotypes, Set<PhenotypeExpression> genePhenotypes, PhenotypeScoreTable phenotypeScores){
 		final List<Double> scores = new ArrayList<Double>();
@@ -174,15 +175,14 @@ public class SimilarityCalculator<E> {
 			}
 		}
 		if (scores.size() > 0){
-			final Double[] scoreArray = scores.toArray(new Double[0]);
-			Arrays.sort(scoreArray);
+			final Double[] scoreArray = scores.toArray(seedArray);
 			final int midpoint = scoreArray.length/2;
 			Double median;
 			if (scoreArray.length%2 == 0){
-				median = (scoreArray[midpoint-1] + scoreArray[midpoint])/2.0;
+				median = (select(scoreArray,midpoint-1) + select(scoreArray,midpoint))/2.0;
 			}
 			else {
-				median = scoreArray[midpoint];
+				median = select(scoreArray,midpoint);
 			}
 			return median;
 		}
@@ -191,127 +191,263 @@ public class SimilarityCalculator<E> {
 		}
 	}
 
+	
+	
+	//Select implementation is from http://www.brilliantsheep.com/java-implementation-of-hoares-selection-algorithm-quickselect/
+	//Naive adaptation of code from Numerical Recipes didn't pass unit testing.
+    /** Helper method for select( Double[ ], int, int, int ) */
+    public static double select( Double[ ] array, int k ) {
+        return select( array, 0, array.length - 1, k );
+    }
+ 
+    /** 
+     * Returns the value of the kth lowest element. 
+     * Do note that for nth lowest element, k = n - 1.
+     */
+    private static double select( Double[ ] array, int left, int right, int k ) {
+ 
+        while( true ) {
+ 
+            if( right <= left + 1 ) { 
+ 
+                if( right == left + 1 && array[ right ] < array[ left ] ) {
+                    swap( array, left, right );
+                }
+ 
+                return array[ k ];
+ 
+            } else {
+ 
+                int middle = ( left + right ) >>> 1; 
+                swap( array, middle, left + 1 );
+ 
+                if( array[ left ] > array[ right ] ) {
+                    swap( array, left, right );
+                }
+ 
+                if( array[ left + 1 ] > array[ right ] ) {
+                    swap( array, left + 1, right );
+                }
+ 
+                if( array[ left ] > array[ left + 1 ] ) {
+                    swap( array, left, left + 1 );
+                }
+ 
+                int i = left + 1;
+                int j = right;
+                Double pivot = array[ left + 1 ];
+ 
+                while( true ) { 
+                    do i++; while( array[ i ] < pivot ); 
+                    do j--; while( array[ j ] > pivot ); 
+ 
+                    if( j < i ) {
+                        break; 
+                    }
+ 
+                    swap( array, i, j );
+                } 
+ 
+                array[ left + 1 ] = array[ j ];
+                array[ j ] = pivot;
+ 
+                if( j >= k ) {
+                    right = j - 1;
+                }
+ 
+                if( j <= k ) {
+                    left = i;
+                }
+            }
+        }
+    }
+ 
+    /** Helper method for swapping array entries */
+    private static void swap( Double[ ] array, int a, int b ) {
+        Double temp = array[ a ];
+        array[ a ] = array[ b ];
+        array[ b ] = temp;
+    }
+ 
+	
+//	static void elemSwap(Double[] arr,int a, int b){
+//		Double t = arr[a];
+//		arr[a]=arr[b];
+//		arr[b]=t;
+//	}
+//	
+//	static double quickSelect(Double[] scores){
+//		final int n = scores.length;
+//		int low, high;
+//
+//		int median;
+//		int middle, ll, hh;
+//
+//		low = 0 ; high = n-1 ; median = (low + high) / 2;
+//
+//		while(true){
+//			if (high <= low) /* One element only */
+//				return scores[median] ;
+//
+//			if (high == low + 1) {  /* Two elements only */
+//				if (scores[low] > scores[high])
+//					elemSwap(scores,low,high);
+//				return scores[median] ;
+//			}
+//
+//			/* Find median of low, middle and high items; swap into position low */
+//			middle = (low + high) / 2;
+//			if (scores[middle] > scores[high])    elemSwap(scores,middle,high);
+//			if (scores[low] > scores[high])       elemSwap(scores,low,high);
+//			if (scores[middle] > scores[low])     elemSwap(scores,middle,low);
+//
+//			/* Swap low item (now in position middle) into position (low+1) */
+//			elemSwap(scores,middle,low);
+//
+//			/* Nibble from each end towards middle, swapping items when stuck */
+//			ll = low + 1;
+//			hh = high;
+//			while(true) {
+//				do ll++; while (scores[low] > scores[ll]) ;
+//				do hh--; while (scores[hh]  > scores[low]) ;
+//
+//				if (hh < ll)
+//					break;
+//
+//				elemSwap(scores,ll,hh) ;
+//			}
+//
+//			/* Swap middle item (in position low) back into correct position */
+//			elemSwap(scores,low,hh) ;
+//
+//			/* Re-set active partition */
+//			if (hh <= median)
+//				low = ll;
+//			if (hh >= median)
+//				high = hh - 1;
+//		}
+//	}
 
 
 
 
 
-	/**
-	 * simGOS metric suggested by T. Vision
-	 * @param xWeight
-	 * @return
-	 * @throws SQLException
-	 */
-	public double simGOS(double xWeight) throws SQLException {
-		final double cInt = (double)matchIntersection.size();
-		final double cUni = (double)matchUnion.size();
-		final double cTotal = cInt+cUni;
-		final double gos = -xWeight*Math.log((1-(cInt/cUni)) - (1-xWeight)*Math.log(cUni/cTotal));
-		return gos;
+/**
+ * simGOS metric suggested by T. Vision
+ * @param xWeight
+ * @return
+ * @throws SQLException
+ */
+public double simGOS(double xWeight) throws SQLException {
+	final double cInt = (double)matchIntersection.size();
+	final double cUni = (double)matchUnion.size();
+	final double cTotal = cInt+cUni;
+	final double gos = -xWeight*Math.log((1-(cInt/cUni)) - (1-xWeight)*Math.log(cUni/cTotal));
+	return gos;
+}
+
+
+/**
+ * normalized version of simGOS metric suggested by T. Vision
+ * @param xWeight
+ * @return
+ * @throws SQLException
+ */
+public double simNormGOS(double xWeight) throws SQLException {
+	double cInt = (double)matchIntersection.size();
+	double cUni = (double)matchUnion.size();
+	double cTotal = cInt+cUni;
+	double gos = -xWeight*Math.log((1-(cInt/cUni)) - (1-xWeight)*Math.log(cUni/cTotal));
+	double gosNorm = gos/(-Math.log(1/cTotal));
+	return gosNorm;
+}
+
+/**
+ * 
+ * @param geneEntityList 
+ * @param taxonEntityList 
+ * @param x 
+ * @return distribution probability that the number of shared parents is exactly the number observed (= size of intersection)
+ */
+public double simHyperSS(int taxonCount,int geneCount, int entIntersectionScore){
+	int popSize = annotationCount;
+	if (taxonCount == 0){
+		throw new RuntimeException("simHyperSS received an empty set of taxon entities");
 	}
-
-
-	/**
-	 * normalized version of simGOS metric suggested by T. Vision
-	 * @param xWeight
-	 * @return
-	 * @throws SQLException
-	 */
-	public double simNormGOS(double xWeight) throws SQLException {
-		double cInt = (double)matchIntersection.size();
-		double cUni = (double)matchUnion.size();
-		double cTotal = cInt+cUni;
-		double gos = -xWeight*Math.log((1-(cInt/cUni)) - (1-xWeight)*Math.log(cUni/cTotal));
-		double gosNorm = gos/(-Math.log(1/cTotal));
-		return gosNorm;
+	if (geneCount == 0){
+		logger.error("simHyperSS received an empty set of gene entities");
 	}
-
-	/**
-	 * 
-	 * @param geneEntityList 
-	 * @param taxonEntityList 
-	 * @param x 
-	 * @return distribution probability that the number of shared parents is exactly the number observed (= size of intersection)
-	 */
-	public double simHyperSS(int taxonCount,int geneCount, int entIntersectionScore){
-		int popSize = annotationCount;
-		if (taxonCount == 0){
-			throw new RuntimeException("simHyperSS received an empty set of taxon entities");
-		}
-		if (geneCount == 0){
-			logger.error("simHyperSS received an empty set of gene entities");
-		}
-		final int successes = taxonCount;    //taxon parent count
-		final int sampleSize = geneCount;   //gene parent count
-		final HypergeometricDistribution hg = new HypergeometricDistributionImpl(popSize, successes, sampleSize);
-		final double result = hg.probability(entIntersectionScore);    //maybe cumulativeProbablility() ?
-		return result;
-	}
+	final int successes = taxonCount;    //taxon parent count
+	final int sampleSize = geneCount;   //gene parent count
+	final HypergeometricDistribution hg = new HypergeometricDistributionImpl(popSize, successes, sampleSize);
+	final double result = hg.probability(entIntersectionScore);    //maybe cumulativeProbablility() ?
+	return result;
+}
 
 
 
 
-	// filter out spatial postcompositions
-	private Set<E> filterSpatialPostComps(Set<E> matchIntersection, Utils u) throws SQLException{
-		final Set<E> matchesCopy = new HashSet<E>();
-		matchesCopy.addAll(matchIntersection);
-		for(E item : matchesCopy){
-			if (item instanceof Integer){
-				Integer ent = (Integer)item;
-				final String eUID = u.getNodeUID(ent); 
+// filter out spatial postcompositions
+private Set<E> filterSpatialPostComps(Set<E> matchIntersection, Utils u) throws SQLException{
+	final Set<E> matchesCopy = new HashSet<E>();
+	matchesCopy.addAll(matchIntersection);
+	for(E item : matchesCopy){
+		if (item instanceof Integer){
+			Integer ent = (Integer)item;
+			final String eUID = u.getNodeUID(ent); 
+			//logger.info("Checking " + eUID);
+			if (eUID != null){
+				if (SPATIALPOSTCOMPUIDPREFIX.equals(eUID.substring(0,5))){
+					matchIntersection.remove(ent);
+				}
+			}
+			else {
+				logger.warn("Entity id had no UID: " + ent);
+			}
+		}  
+		else{ 
+			PhenotypeExpression pe = (PhenotypeExpression)item;
+			if (!pe.isSimpleQuality()){
+				if (u.getNodeUID(pe.getEntity()) == null){
+					u.cacheOneNode(pe.getEntity());
+
+				}
+				final String eUID = u.getNodeUID(pe.getEntity()); 
 				//logger.info("Checking " + eUID);
 				if (eUID != null){
 					if (SPATIALPOSTCOMPUIDPREFIX.equals(eUID.substring(0,5))){
-						matchIntersection.remove(ent);
+						//logger.info("Supressing " + pe.getFullName(u) + " from intersection");
+						matchIntersection.remove(pe);
 					}
 				}
 				else {
-					logger.warn("Entity id had no UID: " + ent);
-				}
-			}  
-			else{ 
-				PhenotypeExpression pe = (PhenotypeExpression)item;
-				if (!pe.isSimpleQuality()){
-					if (u.getNodeUID(pe.getEntity()) == null){
-						u.cacheOneNode(pe.getEntity());
-
-					}
-					final String eUID = u.getNodeUID(pe.getEntity()); 
-					//logger.info("Checking " + eUID);
-					if (eUID != null){
-						if (SPATIALPOSTCOMPUIDPREFIX.equals(eUID.substring(0,5))){
-							//logger.info("Supressing " + pe.getFullName(u) + " from intersection");
-							matchIntersection.remove(pe);
-						}
-					}
-					else {
-						logger.info("Found null entity: " + pe.getFullUID(u));
-					}
+					logger.info("Found null entity: " + pe.getFullUID(u));
 				}
 			}
-		}	
-		return matchIntersection;
+		}
+	}	
+	return matchIntersection;
+}
+
+
+static class MICS<E>{
+	final E subsumer;
+	final double ic;
+
+	MICS(E sub, double maxIC){
+		subsumer = sub;
+		ic = maxIC;
 	}
 
-	
-	static class MICS<E>{
-		final E subsumer;
-		final double ic;
-		
-		MICS(E sub, double maxIC){
-			subsumer = sub;
-			ic = maxIC;
-		}
-		
-		E getSubsumer(){
-			return subsumer;
-		}
-		
-		double getMaxIC(){
-			return ic;
-		}
-		
+	E getSubsumer(){
+		return subsumer;
 	}
+
+	double getMaxIC(){
+		return ic;
+	}
+
+}
 
 
 }

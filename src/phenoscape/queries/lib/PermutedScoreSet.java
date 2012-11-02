@@ -20,7 +20,7 @@ public class PermutedScoreSet {
 	
 	static final Logger logger = Logger.getLogger(PhenotypeProfileAnalysis.class);
 	
-	final static int DISTSIZE = 10000;
+	final static int DISTSIZE = 100000;
 
 	private final List<PermutedProfileScore> scores = new ArrayList<PermutedProfileScore>();
 	

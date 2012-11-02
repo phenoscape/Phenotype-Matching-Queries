@@ -499,6 +499,11 @@ public class TestPropTree7 extends PropTreeTest{
 		childProfiles.clear();
 		for(Integer child : children){
 			childProfiles.add(taxonProfiles.getProfile(child));
+			System.out.println("!!!! " + u.getNodeName(child) + "  " + taxonProfiles.getProfile(child).summary());
+			for (Integer e : taxonProfiles.getProfile(child).getAllEQPhenotypes()){
+				System.out.print(e.toString() + "  ");
+			}
+			System.out.println();
 		}
 		parentProfile = taxonProfiles.getProfile(taxon);			
 		usedEntities.clear();

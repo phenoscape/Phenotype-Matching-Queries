@@ -422,6 +422,9 @@ Proptree7: looks at phenotype subsumption; also problems with intersection pheno
                 </phen:bearer>
                 <phen:quality>
                   <phen:typeref about="PATO:7777777"/>
+                  <phen:related_entity>
+                    <phen:typeref about="TAO:0001625"/>
+                  </phen:related_entity>
                 </phen:quality>
               </phen:phenotype_character>
             </phen:phenotype>
@@ -429,6 +432,18 @@ Proptree7: looks at phenotype subsumption; also problems with intersection pheno
         </state>
         <state id="f013e595-abe5-4ca2-8409-f35762f7a4c3" label="teeth unattached" about="#f013e595-abe5-4ca2-8409-f35762f7a4c3" symbol="1">
           <meta xmlns:rdf="http://www.w3.org/2000/01/rdf-schema#" xsi:type="ns:LiteralMeta" property="rdf:comment">bogus state</meta>
+          <meta xmlns:voc="http://vocab.phenoscape.org/" xsi:type="ns:LiteralMeta" property="voc:describesPhenotype">
+            <phen:phenotype>
+              <phen:phenotype_character>
+                <phen:bearer>
+                  <phen:typeref about="TAO:0001239"/>
+                </phen:bearer>
+                <phen:quality>
+                  <phen:typeref about="PATO:7777777"/>
+                </phen:quality>
+              </phen:phenotype_character>
+            </phen:phenotype>
+          </meta>
         </state>
       </states>
       <char id="9487690e-6865-40e2-a3b7-d444355842c2" label="opercle shape" about="#9487690e-6865-40e2-a3b7-d444355842c2" states="0f21dfa7-ccf5-43cb-90a8-5b9c947eaa6f">

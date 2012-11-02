@@ -534,47 +534,6 @@ public class PhenotypeProfileAnalysis {
 		ProfileScoreSet result = new ProfileScoreSet(taxon, gene,taxonProfile.getAllEAPhenotypes(), geneProfile.getAllEAPhenotypes());
 		PermutedProfileScore pScore = scores.matchProfileSizes(taxonProfile.getAllEAPhenotypes().size(),geneProfile.getAllEAPhenotypes().size());
 
-		//		Set<Integer> taxonEntityUnion = new HashSet<Integer>();
-		//		for(Integer e : taxonProfile.getUsedEntities()){
-		//			taxonEntityUnion.addAll(entityParentCache.get(e));
-		//		}
-
-//		final List<Integer>taxonEntityList = buildEntityList(taxonProfile,u);
-//
-//		Collection<AnnotationPair>taxonBag = new ArrayList<AnnotationPair>();
-//		Set<Integer>allTaxonEntities = new HashSet<Integer>();
-//		for(Integer ent : taxonEntityList){
-//			if (!allTaxonEntities.contains(ent)){
-//				allTaxonEntities.addAll(entityChildCache.get(ent));
-//				if (entityAnnotations.hasEntity(ent))
-//					taxonBag.addAll(entityAnnotations.getAnnotations(ent));
-//			}
-//		}
-
-		//		Set<Integer> geneEntityUnion = new HashSet<Integer>();
-		//		for(Integer e : geneProfile.getUsedEntities()){
-		//			geneEntityUnion.addAll(entityParentCache.get(e));
-		//		}
-
-//		final List<Integer>geneEntityList = buildEntityList(geneProfile,u);
-//
-//		Collection<AnnotationPair>geneBag = new ArrayList<AnnotationPair>();
-//		Set<Integer>allGeneEntities = new HashSet<Integer>();
-//		for(Integer ent : geneEntityList){
-//			if (!allGeneEntities.contains(ent)){
-//				allGeneEntities.addAll(entityChildCache.get(ent));
-//				if (entityAnnotations.hasEntity(ent))
-//					geneBag.addAll(entityAnnotations.getAnnotations(ent));
-//
-//			}
-//		}
-		//SimilarityCalculator<AnnotationPair> sc = new SimilarityCalculator<AnnotationPair>(totalAnnotations);
-
-		//Collection<AnnotationPair> entityIntersection = sc.collectionIntersection(taxonBag, geneBag);
-
-		//double hyperSSScore = sc.simHyperSS(taxonBag.size(),geneBag.size(),entityIntersection.size());
-		// calculate maxIC
-		//double maxIC = calcMaxIC(taxonProfile.getAllEAPhenotypes(), geneProfile.getAllEAPhenotypes(),phenotypeScores);
 		double medianICScore = SimilarityCalculator.calcMedianIC(taxonProfile.getAllEAPhenotypes(),geneProfile.getAllEAPhenotypes(),phenotypeScores);
 		double meanICScore = SimilarityCalculator.calcMeanIC(taxonProfile.getAllEAPhenotypes(),geneProfile.getAllEAPhenotypes(),phenotypeScores,u);
 
@@ -780,9 +739,11 @@ public class PhenotypeProfileAnalysis {
 
 	/**
 	 * This method marks taxon phenotypes that display variation. 
-	 *  There are two additional twists: the absence of an annotation for a particular entity-attribute
-	 * combination in a child taxon is treated as variation if there are sister taxa with annotation for the same combination, but if the taxon
-	 * has no annotations whatsoever, it is ignored.
+	 *  There are two additional twists:
+	 *  1) the absence of an annotation for a particular entity-attribute
+	 * combination in a child taxon is treated as variation if there are sister taxa with annotation for the same combination, 
+	 * Note: as of 1 Oct 2012, we are ignoring sister taxa (at least to explore how this affects the results) - see changes to taxonAnalysis (below)
+	 *  2) but if the taxon has no annotations whatsoever, it is ignored.
 	 * @param t
 	 * @param taxon
 	 * @param taxonProfiles2
@@ -800,7 +761,7 @@ public class PhenotypeProfileAnalysis {
 			}
 			final Profile parentProfile = taxonProfiles2.getProfile(taxon);			
 			//This builds the union and intersection sets (upwards) sets annotations for each taxon with childProfiles
-			//Changed to propagate the intersection rather than the union 21 Feb
+			//Changed to propagate the intersection rather than the union 21 Feb 2011
 			final Set<Integer> usedEntities = new HashSet<Integer>();
 			final Set<Integer> usedAttributes = new HashSet<Integer>();
 			for (Profile childProfile : childProfiles){
@@ -844,8 +805,9 @@ public class PhenotypeProfileAnalysis {
 					intersectionSet.retainAll(childProfile.getPhenotypeSet(ent,att));  //turns out non-subsuming intersection is correct here
 					//intersectionSet = subsumingIntersection(intersectionSet,childProfile.getPhenotypeSet(ent, att));
 				}
+				// commented out 1-Oct-2012 - we are trying the analysis when children with annotations to different phenotypes, but not this one are ignored....
 				else {
-					intersectionSet.clear();	//if a child has no annotations to this ent/att pair, this will tag variation
+                    //intersectionSet.clear();	//if a child has no annotations to this ent/att pair, this will tag variation
 				}
 			}
 		}

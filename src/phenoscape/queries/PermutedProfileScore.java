@@ -21,8 +21,9 @@ public class PermutedProfileScore {
 		geneSize = geneCount;
 		medianICdist=mediandistribution;
 		meanICdist=meandistribution;
-		Arrays.sort(mediandistribution);  
-		Arrays.sort(meandistribution);
+		//sorting not needed - R's ecdf is doing the work now
+		//Arrays.sort(mediandistribution);  
+		//Arrays.sort(meandistribution);
 	}
 	
 	public boolean matchSize(int tSize, int gSize){

@@ -167,8 +167,6 @@ public class Utils {
 		int closureNodeID = getOneName("closure");
 		int sizeNodeID = getOneName("size");
 		int shapeNodeID = getOneName("shape");
-		int closureStructureNodeID = getOneName("Closure+Structure");
-		int shapeSizeNodeID = getOneName("Shape+Size");
 		
 		
 		ResultSet attributeResults = s1.executeQuery(ATTRIBUTEQUERY);
@@ -190,7 +188,10 @@ public class Utils {
 			}
 		}		
 		attMap.put(structureNodeID,structureNodeID);
-		attMap.put(structureNodeID, getOneUID("PATO:0000141^PHENOSCAPE:complement_of(PATO:0001590)"));
+		int structNoOverlaps = getOneUID("PATO:0000141^PHENOSCAPE:complement_of(PATO:0001590)");
+		if (structNoOverlaps > -1){
+			attMap.put(structNoOverlaps,structureNodeID);
+		}
 		//attAll.put(structureNodeID, new HashSet<Integer>());
 		//attAll.get(structureNodeID).add(structureNodeID);
 		
